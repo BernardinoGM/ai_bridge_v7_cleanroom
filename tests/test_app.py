@@ -17,6 +17,7 @@ from app.billing import wallet_balance
 from app.db import SessionLocal
 from app.main import app, bootstrap
 from app.models import AgentProfile, PaymentRecord, TaskSession, User
+from app.models import TaskTurn
 from app.payments import ensure_seed_user, process_checkout_completed
 
 
@@ -56,6 +57,17 @@ def test_dashboard_is_runway_centric() -> None:
     assert "heavy-workdays" in body
     assert "top up balance" in body
     assert "promo / perks" not in body
+
+
+def test_chat_surface_loads_as_product_ui() -> None:
+    response = client.get("/chat/1")
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "ai bridge chat" in body
+    assert "tasks" in body
+    assert "stable task continuity" in body
+    assert "deepseek" not in body
+    assert "claude" not in body
 
 
 def test_public_pricing_has_no_cost_plus_language() -> None:
@@ -180,6 +192,49 @@ def test_messages_task_continuity_stays_pinned_and_hides_internal_routes() -> No
     assert second_payload["task_id"] == task_id
     assert second_payload["ab"]["mode"] == "Assured"
     assert second_payload["ab"]["task_state"] == "Verified"
+
+
+def test_task_thread_api_maps_visible_messages_to_task_turns() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    first = client.post(
+        "/api/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "source_surface": "chat_surface",
+            "messages": [{"role": "user", "content": "Draft a compact launch summary for the team."}],
+        },
+    )
+    assert first.status_code == 200
+    task_id = first.json()["task_id"]
+    second = client.post(
+        "/api/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "task_id": task_id,
+            "task_action": "continue",
+            "source_surface": "chat_surface",
+            "messages": [{"role": "user", "content": "Continue the same task with two rollout checkpoints."}],
+        },
+    )
+    assert second.status_code == 200
+    thread = client.get(f"/api/tasks/{founder_id}/{task_id}")
+    assert thread.status_code == 200
+    payload = thread.json()
+    assert payload["task"]["task_id"] == task_id
+    assert payload["task"]["source_surface"] == "chat_surface"
+    assert len(payload["messages"]) == 4
+    assert payload["messages"][0]["role"] == "user"
+    assert payload["messages"][1]["role"] == "assistant"
+    assert "deepseek" not in str(payload).lower()
+    assert "claude" not in str(payload).lower()
+    with SessionLocal() as db:
+        task = db.scalar(select(TaskSession).where(TaskSession.task_id == task_id))
+        assert task is not None
+        turns = db.scalars(select(TaskTurn).where(TaskTurn.task_session_id == task.id)).all()
+        assert len(turns) == 2
+        assert task.turn_count == 2
 
 
 def test_user_gets_one_logical_agent_profile_and_multiple_tasks_bind_to_it() -> None:

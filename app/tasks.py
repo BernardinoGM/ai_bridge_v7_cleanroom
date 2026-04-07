@@ -44,6 +44,7 @@ def resolve_task(
     prompt: str,
     task_id: str | None,
     task_action: str | None,
+    source_surface: str | None = None,
 ) -> TaskSession:
     profile = get_or_create_agent_profile(db, user_id)
     task = None
@@ -68,6 +69,8 @@ def resolve_task(
             task.quality_check_enabled = False
         task.expires_at = datetime.utcnow() + timedelta(hours=TASK_TIMEOUT_HOURS)
         task.last_user_message = prompt[:1000]
+        if source_surface:
+            task.source_surface = source_surface
         return task
 
     visible_lane, internal_lane, quality_check = choose_initial_lane(profile, requested_mode, prompt)
@@ -86,8 +89,11 @@ def resolve_task(
         quality_check_enabled=quality_check,
         turn_count=0,
         expires_at=datetime.utcnow() + timedelta(hours=TASK_TIMEOUT_HOURS),
+        summary=prompt[:180],
+        last_status_label="In progress",
+        source_surface=source_surface or "api",
         last_user_message=prompt[:1000],
-        notes_json={"continuity_policy": "task_pinned", "entered_via": "/v1/messages"},
+        notes_json={"continuity_policy": "task_pinned", "entered_via": "/v1/messages", "source_surface": source_surface or "api"},
     )
     db.add(task)
     db.flush()
@@ -106,9 +112,15 @@ def record_task_turn(
     premium_escalated: bool,
     fallback_used: bool,
     task_stable: bool,
+    source_surface: str | None = None,
 ) -> None:
     task.turn_count += 1
     task.continuity_status = "checked" if quality_checked else "in_progress"
+    task.summary = (task.summary or task.title or user_message[:180])[:180]
+    task.last_assistant_excerpt = assistant_excerpt[:1200]
+    task.last_status_label = "Verified" if task.pinned_lane == "assured" else ("Checked" if quality_checked else "In progress")
+    if source_surface:
+        task.source_surface = source_surface
     if task.turn_count > 1 and provider_family != "premium_anthropic" and not fallback_used and not _is_correction_or_refactor_prompt(user_message):
         task.quality_check_enabled = False
     task.expires_at = datetime.utcnow() + timedelta(hours=TASK_TIMEOUT_HOURS)
@@ -122,6 +134,7 @@ def record_task_turn(
             internal_lane=task.internal_lane,
             status_label=task.continuity_status,
             quality_checked=quality_checked,
+            source_surface=source_surface or task.source_surface or "api",
         )
     )
     profile = get_or_create_agent_profile(db, task.user_id)

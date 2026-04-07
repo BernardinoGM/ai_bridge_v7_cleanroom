@@ -22,6 +22,7 @@ class MessagesRequest(BaseModel):
     messages: list[dict[str, Any]]
     task_id: str | None = None
     task_action: Literal["continue", "escalate", "deescalate"] | None = None
+    source_surface: str | None = None
     stream: bool = False
 
 

@@ -3,6 +3,7 @@ import uuid
 import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.benchmark import benchmark_cost_usd
@@ -12,7 +13,7 @@ from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
 from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
-from app.models import AgentProfile, UsageEvent
+from app.models import AgentProfile, TaskSession, TaskTurn, UsageEvent
 from app.payments import create_checkout_session, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
@@ -25,6 +26,68 @@ from app.tasks import record_task_turn, resolve_task
 
 router = APIRouter(prefix="/api")
 compat_router = APIRouter(prefix="/v1")
+
+
+def _task_status_label(task: TaskSession) -> str:
+    if task.last_status_label:
+        return task.last_status_label
+    if task.pinned_lane == "assured":
+        return "Verified"
+    return "Checked" if task.quality_check_enabled else "In progress"
+
+
+def _human_status(status: str) -> str:
+    normalized = status.replace("_", " ").strip().lower()
+    if normalized == "in progress":
+        return "In progress"
+    if normalized == "checked":
+        return "Checked"
+    if normalized == "verified":
+        return "Verified"
+    return normalized.title()
+
+
+def _serialize_task_summary(task: TaskSession) -> dict:
+    return {
+        "task_id": task.task_id,
+        "title": task.title or "New task",
+        "summary": task.summary or task.last_user_message or "",
+        "mode": task.pinned_lane.title(),
+        "status": _task_status_label(task),
+        "archived": task.archived,
+        "starred": task.starred,
+        "turn_count": task.turn_count,
+        "updated_at": task.updated_at.isoformat(),
+        "last_assistant_excerpt": task.last_assistant_excerpt or "",
+        "source_surface": task.source_surface or "api",
+    }
+
+
+def _serialize_task_thread(task: TaskSession, turns: list[TaskTurn]) -> dict:
+    messages: list[dict] = []
+    for turn in turns:
+        messages.append(
+            {
+                "id": f"user_{turn.request_id}",
+                "role": "user",
+                "content": turn.user_message,
+                "status": _human_status(turn.status_label),
+                "created_at": turn.created_at.isoformat(),
+            }
+        )
+        messages.append(
+            {
+                "id": f"assistant_{turn.request_id}",
+                "role": "assistant",
+                "content": turn.assistant_excerpt or "",
+                "status": "Verified" if task.pinned_lane == "assured" else ("Checked" if turn.quality_checked else "In progress"),
+                "created_at": turn.created_at.isoformat(),
+            }
+        )
+    return {
+        "task": _serialize_task_summary(task),
+        "messages": messages,
+    }
 
 
 def _provider_registry(settings: Settings) -> dict[str, ProviderClient]:
@@ -142,6 +205,35 @@ def dashboard_api(user_id: int, db: Session = Depends(get_db)) -> dict:
         ],
         "upsells": data["upsells"],
     }
+
+
+@router.get("/tasks/{user_id}")
+def list_tasks(user_id: int, archived: bool = False, db: Session = Depends(get_db)) -> dict:
+    tasks = db.scalars(
+        select(TaskSession)
+        .where(TaskSession.user_id == user_id, TaskSession.archived == archived)
+        .order_by(TaskSession.starred.desc(), desc(TaskSession.updated_at))
+    ).all()
+    dashboard = build_dashboard(db, user_id)
+    return {
+        "tasks": [_serialize_task_summary(task) for task in tasks],
+        "runway": {
+            "balance_usd": dashboard["balance_usd"],
+            "days_left": dashboard["days_left"],
+            "heavy_workdays_left": dashboard["heavy_workdays_left"],
+        },
+    }
+
+
+@router.get("/tasks/{user_id}/{task_id}")
+def get_task_thread(user_id: int, task_id: str, db: Session = Depends(get_db)) -> dict:
+    task = db.scalar(select(TaskSession).where(TaskSession.user_id == user_id, TaskSession.task_id == task_id))
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    turns = db.scalars(
+        select(TaskTurn).where(TaskTurn.task_session_id == task.id).order_by(TaskTurn.created_at.asc(), TaskTurn.id.asc())
+    ).all()
+    return _serialize_task_thread(task, turns)
 
 
 @router.get("/admin/usage/{request_id}")
@@ -358,7 +450,15 @@ def api_messages(
     if payload.stream:
         raise HTTPException(status_code=400, detail="Streaming is disabled in launch mode for accurate billing.")
     prompt = "\n".join(str(item.get("content", "")) for item in payload.messages if item.get("role") == "user")
-    task = resolve_task(db, payload.user_id, payload.mode, prompt, payload.task_id, payload.task_action)
+    task = resolve_task(
+        db,
+        payload.user_id,
+        payload.mode,
+        prompt,
+        payload.task_id,
+        payload.task_action,
+        source_surface=payload.source_surface,
+    )
     result = _complete_chat(
         payload.user_id,
         task.pinned_lane,
@@ -392,6 +492,7 @@ def api_messages(
         result["telemetry"]["premium_escalated"],
         result["fallback_used"],
         task_stable,
+        payload.source_surface,
     )
     db.commit()
     return {
@@ -407,6 +508,7 @@ def api_messages(
             "task_state": "Verified" if task.pinned_lane == "assured" else "In progress",
             "billing": result["billing"],
         },
+        "task": _serialize_task_summary(task),
     }
 
 

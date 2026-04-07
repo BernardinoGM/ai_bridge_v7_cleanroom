@@ -65,6 +65,8 @@ class TaskSession(TimestampMixin, Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str | None] = mapped_column(String(160))
     state: Mapped[str] = mapped_column(String(20), default="active")
+    archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    starred: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     task_mode: Mapped[str] = mapped_column(String(20), default="smart")
     pinned_lane: Mapped[str] = mapped_column(String(20), default="smart")
     internal_lane: Mapped[str] = mapped_column(String(30), default="balanced")
@@ -74,6 +76,10 @@ class TaskSession(TimestampMixin, Base):
     quality_check_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     turn_count: Mapped[int] = mapped_column(Integer, default=0)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    summary: Mapped[str | None] = mapped_column(String(255))
+    last_assistant_excerpt: Mapped[str | None] = mapped_column(Text)
+    last_status_label: Mapped[str | None] = mapped_column(String(20))
+    source_surface: Mapped[str | None] = mapped_column(String(40))
     last_user_message: Mapped[str | None] = mapped_column(Text)
     notes_json: Mapped[dict | None] = mapped_column(JSON)
 
@@ -90,6 +96,7 @@ class TaskTurn(TimestampMixin, Base):
     internal_lane: Mapped[str] = mapped_column(String(30))
     status_label: Mapped[str] = mapped_column(String(20), default="in_progress")
     quality_checked: Mapped[bool] = mapped_column(Boolean, default=False)
+    source_surface: Mapped[str | None] = mapped_column(String(40))
 
 
 class WalletLedger(TimestampMixin, Base):

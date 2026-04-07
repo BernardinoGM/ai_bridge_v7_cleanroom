@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}AI Bridge Chat{% endblock %}
+{% block body %}
+<main
+  class="page chat-page"
+  data-user-id="{{ user_id }}"
+  data-balance="{{ "%.2f"|format(balance_usd) }}"
+  data-days-left="{{ days_left }}"
+  data-heavy-days="{{ heavy_workdays_left }}"
+>
+  <section class="chat-shell">
+    <aside class="chat-sidebar panel">
+      <div class="sidebar-head">
+        <div>
+          <p class="eyebrow">AI Bridge Chat</p>
+          <h1>Tasks</h1>
+        </div>
+        <button class="button secondary button-small" id="new-task-button" type="button">New Task</button>
+      </div>
+      <div class="runway-strip">
+        <div>
+          <span>Balance</span>
+          <strong id="runway-balance">${{ "%.2f"|format(balance_usd) }}</strong>
+        </div>
+        <div>
+          <span>Runway</span>
+          <strong id="runway-days">{{ days_left }} days</strong>
+        </div>
+        <div>
+          <span>Heavy Days</span>
+          <strong id="runway-heavy">{{ heavy_workdays_left }}</strong>
+        </div>
+      </div>
+      <div class="task-list" id="task-list">
+        {% for task in initial_tasks %}
+        <button
+          class="task-item{% if loop.first %} active{% endif %}"
+          type="button"
+          data-task-id="{{ task.task_id }}"
+          data-mode="{{ task.pinned_lane|title }}"
+          data-status="{{ task.last_status_label or ('Verified' if task.pinned_lane == 'assured' else 'In progress') }}"
+        >
+          <div class="task-item-top">
+            <strong>{{ task.title or "New task" }}</strong>
+            <span class="task-badge">{{ task.last_status_label or ('Verified' if task.pinned_lane == 'assured' else 'In progress') }}</span>
+          </div>
+          <p>{{ task.summary or task.last_user_message or "Start a new task." }}</p>
+        </button>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <section class="chat-main">
+      <div class="chat-header panel">
+        <div>
+          <p class="eyebrow">Continuity First</p>
+          <h2 id="thread-title">{% if initial_tasks %}{{ initial_tasks[0].title or "New task" }}{% else %}New task{% endif %}</h2>
+          <p class="muted" id="thread-summary">Stable task continuity, clearer work status, and controlled runway.</p>
+        </div>
+        <div class="chat-header-metrics">
+          <div class="status-chip" id="thread-status">{% if initial_tasks and initial_tasks[0].pinned_lane == 'assured' %}Verified{% else %}In progress{% endif %}</div>
+          <label class="mode-picker">
+            <span>Mode</span>
+            <select id="mode-selector">
+              <option value="fast">Fast</option>
+              <option value="smart" selected>Smart</option>
+              <option value="assured">Assured</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="thread panel" id="thread">
+        <div class="empty-thread" id="empty-thread">
+          <h3>Start a task-based conversation</h3>
+          <p>Each thread is a real task session. Continue work, switch visible modes, and keep the same task stable across turns.</p>
+        </div>
+      </div>
+
+      <form class="composer panel" id="composer">
+        <label class="sr-only" for="message-input">Message</label>
+        <textarea
+          id="message-input"
+          name="message"
+          rows="4"
+          placeholder="Ask AI Bridge to draft, debug, summarize, review, or continue an active task."
+          required
+        ></textarea>
+        <div class="composer-actions">
+          <div class="composer-meta">
+            <span>Task status stays visible.</span>
+            <span>No backend routing details exposed.</span>
+          </div>
+          <button class="button primary" id="send-button" type="submit">Send</button>
+        </div>
+      </form>
+    </section>
+  </section>
+</main>
+
+<script>
+(() => {
+  const root = document.querySelector(".chat-page");
+  if (!root) return;
+
+  const userId = Number(root.dataset.userId);
+  const taskList = document.getElementById("task-list");
+  const thread = document.getElementById("thread");
+  const emptyThread = document.getElementById("empty-thread");
+  const composer = document.getElementById("composer");
+  const messageInput = document.getElementById("message-input");
+  const modeSelector = document.getElementById("mode-selector");
+  const sendButton = document.getElementById("send-button");
+  const titleEl = document.getElementById("thread-title");
+  const summaryEl = document.getElementById("thread-summary");
+  const statusEl = document.getElementById("thread-status");
+  const runwayBalance = document.getElementById("runway-balance");
+  const runwayDays = document.getElementById("runway-days");
+  const runwayHeavy = document.getElementById("runway-heavy");
+  const newTaskButton = document.getElementById("new-task-button");
+
+  let activeTaskId = null;
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function setActiveTaskButton(taskId) {
+    taskList.querySelectorAll(".task-item").forEach((item) => {
+      item.classList.toggle("active", item.dataset.taskId === taskId);
+    });
+  }
+
+  function renderMessages(messages) {
+    if (!messages.length) {
+      thread.innerHTML = "";
+      thread.appendChild(emptyThread);
+      emptyThread.hidden = false;
+      return;
+    }
+    emptyThread.hidden = true;
+    const html = messages
+      .map(
+        (message) => `
+          <article class="message ${message.role}">
+            <div class="message-meta">
+              <span>${message.role === "assistant" ? "AI Bridge" : "You"}</span>
+              <strong>${escapeHtml(message.status || "In progress")}</strong>
+            </div>
+            <div class="message-body">${escapeHtml(message.content).replace(/\n/g, "<br />")}</div>
+          </article>
+        `
+      )
+      .join("");
+    thread.innerHTML = html;
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function renderTaskList(tasks) {
+    taskList.innerHTML = tasks
+      .map(
+        (task) => `
+          <button class="task-item ${task.task_id === activeTaskId ? "active" : ""}" type="button" data-task-id="${task.task_id}">
+            <div class="task-item-top">
+              <strong>${escapeHtml(task.title || "New task")}</strong>
+              <span class="task-badge">${escapeHtml(task.status)}</span>
+            </div>
+            <p>${escapeHtml(task.summary || task.last_assistant_excerpt || "Continue work in this task.")}</p>
+          </button>
+        `
+      )
+      .join("");
+  }
+
+  function applyTaskHeader(task) {
+    titleEl.textContent = task.title || "New task";
+    summaryEl.textContent = task.summary || task.last_assistant_excerpt || "Stable task continuity, clearer work status, and controlled runway.";
+    statusEl.textContent = task.status;
+    const visibleMode = (task.mode || "Smart").toLowerCase();
+    modeSelector.value = ["fast", "smart", "assured"].includes(visibleMode) ? visibleMode : "smart";
+  }
+
+  async function refreshTaskList(preferredTaskId = activeTaskId) {
+    const response = await fetch(`/api/tasks/${userId}`);
+    const payload = await response.json();
+    renderTaskList(payload.tasks);
+    runwayBalance.textContent = `$${Number(payload.runway.balance_usd).toFixed(2)}`;
+    runwayDays.textContent = `${payload.runway.days_left} days`;
+    runwayHeavy.textContent = String(payload.runway.heavy_workdays_left);
+    if (preferredTaskId && payload.tasks.some((task) => task.task_id === preferredTaskId)) {
+      activeTaskId = preferredTaskId;
+      setActiveTaskButton(preferredTaskId);
+    }
+  }
+
+  async function loadTask(taskId) {
+    const response = await fetch(`/api/tasks/${userId}/${taskId}`);
+    if (!response.ok) return;
+    const payload = await response.json();
+    activeTaskId = payload.task.task_id;
+    applyTaskHeader(payload.task);
+    setActiveTaskButton(activeTaskId);
+    renderMessages(payload.messages);
+  }
+
+  async function sendMessage(event) {
+    event.preventDefault();
+    const content = messageInput.value.trim();
+    if (!content) return;
+
+    sendButton.disabled = true;
+    sendButton.textContent = "Sending...";
+    try {
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          user_id: userId,
+          mode: modeSelector.value,
+          task_id: activeTaskId,
+          task_action: activeTaskId ? "continue" : null,
+          source_surface: "chat_surface",
+          messages: [{role: "user", content}]
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Unable to continue the task.");
+      }
+      activeTaskId = payload.task_id;
+      messageInput.value = "";
+      await refreshTaskList(activeTaskId);
+      await loadTask(activeTaskId);
+      statusEl.textContent = payload.ab.task_state || payload.ab.status;
+      runwayBalance.textContent = `$${Number(payload.ab.billing.balance_remaining_usd).toFixed(2)}`;
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      sendButton.disabled = false;
+      sendButton.textContent = "Send";
+    }
+  }
+
+  taskList.addEventListener("click", async (event) => {
+    const button = event.target.closest(".task-item");
+    if (!button) return;
+    await loadTask(button.dataset.taskId);
+  });
+
+  newTaskButton.addEventListener("click", () => {
+    activeTaskId = null;
+    setActiveTaskButton("__none__");
+    titleEl.textContent = "New task";
+    summaryEl.textContent = "Start a new task session and AI Bridge will keep continuity from the first turn.";
+    statusEl.textContent = "In progress";
+    renderMessages([]);
+    messageInput.focus();
+  });
+
+  composer.addEventListener("submit", sendMessage);
+
+  const firstTask = taskList.querySelector(".task-item");
+  if (firstTask) {
+    loadTask(firstTask.dataset.taskId);
+  }
+})();
+</script>
+{% endblock %}
