@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Payment Success{% endblock %}
+{% block body %}
+<main class="page narrow">
+  <section class="section">
+    <h1>Checkout completed</h1>
+    <p>Your balance will be credited only after a verified Stripe webhook is processed.</p>
+    <p class="muted">Session: {{ session_id or "pending" }}</p>
+  </section>
+</main>
+{% endblock %}
+

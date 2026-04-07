@@ -1,0 +1,28 @@
+[project]
+name = "ai-bridge-v7-cleanroom"
+version = "0.1.0"
+description = "Clean-room rebuild of AI Bridge v7 for Railway launch"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116.0",
+  "httpx>=0.28.0",
+  "jinja2>=3.1.6",
+  "pydantic-settings>=2.10.0",
+  "python-multipart>=0.0.20",
+  "sqlalchemy>=2.0.43",
+  "stripe>=11.0.0",
+  "uvicorn[standard]>=0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+]
+

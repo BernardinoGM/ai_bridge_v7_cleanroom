@@ -1,0 +1,89 @@
+Metadata-Version: 2.4
+Name: ai-bridge-v7-cleanroom
+Version: 0.1.0
+Summary: Clean-room rebuild of AI Bridge v7 for Railway launch
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.116.0
+Requires-Dist: httpx>=0.28.0
+Requires-Dist: jinja2>=3.1.6
+Requires-Dist: pydantic-settings>=2.10.0
+Requires-Dist: python-multipart>=0.0.20
+Requires-Dist: sqlalchemy>=2.0.43
+Requires-Dist: stripe>=11.0.0
+Requires-Dist: uvicorn[standard]>=0.35.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.3.0; extra == "dev"
+
+# AI Bridge clean-room rebuild v7
+
+This is a standalone clean-room rebuild of AI Bridge for launch on Railway. It does not inherit public cost-plus pricing, public take-rate logic, reward wallets, withdrawable cashback, perpetual multi-level referral, or consumer VPN assumptions.
+
+## Product model
+
+- `Fast`: cheapest default lane for lightweight and medium requests.
+- `Smart`: main product lane with intelligent routing and limited premium escalation.
+- `Assured`: premium lane for high-risk and release-check workflows.
+
+Public pricing is pack and product-layer based. Benchmark and gross-margin guardrails exist only as internal telemetry.
+
+## Stack
+
+- FastAPI
+- SQLAlchemy
+- Jinja templates for landing and dashboard pages
+- Stripe Checkout + verified webhook crediting
+- SQLite for local development, Postgres-ready via `DATABASE_URL`
+
+## Launch features
+
+- Landing page aligned to the new positioning
+- Runway-centric dashboard
+- Top-up packs: Starter, Growth, Scale
+- Stripe checkout session creation
+- Verified webhook with idempotent wallet crediting
+- Closed-loop referral perks on first paid top-up only
+- Add-on architecture for Bill Guard, Team Vault, Priority Queue, Custom Routing Rules, and Analytics Pro
+- `/api/chat/completions` and `/api/messages` with launch-safe non-streaming billing
+- Internal telemetry for route choice, premium escalation, local-model hits, serving COGS, benchmark estimate, QA trigger rate, and latency
+
+## Quick start
+
+```bash
+cd /Users/forrest/ai_bridge_v7_cleanroom
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+uvicorn app.main:app --reload
+```
+
+Open:
+
+- Landing page: `http://127.0.0.1:8000/`
+- Dashboard: `http://127.0.0.1:8000/dashboard/1`
+- Health: `http://127.0.0.1:8000/api/health`
+
+## Stripe flow
+
+1. Client requests `POST /api/payments/checkout`.
+2. Server creates Stripe Checkout Session and records a pending `payment_records` row.
+3. Stripe sends `checkout.session.completed` webhook.
+4. Webhook signature is verified.
+5. App credits main balance exactly once using the processed webhook table and unique wallet ledger refs.
+6. If eligible, a one-time promo perk is credited to the referrer in the non-withdrawable promo bucket.
+
+There is no public self-credit endpoint.
+
+## Auto-reload
+
+Launch includes schema and config surface for threshold-based auto-reload. It is feature-flagged by default because production activation should use saved payment methods and an explicit Stripe-safe flow.
+
+## Local inference future
+
+Provider settings already support local, remote, Qwen, and premium endpoints. See [docs/ARCHITECTURE_NOTES.md](/Users/forrest/ai_bridge_v7_cleanroom/docs/ARCHITECTURE_NOTES.md).
+
+## Smoke tests
+
+See [docs/SMOKE_TESTS.md](/Users/forrest/ai_bridge_v7_cleanroom/docs/SMOKE_TESTS.md).
+

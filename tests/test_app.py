@@ -1,0 +1,336 @@
+import os
+import json
+from pathlib import Path
+
+os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test.db'}"
+os.environ["STRIPE_SECRET_KEY"] = "sk_test_fake"
+os.environ["STRIPE_WEBHOOK_SECRET"] = "whsec_test"
+os.environ["ADMIN_API_KEY"] = "admin-test-key"
+os.environ["APP_ENV"] = "testing"
+os.environ["PROVIDER_MOCK_ENABLED"] = "true"
+os.environ["PROVIDER_LOCAL_ENABLED"] = "false"
+
+from fastapi.testclient import TestClient
+from sqlalchemy import select
+
+from app.billing import wallet_balance
+from app.db import SessionLocal
+from app.main import app, bootstrap
+from app.models import AgentProfile, PaymentRecord, TaskSession, User
+from app.payments import ensure_seed_user, process_checkout_completed
+
+
+def setup_module() -> None:
+    test_db = Path(__file__).resolve().parent / "test.db"
+    if test_db.exists():
+        test_db.unlink()
+    bootstrap()
+    with SessionLocal() as db:
+        ensure_seed_user(db, "user1@example.com", "User One", referral_code="UONE10")
+        ensure_seed_user(db, "user2@example.com", "User Two", referral_code="UTWO10")
+        db.commit()
+
+
+client = TestClient(app)
+
+
+def _user_id(email: str) -> int:
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == email))
+        assert user is not None
+        return user.id
+
+
+def test_health() -> None:
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    assert response.json()["vpn_required"] is False
+
+
+def test_dashboard_is_runway_centric() -> None:
+    response = client.get("/dashboard/1")
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "runway dashboard" in body
+    assert "heavy-workdays" in body
+    assert "top up balance" in body
+    assert "promo / perks" not in body
+
+
+def test_public_pricing_has_no_cost_plus_language() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "fast / smart / assured" in body
+    assert "actual cost +" not in body
+    assert "split the savings" not in body
+    assert "take rate" not in body
+    assert "earn while you save" not in body
+    assert "87% lower bill" not in body
+    assert "real savings" not in body
+    assert "vs claude direct" not in body
+    assert "vs claude sonnet direct api" not in body
+    assert "cashback" not in body
+    assert "reward wallet" not in body
+    assert "withdrawable reward" not in body
+    assert "lowest platform fee" not in body
+    assert "platform_take" not in body
+    assert "my budget lasts longer" not in body or "budget lasts longer" in body
+    assert "stable task continuity" in body
+    assert "bill guard" in body
+    assert "team vault" in body
+    assert "priority" in body
+    assert "custom rules" in body
+    assert "analytics pro" in body
+
+
+def test_webhook_processing_is_idempotent() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    referrer_id = _user_id("user2@example.com")
+    with SessionLocal() as db:
+        payment = PaymentRecord(
+            user_id=founder_id,
+            pack_code="growth",
+            amount_usd=50.0,
+            bonus_usd=5.0,
+            status="pending",
+            stripe_session_id="cs_test_123",
+            referred_by_code="UTWO10",
+        )
+        db.add(payment)
+        db.commit()
+        processed_first = process_checkout_completed(db, "evt_1", "cs_test_123", "pi_123")
+        db.commit()
+        processed_second = process_checkout_completed(db, "evt_1", "cs_test_123", "pi_123")
+        db.commit()
+        assert processed_first is True
+        assert processed_second is False
+        assert wallet_balance(db, founder_id, "main") == 55.0
+        assert wallet_balance(db, referrer_id, "promo") == 5.0
+
+
+def test_chat_requires_real_balance_and_debits_once() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    with SessionLocal() as db:
+        db_user = db.get(User, founder_id)
+        assert db_user is not None
+    response = client.post(
+        "/api/chat/completions",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Draft a launch note for a release check"}],
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ab"]["mode"] in {"Smart", "Assured"}
+    serialized = str(payload)
+    assert "deepseek" not in serialized.lower()
+    assert "claude" not in serialized.lower()
+    assert "route" not in payload["ab"]
+    assert "model" not in payload
+
+
+def test_streaming_disabled_for_billing_accuracy() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    response = client.post(
+        "/api/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "fast",
+            "system": "Be concise",
+            "messages": [{"role": "user", "content": "hello"}],
+            "stream": True,
+        },
+    )
+    assert response.status_code == 400
+    assert "streaming is disabled" in response.json()["detail"].lower()
+
+
+def test_messages_task_continuity_stays_pinned_and_hides_internal_routes() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    first = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Help me prepare a release-check plan for production launch."}],
+        },
+    )
+    assert first.status_code == 200
+    first_payload = first.json()
+    task_id = first_payload["task_id"]
+    assert first_payload["ab"]["mode"] == "Assured"
+    assert "model" not in first_payload
+    assert "route" not in str(first_payload).lower()
+    assert "claude" not in str(first_payload).lower()
+    second = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "fast",
+            "task_id": task_id,
+            "messages": [{"role": "user", "content": "Continue that same launch task and tighten the checklist."}],
+        },
+    )
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["task_id"] == task_id
+    assert second_payload["ab"]["mode"] == "Assured"
+    assert second_payload["ab"]["task_state"] == "Verified"
+
+
+def test_user_gets_one_logical_agent_profile_and_multiple_tasks_bind_to_it() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    first = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Summarize the board update for this week."}],
+        },
+    )
+    second = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "fast",
+            "messages": [{"role": "user", "content": "Draft a short recap email for the same team."}],
+        },
+    )
+    assert first.status_code == 200
+    assert second.status_code == 200
+    with SessionLocal() as db:
+        profiles = db.scalars(select(AgentProfile).where(AgentProfile.user_id == founder_id)).all()
+        tasks = db.scalars(select(TaskSession).where(TaskSession.user_id == founder_id)).all()
+        assert len(profiles) == 1
+        assert len(tasks) >= 2
+
+
+def test_ds_first_behavior_updates_agent_profile_without_leaking_provider_names() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    response = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Write a concise summary of the weekly operations note."}],
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ab"]["mode"] == "Smart"
+    assert "deepseek" not in str(payload).lower()
+    assert "claude" not in str(payload).lower()
+    admin = client.get(f"/api/admin/agents/{founder_id}", headers={"X-Admin-Key": "admin-test-key"})
+    assert admin.status_code == 200
+    admin_payload = admin.json()
+    assert admin_payload["default_provider_family"].startswith("ds")
+    assert admin_payload["recent_ds_success_rate"] >= 0
+    assert admin_payload["fallback_count"] >= 0
+    assert admin_payload["qa_trigger_count"] >= 0
+    assert admin_payload["ds_clean_success_count_7d"] >= 1
+    assert admin_payload["last_execution_profile"] in {"remote_fast", "remote_balanced", "premium_anthropic"}
+
+
+def test_stable_user_avoids_repeated_qa_on_followup_ds_tasks() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    first = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Summarize this short weekly update."}],
+        },
+    )
+    assert first.status_code == 200
+    first_payload = first.json()
+    second = client.post(
+        "/v1/messages",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "task_id": first_payload["task_id"],
+            "messages": [{"role": "user", "content": "Continue the same summary with one concise next step."}],
+        },
+    )
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["ab"]["mode"] == "Smart"
+    assert second_payload["ab"]["status"] == "In progress"
+    admin = client.get(f"/api/admin/agents/{founder_id}", headers={"X-Admin-Key": "admin-test-key"})
+    assert admin.status_code == 200
+    admin_payload = admin.json()
+    assert admin_payload["default_provider_family"].startswith("ds")
+    assert admin_payload["stable_task_completion_rate_7d"] >= 0.5
+
+
+def test_repeated_ds_instability_makes_escalation_more_likely() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    with SessionLocal() as db:
+        profile = db.scalar(select(AgentProfile).where(AgentProfile.user_id == founder_id))
+        assert profile is not None
+        profile.recent_ds_success_rate = 0.2
+        profile.fallback_count_7d = 4
+        profile.premium_escalation_count_7d = 3
+        db.commit()
+    response = client.post(
+        "/api/chat/completions",
+        json={
+            "user_id": founder_id,
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Review this billing incident and auth failure summary."}],
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["ab"]["mode"] == "Assured"
+
+
+def test_internal_route_telemetry_is_admin_only() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    response = client.post(
+        "/api/chat/completions",
+        json={
+            "user_id": founder_id,
+            "mode": "fast",
+            "messages": [{"role": "user", "content": "Summarize this short note."}],
+        },
+    )
+    assert response.status_code == 200
+    request_id = response.json()["id"].replace("ab_", "")
+    forbidden = client.get(f"/api/admin/usage/{request_id}")
+    assert forbidden.status_code == 403
+    allowed = client.get(f"/api/admin/usage/{request_id}", headers={"X-Admin-Key": "admin-test-key"})
+    assert allowed.status_code == 200
+    admin_payload = allowed.json()
+    assert "route_chosen" in admin_payload
+
+
+def test_landing_has_no_hardcoded_dashboard_user_cta() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.text
+    assert "/dashboard/1" not in body
+    assert "/dashboard/demo" in body
+
+
+def test_no_mock_provider_in_production_path_configuration() -> None:
+    routes_file = Path("/Users/forrest/ai_bridge_v7_cleanroom/app/routes/api.py").read_text()
+    assert "from app.providers.mock import MockProviderClient" not in routes_file
+
+
+def test_launch_docs_do_not_require_local_inference_node() -> None:
+    readme = Path("/Users/forrest/ai_bridge_v7_cleanroom/README.md").read_text().lower()
+    architecture = Path("/Users/forrest/ai_bridge_v7_cleanroom/docs/ARCHITECTURE_NOTES.md").read_text().lower()
+    env_example = Path("/Users/forrest/ai_bridge_v7_cleanroom/.env.example").read_text().lower()
+    assert "production traffic never depends on the founder laptop" in readme
+    assert "production inference uses remote commercial-grade providers only" in architecture
+    assert "provider_local_enabled=false" in env_example
+
+
+def test_railway_startup_points_only_to_cleanroom_app() -> None:
+    railway = json.loads(Path("/Users/forrest/ai_bridge_v7_cleanroom/railway.json").read_text())
+    start_command = railway["deploy"]["startCommand"]
+    assert start_command == "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"

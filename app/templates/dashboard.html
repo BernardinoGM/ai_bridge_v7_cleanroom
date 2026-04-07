@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}AI Bridge Dashboard{% endblock %}
+{% block body %}
+<main class="page">
+  <section class="hero slim">
+    <div class="hero-copy">
+      <p class="eyebrow">Runway Dashboard</p>
+      <h1>${{ "%.2f"|format(balance_usd) }} main balance</h1>
+      <p class="lede">{{ days_left }} estimated days left at current Smart pace, with {{ heavy_workdays_left }} heavy-workdays left.</p>
+    </div>
+    <div class="hero-card">
+      <div class="metric"><span>Estimated savings</span><strong>${{ "%.2f"|format(premium_savings_estimate_usd) }}</strong></div>
+      <div class="metric"><span>Growth actions</span><strong>Top up, auto-reload, invite, upgrade</strong></div>
+      <div class="metric"><span>Trust surface</span><strong>Runway, control, and checked work</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Mode comparison</h2>
+    <div class="cards three-up">
+      {% for item in mode_estimates %}
+      <article class="card">
+        <h3>{{ item.mode|title }}</h3>
+        <p>{{ item.days_left }} runway days</p>
+        <p>{{ item.heavy_workdays_left }} heavy-workdays</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>Growth CTAs</h2>
+      <ul class="checklist">
+        <li>Top up balance</li>
+        <li>Enable auto-reload</li>
+        <li>Upgrade from Fast to Smart or Assured for selected workflows</li>
+        <li>Invite teammates into Team Vault</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Add-on upsells</h2>
+      <ul class="checklist">
+        {% for addon in upsells %}
+        <li>{{ addon.name }}: {{ addon.tagline }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+</main>
+{% endblock %}

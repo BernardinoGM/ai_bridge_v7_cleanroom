@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}AI Bridge v7{% endblock %}
+{% block body %}
+<main class="page">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">AI Bridge</p>
+      <h1>Run more AI work with control, continuity, and longer runway.</h1>
+      <p class="lede">AI Bridge is your AI operating layer. Keep everyday work fast, keep ongoing tasks stable, and bring in premium reasoning only when the work actually needs stronger review.</p>
+      <div class="cta-row">
+        <a class="button primary" href="#packs">Choose a Pack</a>
+        <a class="button secondary" href="#preview">Start Free</a>
+        <a class="button secondary" href="/dashboard/demo">View Demo</a>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="metric">
+        <span>Fast</span>
+        <strong>Low-friction lane for everyday work</strong>
+      </div>
+      <div class="metric">
+        <span>Smart</span>
+        <strong>Main operating lane with steady routing and selective checks</strong>
+      </div>
+      <div class="metric">
+        <span>Assured</span>
+        <strong>Verified lane for release checks and high-risk work</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div>
+      <h2>Why AI Bridge</h2>
+      <p>AI Bridge gives users and teams a stable surface for AI work. It keeps the default path efficient, preserves continuity inside active tasks, and adds governance as usage grows across people, projects, and workflows.</p>
+    </div>
+    <div class="panel">
+      <ul class="checklist">
+        <li>Your budget lasts longer because the operating layer is smarter.</li>
+        <li>Ongoing tasks stay steady instead of bouncing between work styles.</li>
+        <li>Premium controls, governance, and add-ons make scale safer and more valuable.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Fast / Smart / Assured</h2>
+    <div class="cards three-up">
+      <article class="card">
+        <h3>Fast</h3>
+        <p>Default lane for lightweight and medium work when speed, responsiveness, and budget efficiency come first.</p>
+      </article>
+      <article class="card">
+        <h3>Smart</h3>
+        <p>Main operating lane for daily work with continuity-first routing and checks only when the task really benefits from them.</p>
+      </article>
+      <article class="card">
+        <h3>Assured</h3>
+        <p>Premium lane for high-risk, high-value, or release-critical work with stronger review, higher confidence, and tighter control.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>How your budget lasts longer</h2>
+      <ul class="checklist">
+        <li>Runway by operating mode, not token obsession.</li>
+        <li>Fast and Smart stay efficient by default.</li>
+        <li>Premium only appears when the task carries more risk or needs stronger verification.</li>
+        <li>Heavy-workdays forecasts turn budget planning into something tangible.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>How teams scale safely</h2>
+      <ul class="checklist">
+        <li>Shared controls, budgets, and auditability with Team Vault.</li>
+        <li>Priority handling, custom rules, and analytics for stronger governance.</li>
+        <li>Stable task continuity keeps multi-step work from drifting as teams expand usage.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Premium upgrades that strengthen the operating layer</h2>
+    <div class="cards three-up">
+      <article class="card"><h3>Bill Guard</h3><p>Unexpected spike protection and peace of mind.</p></article>
+      <article class="card"><h3>Team Vault</h3><p>Shared wallet, project budgets, member management, and audit log.</p></article>
+      <article class="card"><h3>Priority</h3><p>Faster handling for urgent work, launches, and time-sensitive team operations.</p></article>
+      <article class="card"><h3>Custom Rules</h3><p>Set operating rules by workload so summaries, debugging, and release checks follow the right lane automatically.</p></article>
+      <article class="card"><h3>Analytics Pro</h3><p>Runway forecasts, anomaly alerts, and usage intelligence for better planning and tighter cost control.</p></article>
+    </div>
+  </section>
+
+  <section class="section" id="packs">
+    <h2>Packs</h2>
+    <div class="cards three-up">
+      {% for pack in packs %}
+      <article class="card pack">
+        <p class="eyebrow">{{ pack.name }}</p>
+        <h3>${{ "%.0f"|format(pack.price_usd) }}</h3>
+        <p>{{ pack.tagline }}</p>
+        <p class="muted">{{ pack.governance_note }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section" id="preview">
+    <h2>Preview the control surface</h2>
+    <div class="cards three-up">
+      <article class="card"><h3>Start free</h3><p>Open a low-friction workspace and feel how Fast and Smart handle normal work before you scale volume.</p></article>
+      <article class="card"><h3>Runway preview</h3><p>See how your balance behaves across work paces and operating modes without exposing backend mechanics.</p></article>
+      <article class="card"><h3>Continuity first</h3><p>Keep active drafting, debugging, planning, and review tasks stable across multiple turns instead of starting over every time.</p></article>
+    </div>
+  </section>
+
+  <section class="section faq">
+    <h2>FAQ</h2>
+    <div class="cards two-up">
+      <article class="card"><h3>Do users need to think about backend routing?</h3><p>No. AI Bridge presents clear operating lanes and work status so teams can focus on output, continuity, and control.</p></article>
+      <article class="card"><h3>Is premium the default?</h3><p>No. Fast and Smart are built for efficient day-to-day work. Assured is there when the task needs stronger review or higher confidence.</p></article>
+      <article class="card"><h3>What makes AI Bridge good for ongoing work?</h3><p>Active tasks stay stable, so multi-turn drafting, bugfixing, release preparation, and review flows do not drift unpredictably.</p></article>
+      <article class="card"><h3>How do teams unlock more control?</h3><p>Higher-tier packs and add-ons add governance, budgets, priority handling, analytics, and routing control so teams can scale without chaos.</p></article>
+    </div>
+  </section>
+</main>
+{% endblock %}
