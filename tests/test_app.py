@@ -85,18 +85,23 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "one line of code. 87% lower bill. same output." in body
-    assert "try it free — no signup" in body
+    assert "stop sending every task through the expensive lane." in body
+    assert "try the playground" in body
+    assert "see pricing" in body
+    assert "view dashboard" in body
     assert "get api key" in body
-    assert "how it works" in body
+    assert "why it wins" in body
     assert "playground" in body
     assert "savings calc" in body
     assert "pricing" in body
+    assert "why this is not just a cheaper wrapper" in body
     assert 'href="/dashboard/demo"' in body
     assert 'id="playground"' in body
     assert 'id="savings-calc"' in body
     assert 'id="packs"' in body
     assert 'id="api-key-modal"' in body
+    assert "one-click demo" in body
+    assert "likely reduction range" in body
     assert "choose a pack, get redirected to secure checkout." in body
     assert "start with starter" in body
     assert "choose growth" in body
