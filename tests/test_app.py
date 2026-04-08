@@ -124,9 +124,15 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "$50" in body
     assert "committed credit" in body
     assert "$200" in body
+    assert "scale credit" in body
+    assert "$500" in body
+    assert "volume credit" in body
+    assert "$1000" in body
     assert "start with $10 credit" in body
     assert "start with $50 credit" in body
     assert "start with $200 credit" in body
+    assert "start with $500 credit" in body
+    assert "start with $1000 credit" in body
     assert 'href="/dashboard/demo"' in body
     assert 'id="playground"' in body
     assert 'id="savings"' in body
