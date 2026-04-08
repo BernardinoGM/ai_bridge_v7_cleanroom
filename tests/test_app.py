@@ -87,7 +87,8 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "stop paying premium prices for default work." in body
+    assert "smarter routing. lower bills. same output." in body
+    assert "try 3 free demos" in body
     assert "ai bridge routes routine work through the cheaper lane" in body
     assert "try the playground" in body
     assert "see pricing" in body
@@ -101,6 +102,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "higher on repetitive summarization, lower on review-heavy workflows." in body
     assert "based on a typical summarization task. see live demo below." in body
     assert "why it wins" in body
+    assert "claude code" in body
     assert "cheaper by default" in body
     assert "premium when earned" in body
     assert "stable across turns" in body
