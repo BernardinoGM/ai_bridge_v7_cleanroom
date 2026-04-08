@@ -8,15 +8,17 @@ from app.models import PaymentRecord, ReferralPerk, User
 
 
 def maybe_grant_referral_perk(db: Session, payment: PaymentRecord) -> ReferralPerk | None:
-    if payment.referred_by_code is None:
-        return None
     existing = db.scalar(select(ReferralPerk).where(ReferralPerk.trigger_payment_id == payment.id))
     if existing:
         return existing
     referred_user = db.get(User, payment.user_id)
     if not referred_user:
         return None
-    referrer = db.scalar(select(User).where(User.referral_code == payment.referred_by_code))
+    referrer = None
+    if payment.referred_by_code is not None:
+        referrer = db.scalar(select(User).where(User.referral_code == payment.referred_by_code))
+    elif referred_user.referred_by_user_id is not None:
+        referrer = db.get(User, referred_user.referred_by_user_id)
     if not referrer or referrer.id == referred_user.id:
         return None
     prior_paid = db.scalar(

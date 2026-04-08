@@ -39,3 +39,4 @@ class DemoChatRequest(BaseModel):
 class ApiKeyCreateRequest(BaseModel):
     email: str
     use_case: str | None = None
+    referred_by_code: str | None = None

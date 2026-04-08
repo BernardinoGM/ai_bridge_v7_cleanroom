@@ -29,6 +29,26 @@
       {% endif %}
     </div>
     <div class="panel">
+      <h2>Referral</h2>
+      <ul class="checklist">
+        <li>Referral code: {{ referral_code }}</li>
+        <li>Referral link: {{ referral_link }}</li>
+        <li>Promo balance: ${{ "%.2f"|format(promo_balance_usd) }}</li>
+      </ul>
+      {% if recent_referral_perks %}
+      <ul class="checklist">
+        {% for perk in recent_referral_perks %}
+        <li>Earned ${{ "%.2f"|format(perk.amount_usd) }} from a qualifying first purchase</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Referral rewards are closed-loop promo credit and unlock only after a qualifying first purchase.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
       <h2>Recent top-ups</h2>
       {% if recent_topups %}
       <ul class="checklist">
@@ -40,22 +60,6 @@
       <p class="muted">No top-ups yet.</p>
       {% endif %}
     </div>
-  </section>
-
-  <section class="section">
-    <h2>Mode comparison</h2>
-    <div class="cards three-up">
-      {% for item in mode_estimates %}
-      <article class="card">
-        <h3>{{ item.mode|title }}</h3>
-        <p>{{ item.days_left }} runway days</p>
-        <p>{{ item.heavy_workdays_left }} heavy-workdays</p>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="section grid-2">
     <div class="panel">
       <h2>Recent usage</h2>
       {% if recent_usage %}
@@ -79,6 +83,19 @@
       {% else %}
       <p class="muted">No balance activity yet.</p>
       {% endif %}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Mode comparison</h2>
+    <div class="cards three-up">
+      {% for item in mode_estimates %}
+      <article class="card">
+        <h3>{{ item.mode|title }}</h3>
+        <p>{{ item.days_left }} runway days</p>
+        <p>{{ item.heavy_workdays_left }} heavy-workdays</p>
+      </article>
+      {% endfor %}
     </div>
   </section>
 

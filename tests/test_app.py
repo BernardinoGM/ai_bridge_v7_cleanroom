@@ -198,6 +198,43 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
         assert wallet_balance(db, user.id, "main") == 0.0
 
 
+def test_referral_link_and_first_purchase_credit_are_closed_loop_and_one_time() -> None:
+    referrer_id = _user_id("user2@example.com")
+    with SessionLocal() as db:
+        promo_before = wallet_balance(db, referrer_id, "promo")
+    referral_page = client.get("/r/UTWO10", follow_redirects=False)
+    assert referral_page.status_code == 307
+    assert referral_page.headers["location"] == "/?ref=UTWO10"
+    key_response = client.post(
+        "/v1/keys",
+        json={"email": "referredbuilder@example.com", "use_case": "support prompts", "referred_by_code": "UTWO10"},
+    )
+    assert key_response.status_code == 200
+    referred_user_id = key_response.json()["user_id"]
+    with SessionLocal() as db:
+        referred_user = db.get(User, referred_user_id)
+        assert referred_user is not None
+        assert referred_user.referred_by_user_id == referrer_id
+        first_payment = PaymentRecord(
+            user_id=referred_user_id,
+            pack_code="starter",
+            amount_usd=10.0,
+            bonus_usd=0.0,
+            status="pending",
+            stripe_session_id="cs_test_referral_1",
+            referred_by_code=None,
+        )
+        db.add(first_payment)
+        db.commit()
+        processed_first = process_checkout_completed(db, "evt_referral_1", "cs_test_referral_1", "pi_referral_1")
+        db.commit()
+        processed_second = process_checkout_completed(db, "evt_referral_1", "cs_test_referral_1", "pi_referral_1")
+        db.commit()
+        assert processed_first is True
+        assert processed_second is False
+        assert wallet_balance(db, referrer_id, "promo") == promo_before + 1.0
+
+
 def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -> None:
     create = client.post(
         "/v1/keys",
@@ -236,6 +273,7 @@ def test_webhook_processing_is_idempotent() -> None:
     founder_id = _user_id("founder@aibridge.local")
     referrer_id = _user_id("user2@example.com")
     with SessionLocal() as db:
+        promo_before = wallet_balance(db, referrer_id, "promo")
         payment = PaymentRecord(
             user_id=founder_id,
             pack_code="growth",
@@ -254,7 +292,7 @@ def test_webhook_processing_is_idempotent() -> None:
         assert processed_first is True
         assert processed_second is False
         assert wallet_balance(db, founder_id, "main") == 55.0
-        assert wallet_balance(db, referrer_id, "promo") == 5.0
+        assert wallet_balance(db, referrer_id, "promo") == promo_before + 5.0
 
 
 def test_volume_pack_webhook_credits_expected_balance_once() -> None:

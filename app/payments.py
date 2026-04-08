@@ -40,6 +40,11 @@ def create_checkout_session(
     referred_by_code: str | None = None,
 ) -> CheckoutResult:
     pack = get_pack(pack_code)
+    user = db.get(User, user_id)
+    effective_referred_by_code = referred_by_code
+    if effective_referred_by_code is None and user and user.referred_by_user_id:
+        referrer = db.get(User, user.referred_by_user_id)
+        effective_referred_by_code = referrer.referral_code if referrer else None
     configure_stripe(settings)
     session = stripe.checkout.Session.create(
         mode="payment",
@@ -55,7 +60,7 @@ def create_checkout_session(
                 "quantity": 1,
             }
         ],
-        metadata={"user_id": str(user_id), "pack_code": pack_code, "referred_by_code": referred_by_code or ""},
+        metadata={"user_id": str(user_id), "pack_code": pack_code, "referred_by_code": effective_referred_by_code or ""},
     )
     payment = PaymentRecord(
         user_id=user_id,
@@ -64,7 +69,7 @@ def create_checkout_session(
         bonus_usd=pack.bonus_usd,
         status="pending",
         stripe_session_id=session.id,
-        referred_by_code=referred_by_code,
+        referred_by_code=effective_referred_by_code,
     )
     db.add(payment)
     db.flush()

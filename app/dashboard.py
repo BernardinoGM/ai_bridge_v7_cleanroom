@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.add_ons import ADD_ONS
 from app.billing import wallet_balance
-from app.models import ApiKey, PaymentRecord, UsageEvent, User, WalletLedger
+from app.models import ApiKey, PaymentRecord, ReferralPerk, UsageEvent, User, WalletLedger
 
 
 @dataclass
@@ -35,6 +35,9 @@ def build_dashboard(db: Session, user_id: int) -> dict:
     payments = db.scalars(
         select(PaymentRecord).where(PaymentRecord.user_id == user_id).order_by(desc(PaymentRecord.created_at)).limit(10)
     ).all()
+    referral_perks = db.scalars(
+        select(ReferralPerk).where(ReferralPerk.referrer_user_id == user_id).order_by(desc(ReferralPerk.created_at)).limit(10)
+    ).all()
     events = db.scalars(
         select(UsageEvent).where(UsageEvent.user_id == user_id).order_by(desc(UsageEvent.created_at)).limit(30)
     ).all()
@@ -49,7 +52,10 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "user_id": user_id,
         "user_name": user.name if user else "Demo user",
         "user_email": user.email if user else "founder@aibridge.local",
+        "referral_code": user.referral_code if user else "FOUNDER10",
+        "referral_link": f"/r/{user.referral_code}" if user else "/r/FOUNDER10",
         "balance_usd": round(balance, 2),
+        "promo_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),
         "days_left": estimates[1].days_left,
         "heavy_workdays_left": estimates[1].heavy_workdays_left,
         "mode_estimates": estimates,
@@ -59,6 +65,7 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "recent_usage": events[:8],
         "api_keys": api_keys,
         "recent_topups": payments,
+        "recent_referral_perks": referral_perks,
         "main_ledger": ledger[:8],
         "events": events,
         "upsells": ADD_ONS,

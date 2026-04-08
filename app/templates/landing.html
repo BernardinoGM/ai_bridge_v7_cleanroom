@@ -285,6 +285,13 @@
 (() => {
   const root = document.querySelector(".landing-vivid");
   if (!root) return;
+  const url = new URL(window.location.href);
+  const referralFromUrl = url.searchParams.get("ref");
+  if (referralFromUrl) {
+    window.localStorage.setItem("ab_referral_code", referralFromUrl.toUpperCase());
+    url.searchParams.delete("ref");
+    window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams.toString()}` : "") + url.hash);
+  }
 
   const launchUserId = Number(root.dataset.launchUserId || "1");
   const packButtons = Array.from(document.querySelectorAll(".pack-cta"));
@@ -544,7 +551,8 @@
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           email,
-          use_case: apiKeyUse.value.trim() || null
+          use_case: apiKeyUse.value.trim() || null,
+          referred_by_code: window.localStorage.getItem("ab_referral_code") || null
         })
       });
       const payload = await response.json();

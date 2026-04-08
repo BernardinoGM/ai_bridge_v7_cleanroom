@@ -28,14 +28,24 @@ def _hash_key(raw_key: str, settings: Settings) -> str:
     return hashlib.sha256(f"{settings.secret_key}:{raw_key}".encode("utf-8")).hexdigest()
 
 
+def attach_referrer_by_code(db: Session, user: User, referred_by_code: str | None) -> None:
+    if not referred_by_code or user.referred_by_user_id:
+        return
+    referrer = db.scalar(select(User).where(User.referral_code == referred_by_code.strip().upper()))
+    if referrer and referrer.id != user.id:
+        user.referred_by_user_id = referrer.id
+
+
 def issue_api_key(
     db: Session,
     settings: Settings,
     email: str,
     use_case: str | None = None,
+    referred_by_code: str | None = None,
 ) -> tuple[User, str, float]:
     normalized_email = _normalize_email(email)
     user = ensure_seed_user(db, email=normalized_email, name=_display_name_from_email(normalized_email))
+    attach_referrer_by_code(db, user, referred_by_code)
     existing_grant = db.scalar(
         select(WalletLedger).where(
             WalletLedger.user_id == user.id,

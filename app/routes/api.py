@@ -289,6 +289,7 @@ def create_api_key_launch(
         settings=settings,
         email=payload.email,
         use_case=payload.use_case,
+        referred_by_code=payload.referred_by_code,
     )
     db.commit()
     return {

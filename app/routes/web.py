@@ -23,6 +23,11 @@ def landing(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/r/{referral_code}")
+def referral_redirect(referral_code: str) -> RedirectResponse:
+    return RedirectResponse(url=f"/?ref={referral_code}", status_code=307)
+
+
 @router.get("/dashboard")
 def dashboard_root() -> RedirectResponse:
     return RedirectResponse(url="/dashboard/demo", status_code=307)
