@@ -1,128 +1,481 @@
 {% extends "base.html" %}
 {% block title %}AI Bridge v7{% endblock %}
 {% block body %}
-<main class="page">
-  <section class="hero">
+<main class="landing-vivid" data-launch-user-id="{{ launch_user_id }}">
+  <nav class="landing-nav">
+    <a class="brand-mark" href="/">AI Bridge</a>
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#playground">Playground</a>
+      <a href="#savings-calc">Savings calc</a>
+      <a href="#packs">Pricing</a>
+    </div>
+    <div class="nav-actions">
+      <a class="button ghost" href="/dashboard/demo">Dashboard</a>
+      <button class="button secondary api-key-trigger" type="button">Get API Key</button>
+    </div>
+  </nav>
+
+  <section class="hero hero-vivid">
     <div class="hero-copy">
-      <p class="eyebrow">AI Bridge</p>
-      <h1>Run more AI work with control, continuity, and longer runway.</h1>
-      <p class="lede">AI Bridge is your AI operating layer. Keep everyday work fast, keep ongoing tasks stable, and bring in premium reasoning only when the work actually needs stronger review.</p>
+      <p class="eyebrow vivid-eyebrow">AI routing that behaves like a product, not a cost leak</p>
+      <h1>One line of code. 87% lower bill. Same output.</h1>
+      <p class="lede vivid-lede">Route everyday work through a faster cheaper path, keep ongoing tasks stable, and pull in premium reasoning only when the job actually needs it.</p>
       <div class="cta-row">
-        <a class="button primary" href="#packs">Choose a Pack</a>
-        <a class="button secondary" href="#preview">Start Free</a>
-        <a class="button secondary" href="/dashboard/demo">View Demo</a>
+        <a class="button primary" href="#playground">Try it free — no signup</a>
+        <button class="button secondary api-key-trigger" type="button">Get API Key</button>
+        <a class="button ghost" href="/dashboard/demo">Dashboard</a>
+      </div>
+      <div class="hero-proof">
+        <div class="proof-chip"><span>Fast</span><strong>default path</strong></div>
+        <div class="proof-chip"><span>Smart</span><strong>premium only when needed</strong></div>
+        <div class="proof-chip"><span>Assured</span><strong>for release and high-risk work</strong></div>
       </div>
     </div>
-    <div class="hero-card">
-      <div class="metric">
-        <span>Fast</span>
-        <strong>Low-friction lane for everyday work</strong>
+    <div class="hero-visual panel">
+      <div class="hero-console">
+        <div class="console-line"><span>Request</span><strong>Summarize a product spec and draft a customer update</strong></div>
+        <div class="console-line"><span>Lane</span><strong>Smart</strong></div>
+        <div class="console-line"><span>Status</span><strong>Checked</strong></div>
+        <div class="console-line"><span>Effect</span><strong>More work moved over, lower bill anxiety</strong></div>
       </div>
-      <div class="metric">
-        <span>Smart</span>
-        <strong>Main operating lane with steady routing and selective checks</strong>
-      </div>
-      <div class="metric">
-        <span>Assured</span>
-        <strong>Verified lane for release checks and high-risk work</strong>
+      <div class="hero-stats">
+        <div class="stat-card"><span>Playable</span><strong>Try the flow before you commit</strong></div>
+        <div class="stat-card"><span>Sticky</span><strong>Tasks stay stable across turns</strong></div>
+        <div class="stat-card"><span>Ready</span><strong>Pricing and checkout are live</strong></div>
       </div>
     </div>
   </section>
 
-  <section class="section grid-2">
-    <div>
-      <h2>Why AI Bridge</h2>
-      <p>AI Bridge gives users and teams a stable surface for AI work. It keeps the default path efficient, preserves continuity inside active tasks, and adds governance as usage grows across people, projects, and workflows.</p>
+  <section class="section vivid-grid" id="how-it-works">
+    <div class="panel vivid-panel">
+      <h2>How it works</h2>
+      <ol class="step-list">
+        <li>Point your app at AI Bridge instead of routing everything through the expensive lane.</li>
+        <li>Let Fast or Smart absorb normal work while long tasks stay stable.</li>
+        <li>Escalate into Assured only when the prompt, workflow, or risk profile actually justifies it.</li>
+      </ol>
     </div>
-    <div class="panel">
+    <div class="panel vivid-panel">
+      <h2>Why it converts</h2>
       <ul class="checklist">
-        <li>Your budget lasts longer because the operating layer is smarter.</li>
-        <li>Ongoing tasks stay steady instead of bouncing between work styles.</li>
-        <li>Premium controls, governance, and add-ons make scale safer and more valuable.</li>
+        <li>Obvious savings hook up front.</li>
+        <li>Playground feeling before sign-in friction.</li>
+        <li>Pricing that leads to a real checkout flow.</li>
+        <li>Dashboard path that resolves immediately.</li>
       </ul>
     </div>
   </section>
 
-  <section class="section">
-    <h2>Fast / Smart / Assured</h2>
-    <div class="cards three-up">
-      <article class="card">
-        <h3>Fast</h3>
-        <p>Default lane for lightweight and medium work when speed, responsiveness, and budget efficiency come first.</p>
-      </article>
-      <article class="card">
-        <h3>Smart</h3>
-        <p>Main operating lane for daily work with continuity-first routing and checks only when the task really benefits from them.</p>
-      </article>
-      <article class="card">
-        <h3>Assured</h3>
-        <p>Premium lane for high-risk, high-value, or release-critical work with stronger review, higher confidence, and tighter control.</p>
-      </article>
+  <section class="section vivid-feature-strip">
+    <article class="feature-panel">
+      <h3>Fast / Smart / Assured</h3>
+      <p>Three clear product lanes instead of backend routing trivia.</p>
+    </article>
+    <article class="feature-panel">
+      <h3>Playground first</h3>
+      <p>Try prompts, feel the product, then decide whether you want the key or the pack.</p>
+    </article>
+    <article class="feature-panel">
+      <h3>Dashboard ready</h3>
+      <p>Jump straight into a live-feeling control surface instead of reading a strategy memo.</p>
+    </article>
+  </section>
+
+  <section class="section playground-section" id="playground">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">Playground</p>
+        <h2>Try the product before you buy it</h2>
+      </div>
+      <a class="button ghost" href="/chat/demo">Open demo chat</a>
+    </div>
+    <div class="playground-shell">
+      <div class="playground-controls panel">
+        <label>
+          <span>Prompt type</span>
+          <select id="playground-prompt">
+            <option value="summarize">Summarize a long update</option>
+            <option value="debug">Debug a broken feature</option>
+            <option value="release">Release check for production</option>
+          </select>
+        </label>
+        <label>
+          <span>Operating lane</span>
+          <select id="playground-mode">
+            <option value="fast">Fast</option>
+            <option value="smart" selected>Smart</option>
+            <option value="assured">Assured</option>
+          </select>
+        </label>
+        <button class="button primary" id="playground-run" type="button">Run playground</button>
+      </div>
+      <div class="playground-output panel">
+        <div class="playground-status">
+          <span class="playground-pill" id="playground-lane">Smart</span>
+          <span class="playground-pill accent" id="playground-state">Checked</span>
+        </div>
+        <h3 id="playground-title">Smart lane: normal work, stable continuity, lightweight review</h3>
+        <p id="playground-copy">Start with Smart and see how AI Bridge keeps the experience quick, budget-conscious, and predictable without making you think about backend routing.</p>
+      </div>
     </div>
   </section>
 
-  <section class="section grid-2">
-    <div class="panel">
-      <h2>How your budget lasts longer</h2>
-      <ul class="checklist">
-        <li>Runway by operating mode, not token obsession.</li>
-        <li>Fast and Smart stay efficient by default.</li>
-        <li>Premium only appears when the task carries more risk or needs stronger verification.</li>
-        <li>Heavy-workdays forecasts turn budget planning into something tangible.</li>
-      </ul>
+  <section class="section savings-section" id="savings-calc">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">Savings Calc</p>
+        <h2>See the bill difference in seconds</h2>
+      </div>
     </div>
-    <div class="panel">
-      <h2>How teams scale safely</h2>
-      <ul class="checklist">
-        <li>Shared controls, budgets, and auditability with Team Vault.</li>
-        <li>Priority handling, custom rules, and analytics for stronger governance.</li>
-        <li>Stable task continuity keeps multi-step work from drifting as teams expand usage.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>Premium upgrades that strengthen the operating layer</h2>
-    <div class="cards three-up">
-      <article class="card"><h3>Bill Guard</h3><p>Unexpected spike protection and peace of mind.</p></article>
-      <article class="card"><h3>Team Vault</h3><p>Shared wallet, project budgets, member management, and audit log.</p></article>
-      <article class="card"><h3>Priority</h3><p>Faster handling for urgent work, launches, and time-sensitive team operations.</p></article>
-      <article class="card"><h3>Custom Rules</h3><p>Set operating rules by workload so summaries, debugging, and release checks follow the right lane automatically.</p></article>
-      <article class="card"><h3>Analytics Pro</h3><p>Runway forecasts, anomaly alerts, and usage intelligence for better planning and tighter cost control.</p></article>
+    <div class="calc-shell">
+      <div class="panel calc-inputs">
+        <label>
+          <span>Monthly direct spend</span>
+          <input id="calc-spend" type="range" min="100" max="5000" step="50" value="1000" />
+          <strong id="calc-spend-value">$1,000</strong>
+        </label>
+        <label>
+          <span>Routing profile</span>
+          <select id="calc-profile">
+            <option value="0.87" selected>Balanced default</option>
+            <option value="0.72">Heavy Smart usage</option>
+            <option value="0.58">Assured-heavy mix</option>
+          </select>
+        </label>
+      </div>
+      <div class="panel calc-results">
+        <div class="calc-stat">
+          <span>Estimated bill with AI Bridge</span>
+          <strong id="calc-result">$130</strong>
+        </div>
+        <div class="calc-stat">
+          <span>Estimated reduction</span>
+          <strong id="calc-savings">87%</strong>
+        </div>
+        <p class="muted">Use the cheaper lane by default. Keep premium for the prompts that deserve it. That is the whole point.</p>
+      </div>
     </div>
   </section>
 
   <section class="section" id="packs">
-    <h2>Packs</h2>
+    <div class="section-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">Pricing</p>
+        <h2>Start cheap. Scale with intent.</h2>
+      </div>
+      <p class="muted section-note">Choose a pack, get redirected to secure checkout.</p>
+    </div>
     <div class="cards three-up">
       {% for pack in packs %}
-      <article class="card pack">
+      <article class="card pack pack-vivid" data-pack-code="{{ pack.code }}" data-pack-price="{{ "%.0f"|format(pack.price_usd) }}">
         <p class="eyebrow">{{ pack.name }}</p>
         <h3>${{ "%.0f"|format(pack.price_usd) }}</h3>
         <p>{{ pack.tagline }}</p>
         <p class="muted">{{ pack.governance_note }}</p>
+        <button
+          class="button primary pack-cta"
+          type="button"
+          data-pack-code="{{ pack.code }}"
+          data-pack-name="{{ pack.name }}"
+          data-pack-price="{{ "%.0f"|format(pack.price_usd) }}"
+        >
+          {% if pack.code == "starter" %}Start with Starter{% elif pack.code == "growth" %}Choose Growth{% else %}Unlock Scale{% endif %}
+        </button>
+        <p class="pack-helper">
+          {% if pack.code == "starter" %}Top up $10{% elif pack.code == "growth" %}Top up $50{% else %}Top up $200{% endif %}
+        </p>
       </article>
       {% endfor %}
     </div>
-  </section>
-
-  <section class="section" id="preview">
-    <h2>Preview the control surface</h2>
-    <div class="cards three-up">
-      <article class="card"><h3>Start free</h3><p>Open a low-friction workspace and feel how Fast and Smart handle normal work before you scale volume.</p></article>
-      <article class="card"><h3>Runway preview</h3><p>See how your balance behaves across work paces and operating modes without exposing backend mechanics.</p></article>
-      <article class="card"><h3>Continuity first</h3><p>Keep active drafting, debugging, planning, and review tasks stable across multiple turns instead of starting over every time.</p></article>
-    </div>
+    <p class="inline-error" id="checkout-error" hidden></p>
   </section>
 
   <section class="section faq">
-    <h2>FAQ</h2>
+    <div class="section-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">Common Questions</p>
+        <h2>Everything important stays obvious</h2>
+      </div>
+    </div>
     <div class="cards two-up">
-      <article class="card"><h3>Do users need to think about backend routing?</h3><p>No. AI Bridge presents clear operating lanes and work status so teams can focus on output, continuity, and control.</p></article>
-      <article class="card"><h3>Is premium the default?</h3><p>No. Fast and Smart are built for efficient day-to-day work. Assured is there when the task needs stronger review or higher confidence.</p></article>
-      <article class="card"><h3>What makes AI Bridge good for ongoing work?</h3><p>Active tasks stay stable, so multi-turn drafting, bugfixing, release preparation, and review flows do not drift unpredictably.</p></article>
-      <article class="card"><h3>How do teams unlock more control?</h3><p>Higher-tier packs and add-ons add governance, budgets, priority handling, analytics, and routing control so teams can scale without chaos.</p></article>
+      <article class="card"><h3>Do I need to sign up just to test it?</h3><p>No. Start with the playground, jump into the demo dashboard, then open the key flow if you want to wire it in.</p></article>
+      <article class="card"><h3>What happens after I buy a pack?</h3><p>You get redirected to secure checkout. The current pack structure stays aligned with the clean-room pricing model.</p></article>
+      <article class="card"><h3>Can I go straight to the dashboard?</h3><p>Yes. The Dashboard CTA resolves to a working route so you can feel the product instead of reading about it.</p></article>
+      <article class="card"><h3>Do I need to understand the backend model path?</h3><p>No. You choose Fast, Smart, or Assured. The product keeps the routing internals out of your way.</p></article>
     </div>
   </section>
 </main>
+
+<div class="signup-modal" id="api-key-modal" hidden>
+  <div class="checkout-backdrop" data-close-key-modal="true"></div>
+  <div class="checkout-dialog panel" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
+    <div class="checkout-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">Get API Key</p>
+        <h3 id="api-key-modal-title">Start your launch access flow</h3>
+      </div>
+      <button class="button secondary button-small" id="api-key-close" type="button">Close</button>
+    </div>
+    <p class="muted">Enter your email and we will keep the launch flow lightweight while your real auth surface catches up.</p>
+    <form id="api-key-form" class="checkout-form">
+      <label>
+        <span>Work email</span>
+        <input id="api-key-email" type="email" placeholder="you@example.com" required />
+      </label>
+      <label>
+        <span>Intended use</span>
+        <input id="api-key-use" type="text" placeholder="Internal app, side project, team pilot" />
+      </label>
+      <p class="inline-error" id="api-key-error" hidden></p>
+      <button class="button primary" id="api-key-submit" type="submit">Continue</button>
+    </form>
+  </div>
+</div>
+
+<div class="checkout-modal" id="checkout-modal" hidden>
+  <div class="checkout-backdrop" data-close-modal="true"></div>
+  <div class="checkout-dialog panel" role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
+    <div class="checkout-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">Secure Checkout</p>
+        <h3 id="checkout-modal-title">Start checkout</h3>
+      </div>
+      <button class="button secondary button-small" id="checkout-close" type="button">Close</button>
+    </div>
+    <p class="muted" id="checkout-modal-copy">Use a lightweight launch flow to start your pack purchase without a full auth setup.</p>
+    <form id="checkout-form" class="checkout-form">
+      <label>
+        <span>Email for launch follow-up</span>
+        <input id="checkout-email" name="email" type="email" placeholder="you@example.com" />
+      </label>
+      <label>
+        <span>Referral code</span>
+        <input id="checkout-referral" name="referral" type="text" placeholder="Optional" />
+      </label>
+      <p class="muted fine-print">Launch checkout uses a temporary user binding until full sign-in ships.</p>
+      <p class="inline-error" id="checkout-modal-error" hidden></p>
+      <button class="button primary" id="checkout-submit" type="submit">Continue to secure checkout</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  const root = document.querySelector(".landing-vivid");
+  if (!root) return;
+
+  const launchUserId = Number(root.dataset.launchUserId || "1");
+  const packButtons = Array.from(document.querySelectorAll(".pack-cta"));
+  const apiKeyTriggers = Array.from(document.querySelectorAll(".api-key-trigger"));
+  const errorEl = document.getElementById("checkout-error");
+  const modal = document.getElementById("checkout-modal");
+  const modalCopy = document.getElementById("checkout-modal-copy");
+  const modalError = document.getElementById("checkout-modal-error");
+  const modalClose = document.getElementById("checkout-close");
+  const modalForm = document.getElementById("checkout-form");
+  const submitButton = document.getElementById("checkout-submit");
+  const referralInput = document.getElementById("checkout-referral");
+  const emailInput = document.getElementById("checkout-email");
+  const apiKeyModal = document.getElementById("api-key-modal");
+  const apiKeyClose = document.getElementById("api-key-close");
+  const apiKeyForm = document.getElementById("api-key-form");
+  const apiKeyEmail = document.getElementById("api-key-email");
+  const apiKeyUse = document.getElementById("api-key-use");
+  const apiKeyError = document.getElementById("api-key-error");
+  const playgroundPrompt = document.getElementById("playground-prompt");
+  const playgroundMode = document.getElementById("playground-mode");
+  const playgroundRun = document.getElementById("playground-run");
+  const playgroundLane = document.getElementById("playground-lane");
+  const playgroundState = document.getElementById("playground-state");
+  const playgroundTitle = document.getElementById("playground-title");
+  const playgroundCopy = document.getElementById("playground-copy");
+  const calcSpend = document.getElementById("calc-spend");
+  const calcSpendValue = document.getElementById("calc-spend-value");
+  const calcProfile = document.getElementById("calc-profile");
+  const calcResult = document.getElementById("calc-result");
+  const calcSavings = document.getElementById("calc-savings");
+
+  let selectedPack = null;
+  const playgroundMap = {
+    summarize: {
+      fast: ["Fast", "In progress", "Fast lane: summarizing long material without slowing you down", "Good for quick compression, lower cost, and low-friction output when the task is straightforward."],
+      smart: ["Smart", "Checked", "Smart lane: same summary flow with steadier task continuity", "Use Smart when you want low-cost output but still want the task to stay coherent across follow-up turns."],
+      assured: ["Assured", "Verified", "Assured lane: summary plus stronger review before it leaves the system", "Use Assured when the summary is headed toward customers, executives, or a release decision."]
+    },
+    debug: {
+      fast: ["Fast", "In progress", "Fast lane: quick debugging pass for lightweight issues", "Good for first-look debugging when you want speed and low cost before escalating."],
+      smart: ["Smart", "Checked", "Smart lane: stable bugfixing flow without premium on every turn", "The default debug path when you want continuity, less rerouting, and fewer unnecessary premium jumps."],
+      assured: ["Assured", "Verified", "Assured lane: stronger verification before a risky fix ships", "Use Assured for release-adjacent debugging, regressions, and work that needs an extra layer of confidence."]
+    },
+    release: {
+      fast: ["Fast", "In progress", "Fast lane: minimal release prep for low-risk updates", "Useful only when the release task is light and the risk is genuinely low."],
+      smart: ["Smart", "Checked", "Smart lane: production prep with continuity and selective review", "A balanced path for launch preparation when you want the task to stay stable without overpaying."],
+      assured: ["Assured", "Verified", "Assured lane: release-check flow with stronger verification", "The premium path for production, migration, billing, auth, or anything that cannot afford a loose final pass."]
+    }
+  };
+
+  function showInlineError(message) {
+    errorEl.hidden = false;
+    errorEl.textContent = message;
+  }
+
+  function clearInlineError() {
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+  }
+
+  function openModal(pack) {
+    selectedPack = pack;
+    modal.hidden = false;
+    modalCopy.textContent = `Continue with ${pack.name} and get redirected to secure checkout.`;
+    modalError.hidden = true;
+    modalError.textContent = "";
+    referralInput.value = window.localStorage.getItem("ab_referral_code") || "";
+    emailInput.value = window.localStorage.getItem("ab_launch_email") || "";
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    selectedPack = null;
+    submitButton.disabled = false;
+    submitButton.textContent = "Continue to secure checkout";
+  }
+
+  function openApiKeyModal() {
+    apiKeyModal.hidden = false;
+    apiKeyError.hidden = true;
+    apiKeyError.textContent = "";
+    apiKeyEmail.value = window.localStorage.getItem("ab_launch_email") || "";
+    apiKeyUse.value = "";
+  }
+
+  function closeApiKeyModal() {
+    apiKeyModal.hidden = true;
+  }
+
+  async function startCheckout(packCode, referralCode) {
+    const response = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        user_id: launchUserId,
+        pack_code: packCode,
+        referred_by_code: referralCode || null
+      })
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.detail || "Unable to start checkout right now.");
+    }
+    if (!payload.checkout_url) {
+      throw new Error("Checkout URL was not returned.");
+    }
+    window.location.href = payload.checkout_url;
+  }
+
+  function updatePlayground() {
+    const promptType = playgroundPrompt.value;
+    const mode = playgroundMode.value;
+    const [lane, state, title, copy] = playgroundMap[promptType][mode];
+    playgroundLane.textContent = lane;
+    playgroundState.textContent = state;
+    playgroundTitle.textContent = title;
+    playgroundCopy.textContent = copy;
+  }
+
+  function updateCalculator() {
+    const spend = Number(calcSpend.value);
+    const savingsRate = Number(calcProfile.value);
+    const bridgeSpend = Math.max(Math.round(spend * (1 - savingsRate)), 25);
+    calcSpendValue.textContent = `$${spend.toLocaleString()}`;
+    calcResult.textContent = `$${bridgeSpend.toLocaleString()}`;
+    calcSavings.textContent = `${Math.round(savingsRate * 100)}%`;
+  }
+
+  packButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      clearInlineError();
+      openModal({
+        code: button.dataset.packCode,
+        name: button.dataset.packName,
+        price: button.dataset.packPrice
+      });
+    });
+  });
+
+  apiKeyTriggers.forEach((button) => {
+    button.addEventListener("click", openApiKeyModal);
+  });
+
+  modal.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
+      closeModal();
+    }
+  });
+
+  apiKeyModal.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeKeyModal === "true") {
+      closeApiKeyModal();
+    }
+  });
+
+  modalClose.addEventListener("click", closeModal);
+  apiKeyClose.addEventListener("click", closeApiKeyModal);
+
+  apiKeyForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const email = apiKeyEmail.value.trim();
+    if (!email) {
+      apiKeyError.hidden = false;
+      apiKeyError.textContent = "Enter an email to continue.";
+      return;
+    }
+    window.localStorage.setItem("ab_launch_email", email);
+    if (apiKeyUse.value.trim()) {
+      window.localStorage.setItem("ab_launch_use_case", apiKeyUse.value.trim());
+    }
+    closeApiKeyModal();
+    window.location.href = "/chat/demo";
+  });
+
+  modalForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!selectedPack) return;
+    submitButton.disabled = true;
+    submitButton.textContent = "Redirecting...";
+    modalError.hidden = true;
+    modalError.textContent = "";
+    const referralCode = referralInput.value.trim();
+    const email = emailInput.value.trim();
+    if (email) {
+      window.localStorage.setItem("ab_launch_email", email);
+    }
+    if (referralCode) {
+      window.localStorage.setItem("ab_referral_code", referralCode);
+    } else {
+      window.localStorage.removeItem("ab_referral_code");
+    }
+    try {
+      await startCheckout(selectedPack.code, referralCode);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to start checkout right now.";
+      modalError.hidden = false;
+      modalError.textContent = message;
+      showInlineError(message);
+      submitButton.disabled = false;
+      submitButton.textContent = "Continue to secure checkout";
+    }
+  });
+
+  playgroundRun.addEventListener("click", updatePlayground);
+  playgroundPrompt.addEventListener("change", updatePlayground);
+  playgroundMode.addEventListener("change", updatePlayground);
+  calcSpend.addEventListener("input", updateCalculator);
+  calcProfile.addEventListener("change", updateCalculator);
+
+  updatePlayground();
+  updateCalculator();
+})();
+</script>
 {% endblock %}

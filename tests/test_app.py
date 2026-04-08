@@ -81,37 +81,27 @@ def test_chat_surface_loads_as_product_ui() -> None:
     assert "claude" not in body
 
 
-def test_public_pricing_has_no_cost_plus_language() -> None:
+def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "fast / smart / assured" in body
-    assert "actual cost +" not in body
-    assert "split the savings" not in body
-    assert "take rate" not in body
-    assert "earn while you save" not in body
-    assert "87% lower bill" not in body
-    assert "real savings" not in body
-    assert "vs claude direct" not in body
-    assert "vs claude sonnet direct api" not in body
-    assert "cashback" not in body
-    assert "reward wallet" not in body
-    assert "withdrawable reward" not in body
-    assert "lowest platform fee" not in body
-    assert "platform_take" not in body
-    assert "my budget lasts longer" not in body or "budget lasts longer" in body
-    assert "stable task continuity" in body
-    assert "bill guard" in body
-    assert "team vault" in body
-    assert "priority" in body
-    assert "custom rules" in body
-    assert "analytics pro" in body
+    assert "one line of code. 87% lower bill. same output." in body
+    assert "try it free — no signup" in body
+    assert "get api key" in body
+    assert "how it works" in body
+    assert "playground" in body
+    assert "savings calc" in body
+    assert "pricing" in body
+    assert 'href="/dashboard/demo"' in body
+    assert 'id="playground"' in body
+    assert 'id="savings-calc"' in body
+    assert 'id="packs"' in body
+    assert 'id="api-key-modal"' in body
     assert "choose a pack, get redirected to secure checkout." in body
     assert "start with starter" in body
     assert "choose growth" in body
     assert "unlock scale" in body
     assert 'fetch("/api/payments/checkout"' in body
-    assert "reward wallet" not in body
 
 
 def test_webhook_processing_is_idempotent() -> None:
