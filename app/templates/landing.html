@@ -37,17 +37,17 @@
           <p class="route-task">Task: summarize a 6-page product spec and refine it across follow-up turns.</p>
           <ul class="route-list">
             <li>Per-task cost: about $0.22</li>
-            <li>Same expensive path on every turn</li>
-            <li>You decide manually when to keep paying premium</li>
+            <li>Same expensive path every time the thread moves</li>
+            <li>You keep making the call on whether premium is still worth it</li>
           </ul>
         </div>
         <div class="route-card after">
           <span class="route-label">AI Bridge</span>
-          <p class="route-task">Same task, but the cheap path handles the routine turns and premium stays on standby.</p>
+          <p class="route-task">Same task, but the routine turns stay on the cheaper path and premium waits for real risk.</p>
           <ul class="route-list">
             <li>Routed cost: about $0.09</li>
-            <li>Premium only if the task earns it</li>
-            <li>Steadier thread across follow-up turns</li>
+            <li>Premium shows up only when the task clearly justifies it</li>
+            <li>Follow-up turns stay more stable instead of bouncing around</li>
           </ul>
         </div>
       </div>
@@ -63,15 +63,15 @@
   <section class="section vivid-feature-strip" id="why-aibridge">
     <article class="feature-panel">
       <h3>Cheaper by default</h3>
-      <p>Routine work stops paying premium rates just because the direct path makes that the default.</p>
+      <p>Routine work stops hitting premium rates by default when a cheaper lane is good enough.</p>
     </article>
     <article class="feature-panel">
       <h3>Premium when earned</h3>
-      <p>Harder work can still escalate. The expensive lane shows up when the task deserves it, not before.</p>
+      <p>Harder work can still escalate, but only when the task actually earns the more expensive path.</p>
     </article>
     <article class="feature-panel">
       <h3>Stable across turns</h3>
-      <p>Ongoing work stays steadier across follow-ups instead of getting rerouted unpredictably every time.</p>
+      <p>Ongoing work stays steadier across follow-ups instead of being reconsidered from scratch every turn.</p>
     </article>
   </section>
 
@@ -101,7 +101,7 @@
             <strong id="playground-lane">Smart</strong>
           </div>
           <div class="playground-stat">
-            <span>Why</span>
+            <span>Routing reason</span>
             <strong id="playground-why">Stayed cheap because the task is routine and stable.</strong>
           </div>
           <div class="playground-stat">
@@ -205,10 +205,10 @@
       </div>
     </div>
     <div class="cards two-up">
-      <article class="card"><h3>Is this just a cheaper wrapper?</h3><p>No. It is a routing layer for people who want lower default spend without pushing every task down to the lowest-quality path.</p></article>
-      <article class="card"><h3>Can I try it before I buy?</h3><p>Yes. The playground and dashboard demo are there to help you judge fit before you move real work over.</p></article>
-      <article class="card"><h3>What happens after I buy credit?</h3><p>You go through secure checkout and use balance against routed work. Premium-heavy workflows will still spend more than routine ones.</p></article>
-      <article class="card"><h3>Who is this for?</h3><p>Solo founders, indie CTOs, and small teams that watch spend closely and want more control than direct premium for everything.</p></article>
+      <article class="card"><h3>Is this just a cheaper wrapper?</h3><p>No. It is a routing layer for people who want better default spend control without forcing every task onto the lowest-cost path.</p></article>
+      <article class="card"><h3>Can I try it before I buy?</h3><p>Yes. The playground and dashboard demo are there to help you judge fit before you move meaningful workflow volume over.</p></article>
+      <article class="card"><h3>What happens after I buy credit?</h3><p>You go through secure checkout and use balance against routed work. Premium-heavy workflows usually spend more than routine ones, and the mix depends on what you run.</p></article>
+      <article class="card"><h3>Who is this for?</h3><p>Solo founders, indie CTOs, and small teams that watch spend closely and want more control than sending everything through premium by default.</p></article>
     </div>
   </section>
 </main>
@@ -223,7 +223,7 @@
       </div>
       <button class="button secondary button-small" id="api-key-close" type="button">Close</button>
     </div>
-    <p class="muted">Use this lightweight launch flow to request access, then decide whether to wire the key into your app or keep evaluating the product.</p>
+    <p class="muted">Use this lightweight launch flow to request access, then decide whether to wire the key into your app or keep evaluating the fit.</p>
     <form id="api-key-form" class="checkout-form">
       <label>
         <span>Work email</span>
@@ -249,7 +249,7 @@
       </div>
       <button class="button secondary button-small" id="checkout-close" type="button">Close</button>
     </div>
-    <p class="muted" id="checkout-modal-copy">Use a lightweight launch flow to start your pack purchase without a full auth setup.</p>
+    <p class="muted" id="checkout-modal-copy">Use this lightweight launch flow to start checkout without waiting on full account setup.</p>
     <form id="checkout-form" class="checkout-form">
       <label>
         <span>Email for launch follow-up</span>
@@ -314,27 +314,27 @@
       title: "Summarize a spec",
       copy: "Routine synthesis work should stay cheap unless the task proves it needs more.",
       lane: "Smart",
-      why: "Stayed cheap because the task is routine and the thread stays stable across follow-ups.",
+      why: "Stayed on the cheaper lane because the work is routine and the thread remained stable across follow-ups.",
       directCost: "$0.22",
       cost: "$0.08",
       saved: "$0.14",
-      result: "Preview: concise spec summary, stable follow-up path, premium held back until the task proves it needs it."
+      result: "Preview: concise spec summary, stable follow-up path, and premium held back until the task clearly needs it."
     },
     refactor: {
       title: "Refactor a file",
       copy: "Code cleanup can stay in the blended path until the work becomes risky or release-adjacent.",
       lane: "Smart",
-      why: "Stayed blended because the refactor is iterative and continuity matters more than forcing premium on every turn.",
+      why: "Stayed on the blended path because the refactor is iterative and continuity matters more than forcing premium on every turn.",
       directCost: "$0.31",
       cost: "$0.14",
       saved: "$0.17",
-      result: "Preview: cleaner file structure, refactor notes, and a stable thread that stays coherent across follow-up edits."
+      result: "Preview: cleaner file structure, refactor notes, and a thread that stays coherent across follow-up edits."
     },
     reply: {
       title: "Draft a customer reply",
       copy: "Customer replies should stay cheap by default, then escalate only if the tone or risk profile demands it.",
       lane: "Fast",
-      why: "Stayed cheap because this is straightforward customer communication with low escalation risk.",
+      why: "Stayed on the cheaper lane because this is straightforward customer communication with low escalation risk.",
       directCost: "$0.12",
       cost: "$0.05",
       saved: "$0.07",
@@ -347,13 +347,13 @@
       direct: "$120–$180/mo",
       blended: "$65–$105/mo",
       reduction: "30%–45%",
-      copy: "Solo builders usually save the most when specs, summaries, and routine coding help stop hitting premium by default."
+      copy: "Estimated for a solo builder running specs, summaries, and routine coding help that no longer hits premium by default."
     },
     shipping: {
       direct: "$250–$450/mo",
       blended: "$165–$300/mo",
       reduction: "25%–40%",
-      copy: "During a shipping sprint, savings stay solid on routine build work, but premium still shows up when the task earns it."
+      copy: "Typical for a shipping sprint where routine build work stays cheaper, but premium still shows up when the task earns it."
     },
     review: {
       direct: "$180–$320/mo",
@@ -424,6 +424,11 @@
 
   function renderExample() {
     const example = examples[activeExample];
+    playgroundRun.disabled = true;
+    playgroundRun.textContent = "Routing...";
+    playgroundResult.classList.remove("is-refreshing");
+    void playgroundResult.offsetWidth;
+    playgroundResult.classList.add("is-refreshing");
     exampleTitle.textContent = example.title;
     exampleCopy.textContent = example.copy;
     playgroundLane.textContent = example.lane;
@@ -432,6 +437,11 @@
     playgroundCost.textContent = example.cost;
     playgroundSaved.textContent = example.saved;
     playgroundResult.textContent = example.result;
+    window.setTimeout(() => {
+      playgroundRun.disabled = false;
+      playgroundRun.textContent = "Run this example";
+      playgroundResult.classList.remove("is-refreshing");
+    }, 220);
   }
 
   function renderSavings() {

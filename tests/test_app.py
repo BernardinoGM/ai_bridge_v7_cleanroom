@@ -97,6 +97,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "typical reduction on routine work" in body
     assert "40%–70%." in body
     assert "higher on repetitive summarization, lower on review-heavy workflows." in body
+    assert "based on a typical summarization task. see live demo below." in body
     assert "why it wins" in body
     assert "cheaper by default" in body
     assert "premium when earned" in body
@@ -107,6 +108,8 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "refactor a file" in body
     assert "draft a customer reply" in body
     assert "run this example" in body
+    assert "routing reason" in body
+    assert "saved on this task" in body
     assert "see what your current workflow is costing you" in body
     assert "direct premium spend" in body
     assert "ai bridge blended spend" in body
@@ -139,7 +142,11 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert 'id="packs"' in body
     assert 'id="api-key-modal"' in body
     assert "choose a pack, get redirected to secure checkout." in body
+    assert "use this lightweight launch flow to request access" in body
+    assert "you go through secure checkout and use balance against routed work." in body
     assert 'fetch("/api/payments/checkout"' in body
+    assert "🎯" not in body
+    assert "🚀" not in body
 
 
 def test_webhook_processing_is_idempotent() -> None:

@@ -172,7 +172,7 @@ body:has(.landing-vivid) {
 
 .hero-visual {
   border-radius: 28px;
-  padding: 24px;
+  padding: 22px;
 }
 
 .route-compare {
@@ -183,9 +183,10 @@ body:has(.landing-vivid) {
 
 .route-card {
   border-radius: 22px;
-  padding: 18px;
+  padding: 17px;
   border: 1px solid var(--landing-line);
   background: rgba(255, 255, 255, 0.03);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .route-card.before {
@@ -205,12 +206,51 @@ body:has(.landing-vivid) {
   letter-spacing: 0.08em;
 }
 
+.route-task {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: var(--landing-ink);
+}
+
 .route-list {
   margin: 14px 0 0;
   padding-left: 20px;
   display: grid;
-  gap: 10px;
+  gap: 9px;
   color: var(--landing-muted);
+  line-height: 1.45;
+}
+
+.route-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(103, 232, 255, 0.28);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.52);
+}
+
+.result-footer {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--landing-line);
+}
+
+.result-footer span {
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.result-footer strong {
+  font-size: 1.4rem;
+  color: var(--landing-accent-2);
+}
+
+.result-footer small {
+  color: var(--landing-muted);
+  line-height: 1.45;
 }
 
 .outcome-bar {
@@ -310,7 +350,31 @@ body:has(.landing-vivid) {
 
 .feature-panel {
   border-radius: 22px;
-  padding: 22px;
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.feature-panel:hover,
+.pack-vivid:hover,
+.playground-controls:hover,
+.playground-output:hover {
+  transform: translateY(-3px);
+  border-color: rgba(103, 232, 255, 0.28);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.52);
+}
+
+.feature-panel h3,
+.playground-stat strong,
+.pack-vivid h3 {
+  margin: 0;
+}
+
+.feature-panel p,
+.pack-vivid p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .section-head {
@@ -336,6 +400,13 @@ body:has(.landing-vivid) {
   padding: 10px 14px;
   font: inherit;
   cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.preset-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(103, 232, 255, 0.32);
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.28);
 }
 
 .preset-button.active {
@@ -356,6 +427,12 @@ body:has(.landing-vivid) {
 .calc-results {
   border-radius: 24px;
   padding: 22px;
+}
+
+.playground-controls,
+.playground-output,
+.pack-vivid {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .playground-controls,
@@ -413,6 +490,28 @@ body:has(.landing-vivid) {
   align-content: center;
 }
 
+.playground-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.playground-stat {
+  border: 1px solid var(--landing-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 14px;
+}
+
+.playground-stat span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
 .demo-message {
   margin-top: 16px;
   border-radius: 18px;
@@ -421,6 +520,12 @@ body:has(.landing-vivid) {
   padding: 16px;
   color: var(--landing-muted);
   line-height: 1.45;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.demo-message.is-refreshing {
+  opacity: 0.88;
+  transform: translateY(4px);
 }
 
 .calc-stat strong {
@@ -430,6 +535,7 @@ body:has(.landing-vivid) {
 
 .pack-vivid {
   border-radius: 24px;
+  padding: 20px;
 }
 
 .landing-vivid .pack-cta {
@@ -453,6 +559,19 @@ body:has(.landing-vivid) {
 
 .trust-strip .card {
   min-height: 100%;
+}
+
+.faq .card {
+  padding: 20px;
+}
+
+.faq .card h3 {
+  margin: 0 0 10px;
+}
+
+.faq .card p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 * { box-sizing: border-box; }
@@ -786,7 +905,8 @@ body {
   .vivid-grid,
   .vivid-feature-strip,
   .route-compare,
-  .outcome-bar {
+  .outcome-bar,
+  .playground-grid {
     grid-template-columns: 1fr;
   }
   .chat-shell { grid-template-columns: 1fr; }
