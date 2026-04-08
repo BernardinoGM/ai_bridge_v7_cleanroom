@@ -59,6 +59,17 @@ def test_dashboard_is_runway_centric() -> None:
     assert "promo / perks" not in body
 
 
+def test_root_and_dashboard_routes_resolve_without_affecting_health() -> None:
+    root = client.get("/")
+    assert root.status_code == 200
+    assert "text/html" in root.headers["content-type"]
+    dashboard = client.get("/dashboard", follow_redirects=True)
+    assert dashboard.status_code == 200
+    assert "runway dashboard" in dashboard.text.lower()
+    health = client.get("/api/health")
+    assert health.status_code == 200
+
+
 def test_chat_surface_loads_as_product_ui() -> None:
     response = client.get("/chat/1")
     assert response.status_code == 200
@@ -95,6 +106,12 @@ def test_public_pricing_has_no_cost_plus_language() -> None:
     assert "priority" in body
     assert "custom rules" in body
     assert "analytics pro" in body
+    assert "choose a pack, get redirected to secure checkout." in body
+    assert "start with starter" in body
+    assert "choose growth" in body
+    assert "unlock scale" in body
+    assert 'fetch("/api/payments/checkout"' in body
+    assert "reward wallet" not in body
 
 
 def test_webhook_processing_is_idempotent() -> None:

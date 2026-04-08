@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -19,19 +19,24 @@ def landing(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "landing.html",
-        {"packs": list(TOP_UP_PACKS.values())},
+        {"packs": list(TOP_UP_PACKS.values()), "launch_user_id": 1},
     )
 
 
-@router.get("/dashboard/{user_id}", response_class=HTMLResponse)
-def dashboard_page(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
-    context = build_dashboard(db, user_id)
-    return templates.TemplateResponse(request, "dashboard.html", context)
+@router.get("/dashboard")
+def dashboard_root() -> RedirectResponse:
+    return RedirectResponse(url="/dashboard/demo", status_code=307)
 
 
 @router.get("/dashboard/demo", response_class=HTMLResponse)
 def dashboard_demo(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     context = build_dashboard(db, 1)
+    return templates.TemplateResponse(request, "dashboard.html", context)
+
+
+@router.get("/dashboard/{user_id}", response_class=HTMLResponse)
+def dashboard_page(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    context = build_dashboard(db, user_id)
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 
