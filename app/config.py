@@ -59,15 +59,19 @@ class Settings(BaseSettings):
     def validate_production_settings(self) -> "Settings":
         if self.app_env == "production":
             placeholders = {"replace-me", "sk_test_replace", "whsec_replace", "pk_test_replace", "admin-dev-key"}
-            values = {
-                self.secret_key,
-                self.stripe_secret_key,
-                self.stripe_webhook_secret,
-                self.stripe_publishable_key,
-                self.admin_api_key,
+            secret_fields = {
+                "SECRET_KEY": self.secret_key,
+                "STRIPE_SECRET_KEY": self.stripe_secret_key,
+                "STRIPE_WEBHOOK_SECRET": self.stripe_webhook_secret,
+                "STRIPE_PUBLISHABLE_KEY": self.stripe_publishable_key,
+                "ADMIN_API_KEY": self.admin_api_key,
             }
-            if values & placeholders:
-                raise ValueError("Production configuration contains placeholder secrets.")
+            offending_fields = [name for name, value in secret_fields.items() if value in placeholders]
+            if offending_fields:
+                raise ValueError(
+                    "Production configuration contains placeholder secrets in: "
+                    + ", ".join(offending_fields)
+                )
             required_non_placeholder = {
                 "provider_fast_api_key": self.provider_fast_api_key,
                 "provider_remote_api_key": self.provider_remote_api_key,
