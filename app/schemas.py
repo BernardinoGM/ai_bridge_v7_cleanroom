@@ -34,3 +34,8 @@ class CheckoutCreateRequest(BaseModel):
 
 class DemoChatRequest(BaseModel):
     example: Literal["spec", "refactor", "reply"]
+
+
+class ApiKeyCreateRequest(BaseModel):
+    email: str
+    use_case: str | None = None

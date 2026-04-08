@@ -214,3 +214,15 @@ class DemoTrial(TimestampMixin, Base):
     session_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     tries_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     last_example: Mapped[str | None] = mapped_column(String(32))
+
+
+class ApiKey(TimestampMixin, Base):
+    __tablename__ = "api_keys"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    key_prefix: Mapped[str] = mapped_column(String(24), index=True)
+    key_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    label: Mapped[str | None] = mapped_column(String(120))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)

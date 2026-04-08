@@ -16,7 +16,7 @@ from sqlalchemy import select
 from app.billing import wallet_balance
 from app.db import SessionLocal
 from app.main import app, bootstrap
-from app.models import AgentProfile, PaymentRecord, TaskSession, User
+from app.models import AgentProfile, ApiKey, PaymentRecord, TaskSession, User
 from app.models import TaskTurn
 from app.payments import ensure_seed_user, process_checkout_completed
 
@@ -145,8 +145,10 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "choose a pack, get redirected to secure checkout." in body
     assert "use this lightweight launch flow to request access" in body
     assert "you go through secure checkout and use balance against routed work." in body
+    assert 'fetch("/v1/keys"' in body
     assert 'fetch("/demo/chat"' in body
     assert 'fetch("/api/payments/checkout"' in body
+    assert 'window.location.href = "/chat/demo";' not in body
     assert "🎯" not in body
     assert "🚀" not in body
 
@@ -169,6 +171,27 @@ def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() 
     fourth = demo_client.post("/demo/chat", json={"example": "spec"})
     assert fourth.status_code == 429
     assert "anonymous demo limit reached" in fourth.json()["detail"].lower()
+
+
+def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
+    response = client.post(
+        "/v1/keys",
+        json={"email": "newbuilder@example.com", "use_case": "product docs"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["api_key"].startswith("ab_live_")
+    assert payload["email"] == "newbuilder@example.com"
+    assert payload["dashboard_url"].startswith("/dashboard/")
+    assert payload["chat_url"].startswith("/chat/")
+    assert payload["granted_credit_usd"] == 0.0
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
+        assert user is not None
+        api_keys = db.scalars(select(ApiKey).where(ApiKey.user_id == user.id)).all()
+        assert len(api_keys) == 1
+        assert api_keys[0].key_prefix == payload["api_key"][:16]
+        assert wallet_balance(db, user.id, "main") == 0.0
 
 
 def test_webhook_processing_is_idempotent() -> None:

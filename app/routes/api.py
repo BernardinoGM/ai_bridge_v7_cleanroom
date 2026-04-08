@@ -13,6 +13,7 @@ from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
 from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
+from app.api_keys import STARTER_CREDIT_USD, issue_api_key
 from app.models import AgentProfile, DemoTrial, TaskSession, TaskTurn, UsageEvent
 from app.payments import create_checkout_session, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
@@ -20,7 +21,7 @@ from app.providers.base import ProviderClient, ProviderResponse
 from app.providers.real import ProviderExecutionError, build_provider_clients
 from app.providers.mock import build_mock_clients
 from app.routing import RouteDecision, decide_route
-from app.schemas import ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
+from app.schemas import ApiKeyCreateRequest, ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
 from app.tasks import record_task_turn, resolve_task
 
 
@@ -275,6 +276,30 @@ def demo_chat(
     preview["why"] = _demo_reason(payload.example, decide_route(example["prompt"], "smart"))
     preview["tries_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
     return preview
+
+
+@compat_router.post("/keys")
+def create_api_key_launch(
+    payload: ApiKeyCreateRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    user, raw_key, balance_usd = issue_api_key(
+        db=db,
+        settings=settings,
+        email=payload.email,
+        use_case=payload.use_case,
+    )
+    db.commit()
+    return {
+        "api_key": raw_key,
+        "user_id": user.id,
+        "email": user.email,
+        "granted_credit_usd": STARTER_CREDIT_USD,
+        "balance_usd": round(balance_usd, 2),
+        "dashboard_url": f"/dashboard/{user.id}",
+        "chat_url": f"/chat/{user.id}",
+    }
 
 
 @router.get("/topups/packs")

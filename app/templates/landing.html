@@ -240,6 +240,17 @@
       <p class="inline-error" id="api-key-error" hidden></p>
       <button class="button primary ignition" id="api-key-submit" type="submit">Continue</button>
     </form>
+    <div id="api-key-success" class="checkout-form" hidden>
+      <label>
+        <span>Your API key</span>
+        <input id="api-key-value" type="text" readonly />
+      </label>
+      <p class="muted" id="api-key-success-copy">Key issued successfully.</p>
+      <div class="cta-row">
+        <a class="button primary" id="api-key-dashboard-link" href="/dashboard/demo">Open dashboard</a>
+        <a class="button secondary" id="api-key-chat-link" href="/chat/demo">Open chat</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -292,9 +303,15 @@
   const apiKeyModal = document.getElementById("api-key-modal");
   const apiKeyClose = document.getElementById("api-key-close");
   const apiKeyForm = document.getElementById("api-key-form");
+  const apiKeySubmit = document.getElementById("api-key-submit");
   const apiKeyEmail = document.getElementById("api-key-email");
   const apiKeyUse = document.getElementById("api-key-use");
   const apiKeyError = document.getElementById("api-key-error");
+  const apiKeySuccess = document.getElementById("api-key-success");
+  const apiKeyValue = document.getElementById("api-key-value");
+  const apiKeySuccessCopy = document.getElementById("api-key-success-copy");
+  const apiKeyDashboardLink = document.getElementById("api-key-dashboard-link");
+  const apiKeyChatLink = document.getElementById("api-key-chat-link");
   const playgroundRun = document.getElementById("playground-run");
   const exampleTitle = document.getElementById("playground-example-title");
   const exampleCopy = document.getElementById("playground-example-copy");
@@ -379,6 +396,10 @@
 
   function openApiKeyModal() {
     apiKeyModal.hidden = false;
+    apiKeyForm.hidden = false;
+    apiKeySuccess.hidden = true;
+    apiKeySubmit.disabled = false;
+    apiKeySubmit.textContent = "Continue";
     apiKeyError.hidden = true;
     apiKeyError.textContent = "";
     apiKeyEmail.value = window.localStorage.getItem("ab_launch_email") || "";
@@ -505,7 +526,7 @@
   modalClose.addEventListener("click", closeModal);
   apiKeyClose.addEventListener("click", closeApiKeyModal);
 
-  apiKeyForm.addEventListener("submit", (event) => {
+  apiKeyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = apiKeyEmail.value.trim();
     if (!email) {
@@ -513,12 +534,41 @@
       apiKeyError.textContent = "Enter an email to continue.";
       return;
     }
-    window.localStorage.setItem("ab_launch_email", email);
-    if (apiKeyUse.value.trim()) {
-      window.localStorage.setItem("ab_launch_use_case", apiKeyUse.value.trim());
+    apiKeySubmit.disabled = true;
+    apiKeySubmit.textContent = "Issuing key...";
+    apiKeyError.hidden = true;
+    apiKeyError.textContent = "";
+    try {
+      const response = await fetch("/v1/keys", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          email,
+          use_case: apiKeyUse.value.trim() || null
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Unable to issue a key right now.");
+      }
+      window.localStorage.setItem("ab_launch_email", email);
+      if (apiKeyUse.value.trim()) {
+        window.localStorage.setItem("ab_launch_use_case", apiKeyUse.value.trim());
+      }
+      apiKeyForm.hidden = true;
+      apiKeySuccess.hidden = false;
+      apiKeyValue.value = payload.api_key;
+      apiKeyDashboardLink.href = payload.dashboard_url;
+      apiKeyChatLink.href = payload.chat_url;
+      apiKeySuccessCopy.textContent = payload.granted_credit_usd > 0
+        ? `Key issued. $${payload.granted_credit_usd.toFixed(2)} starter credit is now on your balance.`
+        : `Key issued. Current balance: $${payload.balance_usd.toFixed(2)}.`;
+    } catch (error) {
+      apiKeyError.hidden = false;
+      apiKeyError.textContent = error instanceof Error ? error.message : "Unable to issue a key right now.";
+      apiKeySubmit.disabled = false;
+      apiKeySubmit.textContent = "Continue";
     }
-    closeApiKeyModal();
-    window.location.href = "/chat/demo";
   });
 
   modalForm.addEventListener("submit", async (event) => {
