@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -28,6 +29,21 @@ def _hash_key(raw_key: str, settings: Settings) -> str:
     return hashlib.sha256(f"{settings.secret_key}:{raw_key}".encode("utf-8")).hexdigest()
 
 
+def authenticate_api_key(
+    db: Session,
+    settings: Settings,
+    raw_key: str | None,
+) -> User | None:
+    if not raw_key:
+        return None
+    key_hash = _hash_key(raw_key.strip(), settings)
+    api_key = db.scalar(select(ApiKey).where(ApiKey.key_hash == key_hash, ApiKey.revoked_at.is_(None)))
+    if api_key is None:
+        return None
+    api_key.last_used_at = datetime.utcnow()
+    return db.get(User, api_key.user_id)
+
+
 def attach_referrer_by_code(db: Session, user: User, referred_by_code: str | None) -> None:
     if not referred_by_code or user.referred_by_user_id:
         return
@@ -42,7 +58,7 @@ def issue_api_key(
     email: str,
     use_case: str | None = None,
     referred_by_code: str | None = None,
-) -> tuple[User, str, float]:
+) -> tuple[User, str, float, float]:
     normalized_email = _normalize_email(email)
     user = ensure_seed_user(db, email=normalized_email, name=_display_name_from_email(normalized_email))
     attach_referrer_by_code(db, user, referred_by_code)
@@ -74,4 +90,4 @@ def issue_api_key(
         )
         granted_credit = STARTER_CREDIT_USD
     db.flush()
-    return user, raw_key, wallet_balance(db, user.id, "main")
+    return user, raw_key, granted_credit, wallet_balance(db, user.id, "main")

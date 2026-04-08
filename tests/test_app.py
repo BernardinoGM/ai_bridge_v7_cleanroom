@@ -164,7 +164,7 @@ def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() 
     first = demo_client.post("/demo/chat", json={"example": "spec"})
     assert first.status_code == 200
     payload = first.json()
-    assert set(payload.keys()) >= {"reply", "lane", "quality", "direct_cost", "routed_cost", "saved_pct", "tries_remaining"}
+    assert set(payload.keys()) >= {"reply", "lane", "quality", "direct_cost", "routed_cost", "saved_pct", "reason", "tries_remaining"}
     assert payload["lane"] in {"Fast", "Smart", "Assured"}
     assert payload["quality"] in {"In progress", "Checked", "Verified"}
     assert payload["direct_cost"].startswith("$")
@@ -198,6 +198,43 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
         assert len(api_keys) == 1
         assert api_keys[0].key_prefix == payload["api_key"][:16]
         assert wallet_balance(db, user.id, "main") == 0.0
+
+
+def test_issued_api_key_is_usable_for_authenticated_messages_without_user_id() -> None:
+    create = client.post(
+        "/v1/keys",
+        json={"email": "authuser@example.com", "use_case": "release review"},
+    )
+    assert create.status_code == 200
+    create_payload = create.json()
+    api_key = create_payload["api_key"]
+    with SessionLocal() as db:
+        if wallet_balance(db, create_payload["user_id"], "main") <= 0:
+            payment = PaymentRecord(
+                user_id=create_payload["user_id"],
+                pack_code="starter",
+                amount_usd=10.0,
+                bonus_usd=0.0,
+                status="pending",
+                stripe_session_id="cs_test_auth_seed",
+                referred_by_code=None,
+            )
+            db.add(payment)
+            db.commit()
+            process_checkout_completed(db, "evt_auth_seed", "cs_test_auth_seed", "pi_auth_seed")
+            db.commit()
+    response = client.post(
+        "/v1/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "mode": "smart",
+            "messages": [{"role": "user", "content": "Draft a safe release note for a customer-facing update."}],
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["task_id"]
+    assert payload["ab"]["mode"] in {"Smart", "Assured"}
 
 
 def test_referral_link_and_first_purchase_credit_are_closed_loop_and_one_time() -> None:
@@ -269,6 +306,42 @@ def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -
     assert "growth" in body
     assert "$50.00" in body
     assert "$5.00 bonus" in body
+
+
+def test_dashboard_root_redirects_to_launch_user_after_key_issue() -> None:
+    session_client = TestClient(app)
+    create = session_client.post(
+        "/v1/keys",
+        json={"email": "redirectuser@example.com", "use_case": "ops prompts"},
+    )
+    assert create.status_code == 200
+    user_id = create.json()["user_id"]
+    response = session_client.get("/dashboard", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == f"/dashboard/{user_id}"
+
+
+def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypatch) -> None:
+    class _FakeSession:
+        id = "cs_test_checkout_real"
+        url = "https://checkout.stripe.test/session"
+
+    monkeypatch.setattr("app.payments.stripe.checkout.Session.create", lambda **_: _FakeSession())
+    response = client.post(
+        "/api/payments/checkout",
+        json={"email": "checkoutuser@example.com", "pack_code": "scale_plus", "referred_by_code": "UTWO10"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["checkout_url"] == "https://checkout.stripe.test/session"
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == "checkoutuser@example.com"))
+        assert user is not None
+        assert user.referred_by_user_id == _user_id("user2@example.com")
+        payment = db.scalar(select(PaymentRecord).where(PaymentRecord.stripe_session_id == "cs_test_checkout_real"))
+        assert payment is not None
+        assert payment.user_id == user.id
+        assert payment.pack_code == "scale_plus"
 
 
 def test_webhook_processing_is_idempotent() -> None:

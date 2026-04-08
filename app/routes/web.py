@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.config import BASE_DIR
 from app.dashboard import build_dashboard
 from app.db import get_db
-from app.models import TaskSession
+from app.models import TaskSession, User
 from app.pricing import TOP_UP_PACKS
 
 
@@ -16,10 +16,11 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
 @router.get("/", response_class=HTMLResponse)
 def landing(request: Request) -> HTMLResponse:
+    launch_user_id = request.cookies.get("ab_launch_user", "")
     return templates.TemplateResponse(
         request,
         "landing.html",
-        {"packs": list(TOP_UP_PACKS.values()), "launch_user_id": 1},
+        {"packs": list(TOP_UP_PACKS.values()), "launch_user_id": launch_user_id},
     )
 
 
@@ -29,7 +30,15 @@ def referral_redirect(referral_code: str) -> RedirectResponse:
 
 
 @router.get("/dashboard")
-def dashboard_root() -> RedirectResponse:
+def dashboard_root(request: Request, db: Session = Depends(get_db)) -> RedirectResponse:
+    raw_user_id = request.cookies.get("ab_launch_user")
+    if raw_user_id:
+        try:
+            user_id = int(raw_user_id)
+        except ValueError:
+            user_id = None
+        if user_id is not None and db.get(User, user_id) is not None:
+            return RedirectResponse(url=f"/dashboard/{user_id}", status_code=307)
     return RedirectResponse(url="/dashboard/demo", status_code=307)
 
 

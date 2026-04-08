@@ -9,14 +9,14 @@ class ChatMessage(BaseModel):
 
 
 class ChatCompletionRequest(BaseModel):
-    user_id: int = Field(..., description="AI Bridge internal user id")
+    user_id: int | None = Field(default=None, description="AI Bridge internal user id")
     mode: Literal["fast", "smart", "assured"] = "smart"
     messages: list[ChatMessage]
     stream: bool = False
 
 
 class MessagesRequest(BaseModel):
-    user_id: int
+    user_id: int | None = None
     mode: Literal["fast", "smart", "assured"] = "smart"
     system: str | None = None
     messages: list[dict[str, Any]]
@@ -27,7 +27,8 @@ class MessagesRequest(BaseModel):
 
 
 class CheckoutCreateRequest(BaseModel):
-    user_id: int
+    user_id: int | None = None
+    email: str | None = None
     pack_code: Literal["starter", "growth", "scale", "scale_plus", "volume"]
     referred_by_code: str | None = None
 

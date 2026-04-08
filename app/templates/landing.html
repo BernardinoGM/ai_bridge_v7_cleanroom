@@ -282,7 +282,7 @@
         <span>Referral code</span>
         <input id="checkout-referral" name="referral" type="text" placeholder="Optional" />
       </label>
-      <p class="muted fine-print">Launch checkout uses a temporary user binding until full sign-in ships.</p>
+      <p class="muted fine-print">Checkout binds credit to the same launch account used for your key or email.</p>
       <p class="inline-error" id="checkout-modal-error" hidden></p>
       <button class="button primary ignition" id="checkout-submit" type="submit">Continue to secure checkout</button>
     </form>
@@ -301,7 +301,6 @@
     window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams.toString()}` : "") + url.hash);
   }
 
-  const launchUserId = Number(root.dataset.launchUserId || "1");
   const packButtons = Array.from(document.querySelectorAll(".pack-cta"));
   const apiKeyTriggers = Array.from(document.querySelectorAll(".api-key-trigger"));
   const exampleButtons = Array.from(document.querySelectorAll("[data-example]"));
@@ -345,6 +344,13 @@
   let selectedPack = null;
   let activeExample = "spec";
   let activeProfile = "solo";
+
+  function knownUserId() {
+    const local = window.localStorage.getItem("ab_user_id");
+    if (local) return Number(local);
+    const fromDataset = Number(root.dataset.launchUserId || "");
+    return Number.isFinite(fromDataset) && fromDataset > 0 ? fromDataset : null;
+  }
 
   const examples = {
     spec: {
@@ -425,12 +431,14 @@
     apiKeyModal.hidden = true;
   }
 
-  async function startCheckout(packCode, referralCode) {
+  async function startCheckout(packCode, referralCode, email) {
+    const userId = knownUserId();
     const response = await fetch("/api/payments/checkout", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        user_id: launchUserId,
+        user_id: userId,
+        email: email || null,
         pack_code: packCode,
         referred_by_code: referralCode || null
       })
@@ -469,7 +477,7 @@
       }
       playgroundLane.textContent = payload.lane;
       playgroundQuality.textContent = payload.quality;
-      playgroundWhy.textContent = payload.why;
+      playgroundWhy.textContent = payload.reason || payload.why;
       playgroundDirectCost.textContent = payload.direct_cost;
       playgroundCost.textContent = payload.routed_cost;
       playgroundSaved.textContent = `${payload.saved_pct}%`;
@@ -571,6 +579,7 @@
       if (apiKeyUse.value.trim()) {
         window.localStorage.setItem("ab_launch_use_case", apiKeyUse.value.trim());
       }
+      window.localStorage.setItem("ab_user_id", String(payload.user_id));
       apiKeyForm.hidden = true;
       apiKeySuccess.hidden = false;
       apiKeyValue.value = payload.api_key;
@@ -605,7 +614,7 @@
       window.localStorage.removeItem("ab_referral_code");
     }
     try {
-      await startCheckout(selectedPack.code, referralCode);
+      await startCheckout(selectedPack.code, referralCode, email);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to start checkout right now.";
       modalError.hidden = false;

@@ -13,9 +13,9 @@ from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
 from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
-from app.api_keys import STARTER_CREDIT_USD, issue_api_key
-from app.models import AgentProfile, DemoTrial, TaskSession, TaskTurn, UsageEvent
-from app.payments import create_checkout_session, process_checkout_completed
+from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
+from app.models import AgentProfile, DemoTrial, TaskSession, TaskTurn, UsageEvent, User
+from app.payments import create_checkout_session, ensure_seed_user, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
 from app.providers.real import ProviderExecutionError, build_provider_clients
@@ -31,6 +31,7 @@ demo_router = APIRouter()
 
 DEMO_COOKIE_NAME = "ab_demo_session"
 DEMO_TRIAL_LIMIT = 3
+LAUNCH_USER_COOKIE_NAME = "ab_launch_user"
 
 
 DEMO_EXAMPLES = {
@@ -239,6 +240,38 @@ def _require_admin_key(x_admin_key: str | None, settings: Settings) -> None:
         raise HTTPException(status_code=403, detail="Admin access required.")
 
 
+def _cookie_user_id(request: Request) -> int | None:
+    raw = request.cookies.get(LAUNCH_USER_COOKIE_NAME)
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
+def _resolve_user_id(
+    db: Session,
+    settings: Settings,
+    request: Request,
+    payload_user_id: int | None,
+    authorization: str | None = None,
+    x_api_key: str | None = None,
+) -> int:
+    if payload_user_id is not None:
+        return payload_user_id
+    bearer = None
+    if authorization and authorization.lower().startswith("bearer "):
+        bearer = authorization.split(" ", 1)[1].strip()
+    user = authenticate_api_key(db, settings, x_api_key or bearer)
+    if user is not None:
+        return user.id
+    cookie_user_id = _cookie_user_id(request)
+    if cookie_user_id is not None and db.get(User, cookie_user_id) is not None:
+        return cookie_user_id
+    raise HTTPException(status_code=401, detail="Authentication required. Provide a valid API key or launch session.")
+
+
 @router.get("/health")
 def health(settings: Settings = Depends(get_settings)) -> dict:
     return {
@@ -273,7 +306,9 @@ def demo_chat(
         httponly=True,
         samesite="lax",
     )
-    preview["why"] = _demo_reason(payload.example, decide_route(example["prompt"], "smart"))
+    reason = _demo_reason(payload.example, decide_route(example["prompt"], "smart"))
+    preview["reason"] = reason
+    preview["why"] = reason
     preview["tries_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
     return preview
 
@@ -281,10 +316,11 @@ def demo_chat(
 @compat_router.post("/keys")
 def create_api_key_launch(
     payload: ApiKeyCreateRequest,
+    response: Response,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    user, raw_key, balance_usd = issue_api_key(
+    user, raw_key, granted_credit, balance_usd = issue_api_key(
         db=db,
         settings=settings,
         email=payload.email,
@@ -292,11 +328,18 @@ def create_api_key_launch(
         referred_by_code=payload.referred_by_code,
     )
     db.commit()
+    response.set_cookie(
+        key=LAUNCH_USER_COOKIE_NAME,
+        value=str(user.id),
+        max_age=60 * 60 * 24 * 30,
+        httponly=True,
+        samesite="lax",
+    )
     return {
         "api_key": raw_key,
         "user_id": user.id,
         "email": user.email,
-        "granted_credit_usd": STARTER_CREDIT_USD,
+        "granted_credit_usd": round(granted_credit, 2),
         "balance_usd": round(balance_usd, 2),
         "dashboard_url": f"/dashboard/{user.id}",
         "chat_url": f"/chat/{user.id}",
@@ -323,18 +366,42 @@ def list_topup_packs() -> dict:
 @router.post("/payments/checkout")
 def create_checkout(
     payload: CheckoutCreateRequest,
+    request: Request,
+    response: Response,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
+    resolved_user_id = payload.user_id
+    if payload.email:
+        user = ensure_seed_user(
+            db,
+            email=payload.email.strip().lower(),
+            name=payload.email.split("@", 1)[0].replace(".", " ").replace("_", " ").title() or "AI Bridge User",
+        )
+        attach_referrer_by_code(db, user, payload.referred_by_code)
+        resolved_user_id = user.id
+    elif resolved_user_id is None:
+        cookie_user_id = _cookie_user_id(request)
+        if cookie_user_id is not None and db.get(User, cookie_user_id) is not None:
+            resolved_user_id = cookie_user_id
+    if resolved_user_id is None:
+        raise HTTPException(status_code=400, detail="Email is required to start checkout before full sign-in.")
+    response.set_cookie(
+        key=LAUNCH_USER_COOKIE_NAME,
+        value=str(resolved_user_id),
+        max_age=60 * 60 * 24 * 30,
+        httponly=True,
+        samesite="lax",
+    )
     result = create_checkout_session(
         db=db,
         settings=settings,
-        user_id=payload.user_id,
+        user_id=resolved_user_id,
         pack_code=payload.pack_code,
         referred_by_code=payload.referred_by_code,
     )
     db.commit()
-    return {"checkout_url": result.checkout_url, "session_id": result.session_id}
+    return {"checkout_url": result.checkout_url, "session_id": result.session_id, "user_id": resolved_user_id}
 
 
 @router.post("/payments/webhook")
@@ -572,17 +639,21 @@ def _complete_chat(
 @router.post("/chat/completions")
 def api_chat_completions(
     payload: ChatCompletionRequest,
+    request: Request,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
     if payload.stream:
         raise HTTPException(status_code=400, detail="Streaming is disabled in launch mode for accurate billing.")
+    user_id = _resolve_user_id(db, settings, request, payload.user_id, authorization, x_api_key)
     system = next((message.content for message in payload.messages if message.role == "system"), None)
     prompt = "\n".join(message.content for message in payload.messages if message.role == "user")
-    profile = get_or_create_agent_profile(db, payload.user_id)
+    profile = get_or_create_agent_profile(db, user_id)
     visible_lane, internal_lane, quality_check = choose_initial_lane(profile, payload.mode, prompt)
     result = _complete_chat(
-        payload.user_id,
+        user_id,
         visible_lane,
         system,
         prompt,
@@ -617,15 +688,19 @@ def api_chat_completions(
 @router.post("/messages")
 def api_messages(
     payload: MessagesRequest,
+    request: Request,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
     if payload.stream:
         raise HTTPException(status_code=400, detail="Streaming is disabled in launch mode for accurate billing.")
+    user_id = _resolve_user_id(db, settings, request, payload.user_id, authorization, x_api_key)
     prompt = "\n".join(str(item.get("content", "")) for item in payload.messages if item.get("role") == "user")
     task = resolve_task(
         db,
-        payload.user_id,
+        user_id,
         payload.mode,
         prompt,
         payload.task_id,
@@ -633,7 +708,7 @@ def api_messages(
         source_surface=payload.source_surface,
     )
     result = _complete_chat(
-        payload.user_id,
+        user_id,
         task.pinned_lane,
         payload.system,
         prompt,
@@ -688,16 +763,36 @@ def api_messages(
 @compat_router.post("/chat/completions")
 def v1_chat_completions(
     payload: ChatCompletionRequest,
+    request: Request,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    return api_chat_completions(payload=payload, db=db, settings=settings)
+    return api_chat_completions(
+        payload=payload,
+        request=request,
+        authorization=authorization,
+        x_api_key=x_api_key,
+        db=db,
+        settings=settings,
+    )
 
 
 @compat_router.post("/messages")
 def v1_messages(
     payload: MessagesRequest,
+    request: Request,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    return api_messages(payload=payload, db=db, settings=settings)
+    return api_messages(
+        payload=payload,
+        request=request,
+        authorization=authorization,
+        x_api_key=x_api_key,
+        db=db,
+        settings=settings,
+    )
