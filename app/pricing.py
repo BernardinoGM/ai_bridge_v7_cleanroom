@@ -40,6 +40,22 @@ TOP_UP_PACKS = {
         tagline="For teams that want governance, priority, and safer scaling.",
         governance_note="Premium pack with stronger controls, runway management, and upsell surface.",
     ),
+    "scale_plus": TopUpPack(
+        code="scale_plus",
+        name="Scale Credit",
+        price_usd=500.0,
+        bonus_usd=60.0,
+        tagline="For small teams routing meaningful weekly volume with tighter spend control.",
+        governance_note="Higher-commitment credit with stronger operating headroom and preserved margin.",
+    ),
+    "volume": TopUpPack(
+        code="volume",
+        name="Volume Credit",
+        price_usd=1000.0,
+        bonus_usd=150.0,
+        tagline="For operators who already know the workflow and want headroom without constant top-ups.",
+        governance_note="Large-balance option for recurring routed volume and steadier purchasing cadence.",
+    ),
 }
 
 MODE_MULTIPLIERS: dict[Mode, float] = {
@@ -61,4 +77,3 @@ def estimate_public_charge(mode: Mode, prompt_tokens: int, completion_tokens: in
         base += 0.015
     minimum = {"fast": 0.01, "smart": 0.03, "assured": 0.09}[mode]
     return round(max(base, minimum), 4)
-

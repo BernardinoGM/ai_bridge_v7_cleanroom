@@ -137,6 +137,8 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "start with $200 credit" in body
     assert "start with $500 credit" in body
     assert "start with $1000 credit" in body
+    assert 'data-pack-code="scale_plus"' in body
+    assert 'data-pack-code="volume"' in body
     assert 'href="/dashboard/demo"' in body
     assert 'id="playground"' in body
     assert 'id="savings"' in body
@@ -217,6 +219,29 @@ def test_webhook_processing_is_idempotent() -> None:
         assert processed_second is False
         assert wallet_balance(db, founder_id, "main") == 55.0
         assert wallet_balance(db, referrer_id, "promo") == 5.0
+
+
+def test_volume_pack_webhook_credits_expected_balance_once() -> None:
+    founder_id = _user_id("founder@aibridge.local")
+    with SessionLocal() as db:
+        payment = PaymentRecord(
+            user_id=founder_id,
+            pack_code="volume",
+            amount_usd=1000.0,
+            bonus_usd=150.0,
+            status="pending",
+            stripe_session_id="cs_test_volume_1",
+            referred_by_code=None,
+        )
+        db.add(payment)
+        db.commit()
+        processed_first = process_checkout_completed(db, "evt_volume_1", "cs_test_volume_1", "pi_volume_1")
+        db.commit()
+        processed_second = process_checkout_completed(db, "evt_volume_1", "cs_test_volume_1", "pi_volume_1")
+        db.commit()
+        assert processed_first is True
+        assert processed_second is False
+        assert wallet_balance(db, founder_id, "main") >= 1205.0
 
 
 def test_chat_requires_real_balance_and_debits_once() -> None:

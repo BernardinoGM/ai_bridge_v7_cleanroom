@@ -28,7 +28,7 @@ class MessagesRequest(BaseModel):
 
 class CheckoutCreateRequest(BaseModel):
     user_id: int
-    pack_code: Literal["starter", "growth", "scale"]
+    pack_code: Literal["starter", "growth", "scale", "scale_plus", "volume"]
     referred_by_code: str | None = None
 
 
