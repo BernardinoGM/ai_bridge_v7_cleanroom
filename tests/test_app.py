@@ -94,8 +94,9 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "what ai bridge is actually doing" in body
     assert "direct premium" in body
     assert "ai bridge" in body
-    assert "typical reduction" in body
-    assert "55%–85%, depending on task mix." in body
+    assert "typical reduction on routine work" in body
+    assert "40%–70%." in body
+    assert "higher on repetitive summarization, lower on review-heavy workflows." in body
     assert "why it wins" in body
     assert "cheaper by default" in body
     assert "premium when earned" in body
@@ -110,16 +111,22 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "direct premium spend" in body
     assert "ai bridge blended spend" in body
     assert "typical reduction range" in body
+    assert "solo builder" in body
+    assert "shipping sprint" in body
+    assert "review-heavy week" in body
+    assert "$120–$180/mo" in body
+    assert "$250–$450/mo" in body
     assert "pick your starting pack" in body
-    assert "try" in body
+    assert "start small. route real work. scale only when it proves itself." in body
+    assert "starter credit" in body
     assert "$10" in body
-    assert "build" in body
+    assert "operating credit" in body
     assert "$50" in body
-    assert "run" in body
+    assert "committed credit" in body
     assert "$200" in body
-    assert "buy $10 pack" in body
-    assert "buy $50 pack" in body
-    assert "buy $200 pack" in body
+    assert "start with $10 credit" in body
+    assert "start with $50 credit" in body
+    assert "start with $200 credit" in body
     assert 'href="/dashboard/demo"' in body
     assert 'id="playground"' in body
     assert 'id="savings"' in body

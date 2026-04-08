@@ -50,8 +50,9 @@
         </div>
       </div>
       <div class="result-footer">
-        <span>Typical reduction</span>
-        <strong>55%–85%, depending on task mix.</strong>
+        <span>Typical reduction on routine work</span>
+        <strong>40%–70%.</strong>
+        <small>Higher on repetitive summarization, lower on review-heavy workflows.</small>
       </div>
     </div>
   </section>
@@ -118,25 +119,25 @@
       </div>
     </div>
     <div class="preset-row savings-presets">
-      <button class="preset-button active" type="button" data-profile="light">Mostly normal work</button>
-      <button class="preset-button" type="button" data-profile="mixed">Mixed build + debug</button>
-      <button class="preset-button" type="button" data-profile="critical">More critical review</button>
+      <button class="preset-button active" type="button" data-profile="solo">Solo builder</button>
+      <button class="preset-button" type="button" data-profile="shipping">Shipping sprint</button>
+      <button class="preset-button" type="button" data-profile="review">Review-heavy week</button>
     </div>
     <div class="calc-shell blended-shell">
       <div class="panel calc-results">
         <div class="calc-stat">
           <span>Direct premium spend</span>
-          <strong id="calc-direct">$2,400/mo</strong>
+          <strong id="calc-direct">$120–$180/mo</strong>
         </div>
         <div class="calc-stat">
           <span>AI Bridge blended spend</span>
-          <strong id="calc-result">$720–$1,080/mo</strong>
+          <strong id="calc-result">$65–$105/mo</strong>
         </div>
         <div class="calc-stat">
           <span>Typical reduction range</span>
-          <strong id="calc-savings">55%–70%</strong>
+          <strong id="calc-savings">30%–45%</strong>
         </div>
-        <p class="muted" id="calc-copy">Routine summaries, rewrites, and standard product work stop hitting premium by default. That is where the blended savings comes from.</p>
+        <p class="muted" id="calc-copy">Greatest savings show up on routine work. When the week gets more review-heavy, the reduction narrows and the value shifts toward better control.</p>
       </div>
     </div>
   </section>
@@ -149,24 +150,25 @@
       </div>
       <p class="muted section-note">Choose a pack, get redirected to secure checkout.</p>
     </div>
+    <p class="muted pricing-intro">Start small. Route real work. Scale only when it proves itself.</p>
     <div class="cards three-up">
       <article class="card pack pack-vivid" data-pack-code="starter">
-        <p class="eyebrow">Try</p>
+        <p class="eyebrow">Starter credit</p>
         <h3>$10</h3>
         <p>For first routing tests and light daily work.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="starter" data-pack-name="Starter Pack" data-pack-price="10">Buy $10 pack</button>
+        <button class="button primary pack-cta ignition" type="button" data-pack-code="starter" data-pack-name="Starter Pack" data-pack-price="10">Start with $10 credit</button>
       </article>
       <article class="card pack pack-vivid" data-pack-code="growth">
-        <p class="eyebrow">Build</p>
+        <p class="eyebrow">Operating credit</p>
         <h3>$50</h3>
         <p>For solo builders replacing direct premium usage.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="growth" data-pack-name="Growth Pack" data-pack-price="50">Buy $50 pack</button>
+        <button class="button primary pack-cta ignition" type="button" data-pack-code="growth" data-pack-name="Growth Pack" data-pack-price="50">Start with $50 credit</button>
       </article>
       <article class="card pack pack-vivid" data-pack-code="scale">
-        <p class="eyebrow">Run</p>
+        <p class="eyebrow">Committed credit</p>
         <h3>$200</h3>
         <p>For heavier users moving real workflow volume.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="scale" data-pack-name="Scale Pack" data-pack-price="200">Buy $200 pack</button>
+        <button class="button primary pack-cta ignition" type="button" data-pack-code="scale" data-pack-name="Scale Pack" data-pack-price="200">Start with $200 credit</button>
       </article>
     </div>
     <p class="inline-error" id="checkout-error" hidden></p>
@@ -180,10 +182,10 @@
       </div>
     </div>
     <div class="cards two-up">
-      <article class="card"><h3>Is this just a cheaper wrapper?</h3><p>No. The point is not “cheap at any cost.” The point is cheaper by default, premium when earned, and steadier task handling.</p></article>
-      <article class="card"><h3>Can I try it before I buy?</h3><p>Yes. Start with the playground or the dashboard demo, then open checkout when you are ready to route real work.</p></article>
-      <article class="card"><h3>What happens after I buy a pack?</h3><p>You get redirected to secure checkout, and the pack flow stays aligned with the current clean-room product model.</p></article>
-      <article class="card"><h3>Do I need to understand provider internals?</h3><p>No. The page shows the result: cheaper default work, premium only when justified, and steadier multi-turn behavior.</p></article>
+      <article class="card"><h3>Is this just a cheaper wrapper?</h3><p>No. It is a smarter spend-control layer for founders and small teams that do not want premium pricing on default work.</p></article>
+      <article class="card"><h3>Can I try it before I buy?</h3><p>Yes. Use the playground or dashboard demo first, then move into credit when you are ready to route real work.</p></article>
+      <article class="card"><h3>What happens after I buy credit?</h3><p>You go through secure checkout, then use the balance to route work without defaulting every task to premium.</p></article>
+      <article class="card"><h3>Who is this for?</h3><p>Solo founders, indie CTOs, and small teams that care about output quality and spend discipline at the same time.</p></article>
     </div>
   </section>
 </main>
@@ -280,7 +282,7 @@
 
   let selectedPack = null;
   let activeExample = "spec";
-  let activeProfile = "light";
+  let activeProfile = "solo";
 
   const examples = {
     spec: {
@@ -310,23 +312,23 @@
   };
 
   const savingsProfiles = {
-    light: {
-      direct: "$2,400/mo",
-      blended: "$720–$1,080/mo",
-      reduction: "55%–70%",
-      copy: "Mostly normal work means summaries, rewrites, and standard daily prompts stop defaulting to premium."
+    solo: {
+      direct: "$120–$180/mo",
+      blended: "$65–$105/mo",
+      reduction: "30%–45%",
+      copy: "Solo builders save the most when specs, summaries, and routine coding help stop hitting premium by default."
     },
-    mixed: {
-      direct: "$4,000/mo",
-      blended: "$1,400–$2,100/mo",
-      reduction: "48%–65%",
-      copy: "A mixed workflow still drops hard when product drafting and standard bugfix loops move off the expensive default path."
+    shipping: {
+      direct: "$250–$450/mo",
+      blended: "$165–$300/mo",
+      reduction: "25%–40%",
+      copy: "During a shipping sprint, savings stay solid on routine build work, but premium still shows up when the task earns it."
     },
-    critical: {
-      direct: "$6,500/mo",
-      blended: "$2,600–$4,100/mo",
-      reduction: "37%–60%",
-      copy: "Critical review work still escalates more often, but the blended bill improves because not every prompt earns premium treatment."
+    review: {
+      direct: "$180–$320/mo",
+      blended: "$135–$255/mo",
+      reduction: "12%–25%",
+      copy: "In a review-heavy week, the reduction narrows. The payoff is stronger spend control and fewer accidental premium defaults."
     }
   };
 
