@@ -87,20 +87,23 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "smarter routing. lower bills. same output." in body
+    assert "multi-model adaptation beats single-model certainty." in body
     assert "try 3 free demos" in body
-    assert "ai bridge routes routine work through the cheaper lane" in body
+    assert "ai bridge is built for people who already know the tradeoffs." in body
+    assert "it routes work to the model that fits the task, preserves direction across turns, and keeps human judgment in the loop when it matters." in body
+    assert "less blind trust. fewer avoidable errors. more targeted outcomes." in body
     assert "try the playground" in body
-    assert "see pricing" in body
+    assert "for builders, operators, and technical teams running real work through multiple models." in body
     assert "dashboard" in body
     assert "get api key" in body
-    assert "what ai bridge is actually doing" in body
-    assert "direct premium" in body
-    assert "ai bridge" in body
-    assert "typical reduction on routine work" in body
-    assert "40%–70%." in body
-    assert "higher on repetitive summarization, lower on review-heavy workflows." in body
-    assert "based on a typical summarization task. see live demo below." in body
+    assert "what ai bridge is actually optimizing" in body
+    assert "model fit" in body
+    assert "human-in-the-loop control" in body
+    assert "outcome quality" in body
+    assert "the right model for the actual task, not one model for everything" in body
+    assert "direction stays intentional, not accidental" in body
+    assert "fewer avoidable mistakes, more targeted results." in body
+    assert "multi-model routing is not about novelty. it is about getting to the right result with less drift." in body
     assert "why it wins" in body
     assert "claude code" in body
     assert "cheaper by default" in body
