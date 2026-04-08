@@ -55,8 +55,10 @@ def test_dashboard_is_runway_centric() -> None:
     body = response.text.lower()
     assert "runway dashboard" in body
     assert "heavy-workdays" in body
-    assert "top up balance" in body
-    assert "promo / perks" not in body
+    assert "api keys" in body
+    assert "recent top-ups" in body
+    assert "recent usage" in body
+    assert "main balance ledger" in body
 
 
 def test_root_and_dashboard_routes_resolve_without_affecting_health() -> None:
@@ -194,6 +196,40 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
         assert len(api_keys) == 1
         assert api_keys[0].key_prefix == payload["api_key"][:16]
         assert wallet_balance(db, user.id, "main") == 0.0
+
+
+def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -> None:
+    create = client.post(
+        "/v1/keys",
+        json={"email": "dashboarduser@example.com", "use_case": "release notes"},
+    )
+    assert create.status_code == 200
+    payload = create.json()
+    user_id = payload["user_id"]
+    with SessionLocal() as db:
+        payment = PaymentRecord(
+            user_id=user_id,
+            pack_code="growth",
+            amount_usd=50.0,
+            bonus_usd=5.0,
+            status="pending",
+            stripe_session_id="cs_test_dashboard_1",
+            referred_by_code=None,
+        )
+        db.add(payment)
+        db.commit()
+        processed = process_checkout_completed(db, "evt_dashboard_1", "cs_test_dashboard_1", "pi_dashboard_1")
+        db.commit()
+        assert processed is True
+    response = client.get(payload["dashboard_url"])
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "dashboarduser@example.com" in body
+    assert payload["api_key"][:16].lower() in body
+    assert "$55.00 main balance".lower() in body
+    assert "growth" in body
+    assert "$50.00" in body
+    assert "$5.00 bonus" in body
 
 
 def test_webhook_processing_is_idempotent() -> None:

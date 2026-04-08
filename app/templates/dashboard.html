@@ -6,12 +6,39 @@
     <div class="hero-copy">
       <p class="eyebrow">Runway Dashboard</p>
       <h1>${{ "%.2f"|format(balance_usd) }} main balance</h1>
-      <p class="lede">{{ days_left }} estimated days left at current Smart pace, with {{ heavy_workdays_left }} heavy-workdays left.</p>
+      <p class="lede">{{ user_name }} · {{ user_email }} · {{ days_left }} estimated days left at current Smart pace, with {{ heavy_workdays_left }} heavy-workdays left.</p>
     </div>
     <div class="hero-card">
       <div class="metric"><span>Estimated savings</span><strong>${{ "%.2f"|format(premium_savings_estimate_usd) }}</strong></div>
+      <div class="metric"><span>Recent usage</span><strong>{{ recent_usage_count }} requests · ${{ "%.2f"|format(recent_usage_spend_usd) }}</strong></div>
       <div class="metric"><span>Growth actions</span><strong>Top up, auto-reload, invite, upgrade</strong></div>
-      <div class="metric"><span>Trust surface</span><strong>Runway, control, and checked work</strong></div>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>API keys</h2>
+      {% if api_keys %}
+      <ul class="checklist">
+        {% for item in api_keys %}
+        <li>{{ item.key_prefix }}... · {{ item.label or "Launch key" }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No active API keys yet.</p>
+      {% endif %}
+    </div>
+    <div class="panel">
+      <h2>Recent top-ups</h2>
+      {% if recent_topups %}
+      <ul class="checklist">
+        {% for payment in recent_topups %}
+        <li>{{ payment.pack_code|replace("_", " ")|title }} · ${{ "%.2f"|format(payment.amount_usd) }}{% if payment.bonus_usd %} + ${{ "%.2f"|format(payment.bonus_usd) }} bonus{% endif %} · {{ payment.status|title }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No top-ups yet.</p>
+      {% endif %}
     </div>
   </section>
 
@@ -25,6 +52,33 @@
         <p>{{ item.heavy_workdays_left }} heavy-workdays</p>
       </article>
       {% endfor %}
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>Recent usage</h2>
+      {% if recent_usage %}
+      <ul class="checklist">
+        {% for event in recent_usage %}
+        <li>{{ event.mode|title }} · ${{ "%.2f"|format(event.public_charge_usd) }} · {{ event.endpoint }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No usage yet. Your first routed requests will appear here.</p>
+      {% endif %}
+    </div>
+    <div class="panel">
+      <h2>Main balance ledger</h2>
+      {% if main_ledger %}
+      <ul class="checklist">
+        {% for entry in main_ledger %}
+        <li>{{ entry.description }} · {% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No balance activity yet.</p>
+      {% endif %}
     </div>
   </section>
 
