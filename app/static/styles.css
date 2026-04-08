@@ -10,27 +10,28 @@
 }
 
 .landing-vivid {
-  --landing-bg: #0b1020;
-  --landing-bg-2: #121a33;
-  --landing-surface: rgba(20, 28, 54, 0.9);
-  --landing-surface-2: rgba(14, 19, 38, 0.92);
-  --landing-line: rgba(128, 156, 255, 0.18);
-  --landing-ink: #f6f8ff;
-  --landing-muted: #a8b3d9;
-  --landing-accent: #78f4d7;
-  --landing-accent-2: #ff8b5f;
+  --landing-bg: #07111f;
+  --landing-bg-2: #0d1830;
+  --landing-surface: rgba(10, 20, 39, 0.92);
+  --landing-surface-2: rgba(8, 16, 31, 0.95);
+  --landing-line: rgba(116, 223, 255, 0.16);
+  --landing-ink: #f5f9ff;
+  --landing-muted: #afbdd8;
+  --landing-accent: #67e8ff;
+  --landing-accent-2: #ff8a52;
   --landing-shadow: 0 24px 80px rgba(2, 6, 23, 0.45);
   max-width: 1320px;
   margin: 0 auto;
   padding: 24px 20px 88px;
   color: var(--landing-ink);
+  font-family: "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 body:has(.landing-vivid) {
   background:
-    radial-gradient(circle at 10% 20%, rgba(120, 244, 215, 0.15), transparent 20%),
-    radial-gradient(circle at 85% 10%, rgba(255, 139, 95, 0.16), transparent 22%),
-    linear-gradient(180deg, #080b17 0%, #0d1327 45%, #10162d 100%);
+    radial-gradient(circle at 12% 14%, rgba(103, 232, 255, 0.13), transparent 18%),
+    radial-gradient(circle at 82% 10%, rgba(255, 138, 82, 0.10), transparent 18%),
+    linear-gradient(180deg, #050b14 0%, #091222 44%, #0b1427 100%);
 }
 
 .landing-vivid .muted,
@@ -94,7 +95,7 @@ body:has(.landing-vivid) {
 }
 
 .landing-vivid .button.primary {
-  background: linear-gradient(135deg, var(--landing-accent), #4de1ff);
+  background: linear-gradient(135deg, var(--landing-accent), #b5f9ff);
   color: #07111f;
 }
 
@@ -103,6 +104,21 @@ body:has(.landing-vivid) {
   border: 1px solid var(--landing-line);
   color: var(--landing-ink);
   background: rgba(255, 255, 255, 0.02);
+}
+
+.landing-vivid .button {
+  transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.landing-vivid .button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(103, 232, 255, 0.16);
+}
+
+.landing-vivid .button.primary:hover,
+.landing-vivid .ignition:hover {
+  box-shadow: 0 18px 42px rgba(255, 138, 82, 0.24);
+  background: linear-gradient(135deg, #8cf0ff, #ffd0b6);
 }
 
 .hero-vivid {
@@ -115,6 +131,8 @@ body:has(.landing-vivid) {
   font-size: clamp(3.4rem, 9vw, 6.2rem);
   line-height: 0.92;
   color: var(--landing-ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  letter-spacing: -0.03em;
 }
 
 .vivid-lede {
@@ -171,11 +189,11 @@ body:has(.landing-vivid) {
 }
 
 .route-card.before {
-  background: rgba(255, 139, 95, 0.08);
+  background: rgba(255, 138, 82, 0.08);
 }
 
 .route-card.after {
-  background: rgba(120, 244, 215, 0.08);
+  background: rgba(103, 232, 255, 0.08);
 }
 
 .route-label {
@@ -210,8 +228,8 @@ body:has(.landing-vivid) {
 }
 
 .outcome-pill.accent {
-  border-color: rgba(255, 139, 95, 0.3);
-  background: rgba(255, 139, 95, 0.12);
+  border-color: rgba(255, 138, 82, 0.3);
+  background: rgba(255, 138, 82, 0.12);
 }
 
 .outcome-pill span {
@@ -284,13 +302,6 @@ body:has(.landing-vivid) {
   border-radius: 24px;
 }
 
-.step-list {
-  display: grid;
-  gap: 14px;
-  padding-left: 20px;
-  color: var(--landing-muted);
-}
-
 .vivid-feature-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -328,8 +339,8 @@ body:has(.landing-vivid) {
 }
 
 .preset-button.active {
-  background: rgba(120, 244, 215, 0.14);
-  border-color: rgba(120, 244, 215, 0.35);
+  background: rgba(103, 232, 255, 0.16);
+  border-color: rgba(103, 232, 255, 0.4);
 }
 
 .playground-shell,
@@ -392,8 +403,8 @@ body:has(.landing-vivid) {
 }
 
 .playground-pill.accent {
-  border-color: rgba(255, 139, 95, 0.28);
-  background: rgba(255, 139, 95, 0.12);
+  border-color: rgba(255, 138, 82, 0.28);
+  background: rgba(255, 138, 82, 0.12);
 }
 
 .calc-results {
@@ -422,13 +433,13 @@ body:has(.landing-vivid) {
 }
 
 .landing-vivid .pack-cta {
-  background: linear-gradient(135deg, #f6f8ff, #b2fbef);
+  background: linear-gradient(135deg, var(--landing-accent), #dffcff);
 }
 
 .landing-vivid .inline-error {
   color: #ffd0c0;
-  background: rgba(255, 139, 95, 0.14);
-  border-color: rgba(255, 139, 95, 0.22);
+  background: rgba(255, 138, 82, 0.14);
+  border-color: rgba(255, 138, 82, 0.22);
 }
 
 .landing-vivid .checkout-dialog {

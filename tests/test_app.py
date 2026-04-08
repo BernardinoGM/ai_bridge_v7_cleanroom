@@ -85,27 +85,47 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "stop sending every task through the expensive lane." in body
+    assert "stop paying premium prices for default work." in body
+    assert "ai bridge routes routine work through the cheaper lane" in body
     assert "try the playground" in body
     assert "see pricing" in body
-    assert "view dashboard" in body
+    assert "dashboard" in body
     assert "get api key" in body
+    assert "what ai bridge is actually doing" in body
+    assert "direct premium" in body
+    assert "ai bridge" in body
+    assert "typical reduction" in body
+    assert "55%–85%, depending on task mix." in body
     assert "why it wins" in body
-    assert "playground" in body
-    assert "savings calc" in body
-    assert "pricing" in body
-    assert "why this is not just a cheaper wrapper" in body
+    assert "cheaper by default" in body
+    assert "premium when earned" in body
+    assert "stable across turns" in body
+    assert "take one bite" in body
+    assert "pick a real task. watch the router decide." in body
+    assert "summarize a spec" in body
+    assert "refactor a file" in body
+    assert "draft a customer reply" in body
+    assert "run this example" in body
+    assert "see what your current workflow is costing you" in body
+    assert "direct premium spend" in body
+    assert "ai bridge blended spend" in body
+    assert "typical reduction range" in body
+    assert "pick your starting pack" in body
+    assert "try" in body
+    assert "$10" in body
+    assert "build" in body
+    assert "$50" in body
+    assert "run" in body
+    assert "$200" in body
+    assert "buy $10 pack" in body
+    assert "buy $50 pack" in body
+    assert "buy $200 pack" in body
     assert 'href="/dashboard/demo"' in body
     assert 'id="playground"' in body
-    assert 'id="savings-calc"' in body
+    assert 'id="savings"' in body
     assert 'id="packs"' in body
     assert 'id="api-key-modal"' in body
-    assert "one-click demo" in body
-    assert "likely reduction range" in body
     assert "choose a pack, get redirected to secure checkout." in body
-    assert "start with starter" in body
-    assert "choose growth" in body
-    assert "unlock scale" in body
     assert 'fetch("/api/payments/checkout"' in body
 
 

@@ -7,148 +7,136 @@
     <div class="nav-links">
       <a href="#why-aibridge">Why it wins</a>
       <a href="#playground">Playground</a>
-      <a href="#savings-calc">Savings calc</a>
+      <a href="#savings">Savings</a>
       <a href="#packs">Pricing</a>
     </div>
     <div class="nav-actions">
-      <a class="button ghost" href="/dashboard/demo">View dashboard</a>
-      <button class="button secondary api-key-trigger" type="button">Get API key</button>
+      <a class="button ghost" href="/dashboard/demo">Dashboard</a>
+      <button class="button ghost api-key-trigger" type="button">Get API Key</button>
     </div>
   </nav>
 
   <section class="hero hero-vivid">
     <div class="hero-copy">
-      <p class="eyebrow vivid-eyebrow">Cost control without losing the good model when it matters</p>
-      <h1>Stop sending every task through the expensive lane.</h1>
-      <p class="lede vivid-lede">AI Bridge keeps default work on the cheaper path, pulls in premium reasoning only when the task actually needs it, and keeps ongoing work stable instead of rerouting it into chaos.</p>
+      <p class="eyebrow vivid-eyebrow">Smarter path. Lower blended cost.</p>
+      <h1>Stop paying premium prices for default work.</h1>
+      <p class="lede vivid-lede">AI Bridge routes routine work through the cheaper lane, escalates only when the task actually needs premium reasoning, and keeps ongoing work steadier across turns.</p>
       <div class="cta-row">
         <a class="button primary" href="#playground">Try the playground</a>
         <a class="button secondary" href="#packs">See pricing</a>
-        <a class="button ghost" href="/dashboard/demo">View dashboard</a>
-        <button class="button ghost api-key-trigger" type="button">Get API key</button>
-      </div>
-      <div class="hero-proof">
-        <div class="proof-chip"><span>Default work</span><strong>cheaper lane first</strong></div>
-        <div class="proof-chip"><span>Hard tasks</span><strong>premium only when justified</strong></div>
-        <div class="proof-chip"><span>Multi-turn work</span><strong>stays stable across turns</strong></div>
+        <a class="button ghost" href="/dashboard/demo">Dashboard</a>
+        <button class="button ghost api-key-trigger" type="button">Get API Key</button>
       </div>
     </div>
+
     <div class="hero-visual panel">
+      <h3>What AI Bridge is actually doing</h3>
       <div class="route-compare">
         <div class="route-card before">
-          <span class="route-label">Before</span>
-          <h3>Everything hits premium</h3>
+          <span class="route-label">Direct premium</span>
           <ul class="route-list">
-            <li>Simple summaries pay premium rates</li>
-            <li>Follow-up turns restart the logic</li>
-            <li>The bill climbs whether the work needs it or not</li>
+            <li>expensive by default</li>
+            <li>same model for everything</li>
+            <li>manual judgment required</li>
           </ul>
         </div>
         <div class="route-card after">
-          <span class="route-label">After</span>
-          <h3>AI Bridge routes with intent</h3>
+          <span class="route-label">AI Bridge</span>
           <ul class="route-list">
-            <li>Routine work flows through the cheaper path</li>
-            <li>Ongoing tasks stay coherent across turns</li>
-            <li>Premium gets pulled in only for risky or high-value work</li>
+            <li>cheaper by default</li>
+            <li>premium when earned</li>
+            <li>steadier across turns</li>
           </ul>
         </div>
       </div>
-      <div class="outcome-bar">
-        <div class="outcome-pill"><span>Prompt</span><strong>Debug a flaky release issue</strong></div>
-        <div class="outcome-pill"><span>Normal flow</span><strong>Smart</strong></div>
-        <div class="outcome-pill accent"><span>Escalate if needed</span><strong>Assured</strong></div>
+      <div class="result-footer">
+        <span>Typical reduction</span>
+        <strong>55%–85%, depending on task mix.</strong>
       </div>
     </div>
   </section>
 
-  <section class="section vivid-grid" id="why-aibridge">
-    <div class="panel vivid-panel">
-      <p class="eyebrow vivid-eyebrow">Why this is not just a cheaper wrapper</p>
-      <h2>Cheap alone is not the pitch.</h2>
-      <p class="muted">A cheaper wrapper falls apart the moment the work gets messy. AI Bridge is a routing layer with cost discipline: normal work stays cheap, harder work gets stronger reasoning when justified, and live tasks stay stable instead of flipping paths every turn.</p>
-    </div>
-    <div class="panel vivid-panel">
-      <ul class="checklist">
-        <li>Lower bill pressure without forcing low-quality output everywhere.</li>
-        <li>Task stability that makes multi-turn work actually usable.</li>
-        <li>Clear product choices: Fast, Smart, Assured.</li>
-        <li>Purchase path, demo path, and dashboard path all work right now.</li>
-      </ul>
-    </div>
+  <section class="section vivid-feature-strip" id="why-aibridge">
+    <article class="feature-panel">
+      <h3>Cheaper by default</h3>
+      <p>Routine work stops paying premium rates just because the direct path makes that the default.</p>
+    </article>
+    <article class="feature-panel">
+      <h3>Premium when earned</h3>
+      <p>Harder work can still escalate. The expensive lane shows up when the task deserves it, not before.</p>
+    </article>
+    <article class="feature-panel">
+      <h3>Stable across turns</h3>
+      <p>Ongoing work stays steadier across follow-ups instead of getting rerouted unpredictably every time.</p>
+    </article>
   </section>
 
   <section class="section playground-section" id="playground">
     <div class="section-head">
       <div>
         <p class="eyebrow vivid-eyebrow">Playground</p>
-        <h2>Click once and feel the routing behavior</h2>
+        <h2>Take one bite</h2>
+        <p class="muted">Pick a real task. Watch the router decide.</p>
       </div>
-      <a class="button ghost" href="/chat/demo">Open demo chat</a>
     </div>
     <div class="preset-row">
-      <button class="preset-button active" type="button" data-preset="summary">Weekly summary</button>
-      <button class="preset-button" type="button" data-preset="bugfix">Bugfix thread</button>
-      <button class="preset-button" type="button" data-preset="launch">Launch review</button>
+      <button class="preset-button active" type="button" data-example="spec">Summarize a spec</button>
+      <button class="preset-button" type="button" data-example="refactor">Refactor a file</button>
+      <button class="preset-button" type="button" data-example="reply">Draft a customer reply</button>
     </div>
-    <div class="playground-shell">
+    <div class="playground-shell taste-first">
       <div class="playground-controls panel">
-        <label>
-          <span>Task intensity</span>
-          <select id="playground-mode">
-            <option value="fast">Fast</option>
-            <option value="smart" selected>Smart</option>
-            <option value="assured">Assured</option>
-          </select>
-        </label>
-        <button class="button primary" id="playground-run" type="button">Run one-click demo</button>
-        <p class="muted">Preset examples show the public product language only. No backend provider names. No routing trivia.</p>
+        <h3 id="playground-example-title">Summarize a spec</h3>
+        <p class="muted" id="playground-example-copy">Routine synthesis work should stay cheap unless the task proves it needs more.</p>
+        <button class="button primary ignition" id="playground-run" type="button">Run this example</button>
       </div>
       <div class="playground-output panel">
-        <div class="playground-status">
-          <span class="playground-pill" id="playground-lane">Smart</span>
-          <span class="playground-pill accent" id="playground-state">Checked</span>
+        <div class="playground-grid">
+          <div class="playground-stat">
+            <span>Chosen lane</span>
+            <strong id="playground-lane">Smart</strong>
+          </div>
+          <div class="playground-stat">
+            <span>Why</span>
+            <strong id="playground-why">Stayed cheap because the task is routine and stable.</strong>
+          </div>
+          <div class="playground-stat">
+            <span>Estimated blended cost</span>
+            <strong id="playground-cost">$0.08</strong>
+          </div>
         </div>
-        <h3 id="playground-title">Smart keeps normal work cheap while preserving continuity</h3>
-        <p id="playground-copy">Use Smart when you want most work to stay on the cheaper path, but you still want the task to remain steady across follow-ups.</p>
-        <div class="demo-message" id="playground-message">Example: summarize the weekly product update, keep the thread coherent, and avoid paying premium for every follow-up.</div>
+        <div class="demo-message" id="playground-result">Preview: concise spec summary, stable follow-up path, premium held back until the task proves it needs it.</div>
       </div>
     </div>
   </section>
 
-  <section class="section savings-section" id="savings-calc">
+  <section class="section savings-section" id="savings">
     <div class="section-head">
       <div>
-        <p class="eyebrow vivid-eyebrow">Savings calc</p>
-        <h2>Model the monthly difference</h2>
+        <p class="eyebrow vivid-eyebrow">Savings</p>
+        <h2>See what your current workflow is costing you</h2>
       </div>
     </div>
-    <div class="calc-shell">
-      <div class="panel calc-inputs">
-        <label>
-          <span>Current monthly AI spend</span>
-          <input id="calc-spend" type="range" min="200" max="8000" step="100" value="1600" />
-          <strong id="calc-spend-value">$1,600</strong>
-        </label>
-        <label>
-          <span>Work mix</span>
-          <select id="calc-profile">
-            <option value="summary" selected>Mostly normal work</option>
-            <option value="mixed">Mixed product + debug work</option>
-            <option value="critical">More critical release work</option>
-          </select>
-        </label>
-      </div>
+    <div class="preset-row savings-presets">
+      <button class="preset-button active" type="button" data-profile="light">Mostly normal work</button>
+      <button class="preset-button" type="button" data-profile="mixed">Mixed build + debug</button>
+      <button class="preset-button" type="button" data-profile="critical">More critical review</button>
+    </div>
+    <div class="calc-shell blended-shell">
       <div class="panel calc-results">
         <div class="calc-stat">
-          <span>Estimated spend with AI Bridge</span>
-          <strong id="calc-result">$480–$720</strong>
+          <span>Direct premium spend</span>
+          <strong id="calc-direct">$2,400/mo</strong>
         </div>
         <div class="calc-stat">
-          <span>Likely reduction range</span>
+          <span>AI Bridge blended spend</span>
+          <strong id="calc-result">$720–$1,080/mo</strong>
+        </div>
+        <div class="calc-stat">
+          <span>Typical reduction range</span>
           <strong id="calc-savings">55%–70%</strong>
         </div>
-        <p class="muted" id="calc-copy">Best case: you stop sending routine work through premium. Conservative case: critical work still escalates, but the defaults stay under control.</p>
+        <p class="muted" id="calc-copy">Routine summaries, rewrites, and standard product work stop hitting premium by default. That is where the blended savings comes from.</p>
       </div>
     </div>
   </section>
@@ -157,45 +145,45 @@
     <div class="section-head">
       <div>
         <p class="eyebrow vivid-eyebrow">Pricing</p>
-        <h2>Pick a pack and start routing smarter</h2>
+        <h2>Pick your starting pack</h2>
       </div>
       <p class="muted section-note">Choose a pack, get redirected to secure checkout.</p>
     </div>
     <div class="cards three-up">
-      {% for pack in packs %}
-      <article class="card pack pack-vivid" data-pack-code="{{ pack.code }}">
-        <p class="eyebrow">{{ pack.name }}</p>
-        <h3>${{ "%.0f"|format(pack.price_usd) }}</h3>
-        <p>{{ pack.tagline }}</p>
-        <p class="muted">{{ pack.governance_note }}</p>
-        <button
-          class="button primary pack-cta"
-          type="button"
-          data-pack-code="{{ pack.code }}"
-          data-pack-name="{{ pack.name }}"
-          data-pack-price="{{ "%.0f"|format(pack.price_usd) }}"
-        >
-          {% if pack.code == "starter" %}Start with Starter{% elif pack.code == "growth" %}Choose Growth{% else %}Unlock Scale{% endif %}
-        </button>
-        <p class="pack-helper">
-          {% if pack.code == "starter" %}Top up $10{% elif pack.code == "growth" %}Top up $50{% else %}Top up $200{% endif %}
-        </p>
+      <article class="card pack pack-vivid" data-pack-code="starter">
+        <p class="eyebrow">Try</p>
+        <h3>$10</h3>
+        <p>For first routing tests and light daily work.</p>
+        <button class="button primary pack-cta ignition" type="button" data-pack-code="starter" data-pack-name="Starter Pack" data-pack-price="10">Buy $10 pack</button>
       </article>
-      {% endfor %}
+      <article class="card pack pack-vivid" data-pack-code="growth">
+        <p class="eyebrow">Build</p>
+        <h3>$50</h3>
+        <p>For solo builders replacing direct premium usage.</p>
+        <button class="button primary pack-cta ignition" type="button" data-pack-code="growth" data-pack-name="Growth Pack" data-pack-price="50">Buy $50 pack</button>
+      </article>
+      <article class="card pack pack-vivid" data-pack-code="scale">
+        <p class="eyebrow">Run</p>
+        <h3>$200</h3>
+        <p>For heavier users moving real workflow volume.</p>
+        <button class="button primary pack-cta ignition" type="button" data-pack-code="scale" data-pack-name="Scale Pack" data-pack-price="200">Buy $200 pack</button>
+      </article>
     </div>
     <p class="inline-error" id="checkout-error" hidden></p>
   </section>
 
-  <section class="section trust-strip">
+  <section class="section faq">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow vivid-eyebrow">FAQ</p>
+        <h2>Quick answers before you click</h2>
+      </div>
+    </div>
     <div class="cards two-up">
-      <article class="card">
-        <h3>Trust strip</h3>
-        <p>Real checkout. Working dashboard link. Demo chat path. Health route untouched.</p>
-      </article>
-      <article class="card">
-        <h3>Product truth</h3>
-        <p>Default to the cheaper lane. Pull in premium only when the task truly needs it. Keep the thread stable.</p>
-      </article>
+      <article class="card"><h3>Is this just a cheaper wrapper?</h3><p>No. The point is not “cheap at any cost.” The point is cheaper by default, premium when earned, and steadier task handling.</p></article>
+      <article class="card"><h3>Can I try it before I buy?</h3><p>Yes. Start with the playground or the dashboard demo, then open checkout when you are ready to route real work.</p></article>
+      <article class="card"><h3>What happens after I buy a pack?</h3><p>You get redirected to secure checkout, and the pack flow stays aligned with the current clean-room product model.</p></article>
+      <article class="card"><h3>Do I need to understand provider internals?</h3><p>No. The page shows the result: cheaper default work, premium only when justified, and steadier multi-turn behavior.</p></article>
     </div>
   </section>
 </main>
@@ -205,7 +193,7 @@
   <div class="checkout-dialog panel" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
     <div class="checkout-head">
       <div>
-        <p class="eyebrow vivid-eyebrow">Get API key</p>
+        <p class="eyebrow vivid-eyebrow">Get API Key</p>
         <h3 id="api-key-modal-title">Start your launch access flow</h3>
       </div>
       <button class="button secondary button-small" id="api-key-close" type="button">Close</button>
@@ -221,7 +209,7 @@
         <input id="api-key-use" type="text" placeholder="Support prompts, product docs, bugfixing, release review" />
       </label>
       <p class="inline-error" id="api-key-error" hidden></p>
-      <button class="button primary" id="api-key-submit" type="submit">Continue</button>
+      <button class="button primary ignition" id="api-key-submit" type="submit">Continue</button>
     </form>
   </div>
 </div>
@@ -248,7 +236,7 @@
       </label>
       <p class="muted fine-print">Launch checkout uses a temporary user binding until full sign-in ships.</p>
       <p class="inline-error" id="checkout-modal-error" hidden></p>
-      <button class="button primary" id="checkout-submit" type="submit">Continue to secure checkout</button>
+      <button class="button primary ignition" id="checkout-submit" type="submit">Continue to secure checkout</button>
     </form>
   </div>
 </div>
@@ -261,7 +249,8 @@
   const launchUserId = Number(root.dataset.launchUserId || "1");
   const packButtons = Array.from(document.querySelectorAll(".pack-cta"));
   const apiKeyTriggers = Array.from(document.querySelectorAll(".api-key-trigger"));
-  const presetButtons = Array.from(document.querySelectorAll(".preset-button"));
+  const exampleButtons = Array.from(document.querySelectorAll("[data-example]"));
+  const savingsButtons = Array.from(document.querySelectorAll("[data-profile]"));
   const errorEl = document.getElementById("checkout-error");
   const modal = document.getElementById("checkout-modal");
   const modalCopy = document.getElementById("checkout-modal-copy");
@@ -277,43 +266,68 @@
   const apiKeyEmail = document.getElementById("api-key-email");
   const apiKeyUse = document.getElementById("api-key-use");
   const apiKeyError = document.getElementById("api-key-error");
-  const playgroundMode = document.getElementById("playground-mode");
   const playgroundRun = document.getElementById("playground-run");
+  const exampleTitle = document.getElementById("playground-example-title");
+  const exampleCopy = document.getElementById("playground-example-copy");
   const playgroundLane = document.getElementById("playground-lane");
-  const playgroundState = document.getElementById("playground-state");
-  const playgroundTitle = document.getElementById("playground-title");
-  const playgroundCopy = document.getElementById("playground-copy");
-  const playgroundMessage = document.getElementById("playground-message");
-  const calcSpend = document.getElementById("calc-spend");
-  const calcSpendValue = document.getElementById("calc-spend-value");
-  const calcProfile = document.getElementById("calc-profile");
+  const playgroundWhy = document.getElementById("playground-why");
+  const playgroundCost = document.getElementById("playground-cost");
+  const playgroundResult = document.getElementById("playground-result");
+  const calcDirect = document.getElementById("calc-direct");
   const calcResult = document.getElementById("calc-result");
   const calcSavings = document.getElementById("calc-savings");
   const calcCopy = document.getElementById("calc-copy");
 
   let selectedPack = null;
-  let activePreset = "summary";
-  const playgroundMap = {
-    summary: {
-      fast: ["Fast", "In progress", "Fast clears cheap repetitive work immediately", "Use Fast when the task is a plain summary, rewrite, or content cleanup and you just want the cheaper lane to do its job.", "Preset: summarize a weekly ops update and keep the bill out of the premium zone."],
-      smart: ["Smart", "Checked", "Smart keeps default work cheap while holding the thread together", "Use Smart when the work will likely continue for multiple turns and you want continuity without paying premium by default.", "Preset: summarize the weekly update, then keep the next two follow-up turns coherent."],
-      assured: ["Assured", "Verified", "Assured adds stronger review only when the output actually matters more", "Use Assured when the summary is headed into a risky workflow, a release note, or something a stakeholder will treat as final.", "Preset: summarize the launch update, then verify the customer-facing claims before sending."]
+  let activeExample = "spec";
+  let activeProfile = "light";
+
+  const examples = {
+    spec: {
+      title: "Summarize a spec",
+      copy: "Routine synthesis work should stay cheap unless the task proves it needs more.",
+      lane: "Smart",
+      why: "Stayed cheap because the task is routine and stable.",
+      cost: "$0.08",
+      result: "Preview: concise spec summary, stable follow-up path, premium held back until the task proves it needs it."
     },
-    bugfix: {
-      fast: ["Fast", "In progress", "Fast handles first-pass bugfix prompts without overpaying", "Good for quick triage, initial repro notes, or low-risk debugging where speed matters more than review depth.", "Preset: inspect a flaky bug report and suggest likely failure points without escalating immediately."],
-      smart: ["Smart", "Checked", "Smart is the default debug lane for stable multi-turn work", "Use Smart for bugfix threads when you want the conversation to stay coherent across follow-up prompts without dragging premium in every time.", "Preset: debug the issue, continue the thread, and tighten the patch plan across several turns."],
-      assured: ["Assured", "Verified", "Assured is for fixes that can break production if you get them wrong", "Use Assured when the bug touches auth, billing, migrations, or release readiness and you need stronger review before shipping.", "Preset: review a risky fix, verify the release checklist, and tighten the final response before rollout."]
+    refactor: {
+      title: "Refactor a file",
+      copy: "Code cleanup can stay in the blended path until the work becomes risky or release-adjacent.",
+      lane: "Smart",
+      why: "Stayed blended because the refactor is iterative, not release-critical.",
+      cost: "$0.14",
+      result: "Preview: cleaner file structure, refactor notes, and a stable thread that stays coherent across follow-up edits."
     },
-    launch: {
-      fast: ["Fast", "In progress", "Fast is only for lightweight launch work", "Use Fast for simple launch chores, but do not expect it to be the default choice for higher-risk release review.", "Preset: draft a quick launch summary without turning every prompt into a premium event."],
-      smart: ["Smart", "Checked", "Smart balances launch prep without making every step expensive", "Use Smart when the launch flow has multiple steps and you want the work to stay stable while still controlling cost.", "Preset: prepare a launch plan, iterate on the wording, and keep the thread stable across changes."],
-      assured: ["Assured", "Verified", "Assured is the release path when failure is actually expensive", "Use Assured for production, billing, auth, migration, or incident-adjacent work where premium reasoning should be pulled in on purpose.", "Preset: run a release-check style flow and verify the risky parts before you ship."]
+    reply: {
+      title: "Draft a customer reply",
+      copy: "Customer replies should stay cheap by default, then escalate only if the tone or risk profile demands it.",
+      lane: "Fast",
+      why: "Stayed cheap because this is straightforward customer communication.",
+      cost: "$0.05",
+      result: "Preview: polished customer response, fast turnaround, and no unnecessary premium spend."
     }
   };
-  const calcProfiles = {
-    summary: { min: 0.58, max: 0.72, copy: "Mostly normal work means the cheaper lane absorbs the majority of volume while premium stays reserved for outliers." },
-    mixed: { min: 0.42, max: 0.61, copy: "A mixed workload still drops meaningfully when summaries, rewrites, and standard debug loops stop defaulting to premium." },
-    critical: { min: 0.24, max: 0.43, copy: "Critical work still escalates more often, but the overall bill improves because not every task deserves the expensive path." }
+
+  const savingsProfiles = {
+    light: {
+      direct: "$2,400/mo",
+      blended: "$720–$1,080/mo",
+      reduction: "55%–70%",
+      copy: "Mostly normal work means summaries, rewrites, and standard daily prompts stop defaulting to premium."
+    },
+    mixed: {
+      direct: "$4,000/mo",
+      blended: "$1,400–$2,100/mo",
+      reduction: "48%–65%",
+      copy: "A mixed workflow still drops hard when product drafting and standard bugfix loops move off the expensive default path."
+    },
+    critical: {
+      direct: "$6,500/mo",
+      blended: "$2,600–$4,100/mo",
+      reduction: "37%–60%",
+      copy: "Critical review work still escalates more often, but the blended bill improves because not every prompt earns premium treatment."
+    }
   };
 
   function showInlineError(message) {
@@ -375,31 +389,37 @@
     window.location.href = payload.checkout_url;
   }
 
-  function updatePlayground() {
-    const [lane, state, title, copy, message] = playgroundMap[activePreset][playgroundMode.value];
-    playgroundLane.textContent = lane;
-    playgroundState.textContent = state;
-    playgroundTitle.textContent = title;
-    playgroundCopy.textContent = copy;
-    playgroundMessage.textContent = message;
+  function renderExample() {
+    const example = examples[activeExample];
+    exampleTitle.textContent = example.title;
+    exampleCopy.textContent = example.copy;
+    playgroundLane.textContent = example.lane;
+    playgroundWhy.textContent = example.why;
+    playgroundCost.textContent = example.cost;
+    playgroundResult.textContent = example.result;
   }
 
-  function updateCalculator() {
-    const spend = Number(calcSpend.value);
-    const profile = calcProfiles[calcProfile.value];
-    const minSpend = Math.round(spend * (1 - profile.max));
-    const maxSpend = Math.round(spend * (1 - profile.min));
-    calcSpendValue.textContent = `$${spend.toLocaleString()}`;
-    calcResult.textContent = `$${minSpend.toLocaleString()}–$${maxSpend.toLocaleString()}`;
-    calcSavings.textContent = `${Math.round(profile.min * 100)}%–${Math.round(profile.max * 100)}%`;
+  function renderSavings() {
+    const profile = savingsProfiles[activeProfile];
+    calcDirect.textContent = profile.direct;
+    calcResult.textContent = profile.blended;
+    calcSavings.textContent = profile.reduction;
     calcCopy.textContent = profile.copy;
   }
 
-  presetButtons.forEach((button) => {
+  exampleButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      activePreset = button.dataset.preset;
-      presetButtons.forEach((item) => item.classList.toggle("active", item === button));
-      updatePlayground();
+      activeExample = button.dataset.example;
+      exampleButtons.forEach((item) => item.classList.toggle("active", item === button));
+      renderExample();
+    });
+  });
+
+  savingsButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeProfile = button.dataset.profile;
+      savingsButtons.forEach((item) => item.classList.toggle("active", item === button));
+      renderSavings();
     });
   });
 
@@ -417,6 +437,8 @@
   apiKeyTriggers.forEach((button) => {
     button.addEventListener("click", openApiKeyModal);
   });
+
+  playgroundRun.addEventListener("click", renderExample);
 
   modal.addEventListener("click", (event) => {
     if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
@@ -478,13 +500,8 @@
     }
   });
 
-  playgroundRun.addEventListener("click", updatePlayground);
-  playgroundMode.addEventListener("change", updatePlayground);
-  calcSpend.addEventListener("input", updateCalculator);
-  calcProfile.addEventListener("change", updateCalculator);
-
-  updatePlayground();
-  updateCalculator();
+  renderExample();
+  renderSavings();
 })();
 </script>
 {% endblock %}
