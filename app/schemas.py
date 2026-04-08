@@ -30,3 +30,7 @@ class CheckoutCreateRequest(BaseModel):
     user_id: int
     pack_code: Literal["starter", "growth", "scale"]
     referred_by_code: str | None = None
+
+
+class DemoChatRequest(BaseModel):
+    example: Literal["spec", "refactor", "reply"]

@@ -101,6 +101,10 @@
             <strong id="playground-lane">Smart</strong>
           </div>
           <div class="playground-stat">
+            <span>Quality</span>
+            <strong id="playground-quality">In progress</strong>
+          </div>
+          <div class="playground-stat">
             <span>Routing reason</span>
             <strong id="playground-why">Stayed cheap because the task is routine and stable.</strong>
           </div>
@@ -113,8 +117,8 @@
             <strong id="playground-cost">$0.08</strong>
           </div>
           <div class="playground-stat">
-            <span>Saved on this task</span>
-            <strong id="playground-saved">$0.14</strong>
+            <span>Saved vs direct premium</span>
+            <strong id="playground-saved">64%</strong>
           </div>
         </div>
         <div class="demo-message" id="playground-result">Preview: concise spec summary, stable follow-up path, premium held back until the task proves it needs it.</div>
@@ -295,6 +299,7 @@
   const exampleTitle = document.getElementById("playground-example-title");
   const exampleCopy = document.getElementById("playground-example-copy");
   const playgroundLane = document.getElementById("playground-lane");
+  const playgroundQuality = document.getElementById("playground-quality");
   const playgroundWhy = document.getElementById("playground-why");
   const playgroundDirectCost = document.getElementById("playground-direct-cost");
   const playgroundCost = document.getElementById("playground-cost");
@@ -312,33 +317,15 @@
   const examples = {
     spec: {
       title: "Summarize a spec",
-      copy: "Routine synthesis work should stay cheap unless the task proves it needs more.",
-      lane: "Smart",
-      why: "Stayed on the cheaper lane because the work is routine and the thread remained stable across follow-ups.",
-      directCost: "$0.22",
-      cost: "$0.08",
-      saved: "$0.14",
-      result: "Preview: concise spec summary, stable follow-up path, and premium held back until the task clearly needs it."
+      copy: "Routine synthesis work should stay cheap unless the task proves it needs more."
     },
     refactor: {
       title: "Refactor a file",
-      copy: "Code cleanup can stay in the blended path until the work becomes risky or release-adjacent.",
-      lane: "Smart",
-      why: "Stayed on the blended path because the refactor is iterative and continuity matters more than forcing premium on every turn.",
-      directCost: "$0.31",
-      cost: "$0.14",
-      saved: "$0.17",
-      result: "Preview: cleaner file structure, refactor notes, and a thread that stays coherent across follow-up edits."
+      copy: "Code cleanup can stay in the blended path until the work becomes risky or release-adjacent."
     },
     reply: {
       title: "Draft a customer reply",
-      copy: "Customer replies should stay cheap by default, then escalate only if the tone or risk profile demands it.",
-      lane: "Fast",
-      why: "Stayed on the cheaper lane because this is straightforward customer communication with low escalation risk.",
-      directCost: "$0.12",
-      cost: "$0.05",
-      saved: "$0.07",
-      result: "Preview: polished customer response, fast turnaround, and no unnecessary premium spend."
+      copy: "Customer replies should stay cheap by default, then escalate only if the tone or risk profile demands it."
     }
   };
 
@@ -422,26 +409,44 @@
     window.location.href = payload.checkout_url;
   }
 
-  function renderExample() {
+  function renderExamplePreview() {
     const example = examples[activeExample];
+    exampleTitle.textContent = example.title;
+    exampleCopy.textContent = example.copy;
+  }
+
+  async function runDemoExample() {
     playgroundRun.disabled = true;
     playgroundRun.textContent = "Routing...";
     playgroundResult.classList.remove("is-refreshing");
     void playgroundResult.offsetWidth;
     playgroundResult.classList.add("is-refreshing");
-    exampleTitle.textContent = example.title;
-    exampleCopy.textContent = example.copy;
-    playgroundLane.textContent = example.lane;
-    playgroundWhy.textContent = example.why;
-    playgroundDirectCost.textContent = example.directCost;
-    playgroundCost.textContent = example.cost;
-    playgroundSaved.textContent = example.saved;
-    playgroundResult.textContent = example.result;
-    window.setTimeout(() => {
-      playgroundRun.disabled = false;
-      playgroundRun.textContent = "Run this example";
-      playgroundResult.classList.remove("is-refreshing");
-    }, 220);
+    try {
+      const response = await fetch("/demo/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({example: activeExample})
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Unable to run the demo right now.");
+      }
+      playgroundLane.textContent = payload.lane;
+      playgroundQuality.textContent = payload.quality;
+      playgroundWhy.textContent = payload.why;
+      playgroundDirectCost.textContent = payload.direct_cost;
+      playgroundCost.textContent = payload.routed_cost;
+      playgroundSaved.textContent = `${payload.saved_pct}%`;
+      playgroundResult.textContent = `${payload.reply} ${payload.tries_remaining > 0 ? `Anonymous tries left: ${payload.tries_remaining}.` : ""}`.trim();
+    } catch (error) {
+      playgroundResult.textContent = error instanceof Error ? error.message : "Unable to run the demo right now.";
+    } finally {
+      window.setTimeout(() => {
+        playgroundRun.disabled = false;
+        playgroundRun.textContent = "Run this example";
+        playgroundResult.classList.remove("is-refreshing");
+      }, 220);
+    }
   }
 
   function renderSavings() {
@@ -456,7 +461,7 @@
     button.addEventListener("click", () => {
       activeExample = button.dataset.example;
       exampleButtons.forEach((item) => item.classList.toggle("active", item === button));
-      renderExample();
+      renderExamplePreview();
     });
   });
 
@@ -483,7 +488,7 @@
     button.addEventListener("click", openApiKeyModal);
   });
 
-  playgroundRun.addEventListener("click", renderExample);
+  playgroundRun.addEventListener("click", runDemoExample);
 
   modal.addEventListener("click", (event) => {
     if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
@@ -545,7 +550,7 @@
     }
   });
 
-  renderExample();
+  renderExamplePreview();
   renderSavings();
 })();
 </script>

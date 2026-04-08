@@ -1,7 +1,7 @@
 import uuid
 
 import stripe
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
@@ -13,19 +13,39 @@ from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
 from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
-from app.models import AgentProfile, TaskSession, TaskTurn, UsageEvent
+from app.models import AgentProfile, DemoTrial, TaskSession, TaskTurn, UsageEvent
 from app.payments import create_checkout_session, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
 from app.providers.real import ProviderExecutionError, build_provider_clients
 from app.providers.mock import build_mock_clients
 from app.routing import RouteDecision, decide_route
-from app.schemas import ChatCompletionRequest, CheckoutCreateRequest, MessagesRequest
+from app.schemas import ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
 from app.tasks import record_task_turn, resolve_task
 
 
 router = APIRouter(prefix="/api")
 compat_router = APIRouter(prefix="/v1")
+demo_router = APIRouter()
+
+DEMO_COOKIE_NAME = "ab_demo_session"
+DEMO_TRIAL_LIMIT = 3
+
+
+DEMO_EXAMPLES = {
+    "spec": {
+        "prompt": "Summarize a 6-page product spec and keep the follow-up thread stable across revisions.",
+        "title": "Summarize a spec",
+    },
+    "refactor": {
+        "prompt": "Refactor a file, preserve intent across edits, and flag only the points that truly need deeper review.",
+        "title": "Refactor a file",
+    },
+    "reply": {
+        "prompt": "Draft a customer reply that is calm, clear, and safe to send without unnecessary premium reasoning.",
+        "title": "Draft a customer reply",
+    },
+}
 
 
 def _task_status_label(task: TaskSession) -> str:
@@ -96,6 +116,64 @@ def _provider_registry(settings: Settings) -> dict[str, ProviderClient]:
     return build_provider_clients(settings)
 
 
+def _default_demo_profile() -> AgentProfile:
+    return AgentProfile(
+        user_id=0,
+        preferred_mode="smart",
+        default_provider_family="ds_balanced",
+        workload_pattern="general",
+        escalation_sensitivity="balanced",
+        qa_preference="adaptive",
+        cost_guardrail_band="standard",
+        stable_task_bias="enabled",
+        pacing_context="steady",
+        last_successful_provider="remote_balanced",
+        recent_premium_trigger_count=0,
+        recent_ds_success_rate=1.0,
+        fallback_count=0,
+        qa_trigger_count=0,
+        fallback_count_7d=0,
+        qa_trigger_rate_7d=0.0,
+        stable_task_completion_rate_7d=1.0,
+        ds_clean_success_count_7d=0,
+        premium_escalation_count_7d=0,
+        last_execution_profile="remote_balanced",
+        learned_hints_json={},
+    )
+
+
+def _format_usd(amount: float) -> str:
+    return f"${amount:.2f}"
+
+
+def _display_quality(route: RouteDecision) -> str:
+    if route.premium_escalated:
+        return "Verified"
+    if route.quality_check:
+        return "Checked"
+    return "In progress"
+
+
+def _demo_reason(example: str, route: RouteDecision) -> str:
+    if route.premium_escalated:
+        return "Escalated because this example carries higher review or release risk."
+    if example == "refactor":
+        return "Stayed cheaper because the work is iterative and the thread can stay stable without premium on every turn."
+    if example == "reply":
+        return "Stayed cheaper because the request is straightforward and low risk."
+    return "Stayed cheaper because the request is routine and the thread can remain stable across follow-ups."
+
+
+def _get_or_create_demo_trial(db: Session, session_id: str) -> DemoTrial:
+    trial = db.scalar(select(DemoTrial).where(DemoTrial.session_id == session_id))
+    if trial:
+        return trial
+    trial = DemoTrial(session_id=session_id, tries_used=0)
+    db.add(trial)
+    db.flush()
+    return trial
+
+
 def _execute_with_fallback(
     route: RouteDecision,
     registry: dict[str, ProviderClient],
@@ -115,6 +193,46 @@ def _execute_with_fallback(
         return fallback_response, fallback_key, True
 
 
+def _route_preview(
+    *,
+    prompt: str,
+    mode: str,
+    settings: Settings,
+    system: str | None = None,
+    profile: AgentProfile | None = None,
+) -> dict:
+    effective_profile = profile or _default_demo_profile()
+    visible_lane, internal_lane, quality_check = choose_initial_lane(effective_profile, mode, prompt)
+    route = decide_route(prompt, visible_lane, internal_lane=internal_lane, quality_check_override=quality_check)
+    registry = _provider_registry(settings)
+    provider_response, execution_profile_used, fallback_used = _execute_with_fallback(route, registry, prompt, system)
+    routed_cost = estimate_public_charge(
+        mode=visible_lane,
+        prompt_tokens=provider_response.prompt_tokens_est,
+        completion_tokens=provider_response.completion_tokens_est,
+        quality_check=route.quality_check,
+    )
+    direct_premium_cost = estimate_public_charge(
+        mode="assured",
+        prompt_tokens=provider_response.prompt_tokens_est,
+        completion_tokens=provider_response.completion_tokens_est,
+        quality_check=True,
+    )
+    saved_pct = max(0, round((1 - (routed_cost / max(direct_premium_cost, 0.01))) * 100))
+    return {
+        "reply": provider_response.text,
+        "lane": visible_lane.title(),
+        "quality": _display_quality(route),
+        "direct_cost": _format_usd(direct_premium_cost),
+        "routed_cost": _format_usd(routed_cost),
+        "saved_pct": saved_pct,
+        "why": _demo_reason("spec", route),
+        "execution_profile": execution_profile_used,
+        "fallback_used": fallback_used,
+        "premium_escalated": route.premium_escalated,
+    }
+
+
 def _require_admin_key(x_admin_key: str | None, settings: Settings) -> None:
     if x_admin_key != settings.admin_api_key:
         raise HTTPException(status_code=403, detail="Admin access required.")
@@ -128,6 +246,35 @@ def health(settings: Settings = Depends(get_settings)) -> dict:
         "env": settings.app_env,
         "vpn_required": False,
     }
+
+
+@demo_router.post("/demo/chat")
+def demo_chat(
+    payload: DemoChatRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    session_id = request.cookies.get(DEMO_COOKIE_NAME) or uuid.uuid4().hex
+    trial = _get_or_create_demo_trial(db, session_id)
+    if trial.tries_used >= DEMO_TRIAL_LIMIT:
+        raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
+    example = DEMO_EXAMPLES[payload.example]
+    preview = _route_preview(prompt=example["prompt"], mode="smart", settings=settings)
+    trial.tries_used += 1
+    trial.last_example = payload.example
+    db.commit()
+    response.set_cookie(
+        key=DEMO_COOKIE_NAME,
+        value=session_id,
+        max_age=60 * 60 * 24 * 30,
+        httponly=True,
+        samesite="lax",
+    )
+    preview["why"] = _demo_reason(payload.example, decide_route(example["prompt"], "smart"))
+    preview["tries_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
+    return preview
 
 
 @router.get("/topups/packs")

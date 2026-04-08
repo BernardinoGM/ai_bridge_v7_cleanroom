@@ -108,8 +108,9 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "refactor a file" in body
     assert "draft a customer reply" in body
     assert "run this example" in body
+    assert "quality" in body
     assert "routing reason" in body
-    assert "saved on this task" in body
+    assert "saved vs direct premium" in body
     assert "see what your current workflow is costing you" in body
     assert "direct premium spend" in body
     assert "ai bridge blended spend" in body
@@ -144,9 +145,30 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "choose a pack, get redirected to secure checkout." in body
     assert "use this lightweight launch flow to request access" in body
     assert "you go through secure checkout and use balance against routed work." in body
+    assert 'fetch("/demo/chat"' in body
     assert 'fetch("/api/payments/checkout"' in body
     assert "🎯" not in body
     assert "🚀" not in body
+
+
+def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() -> None:
+    demo_client = TestClient(app)
+    first = demo_client.post("/demo/chat", json={"example": "spec"})
+    assert first.status_code == 200
+    payload = first.json()
+    assert set(payload.keys()) >= {"reply", "lane", "quality", "direct_cost", "routed_cost", "saved_pct", "tries_remaining"}
+    assert payload["lane"] in {"Fast", "Smart", "Assured"}
+    assert payload["quality"] in {"In progress", "Checked", "Verified"}
+    assert payload["direct_cost"].startswith("$")
+    assert payload["routed_cost"].startswith("$")
+    assert isinstance(payload["saved_pct"], int)
+    second = demo_client.post("/demo/chat", json={"example": "refactor"})
+    assert second.status_code == 200
+    third = demo_client.post("/demo/chat", json={"example": "reply"})
+    assert third.status_code == 200
+    fourth = demo_client.post("/demo/chat", json={"example": "spec"})
+    assert fourth.status_code == 429
+    assert "anonymous demo limit reached" in fourth.json()["detail"].lower()
 
 
 def test_webhook_processing_is_idempotent() -> None:
