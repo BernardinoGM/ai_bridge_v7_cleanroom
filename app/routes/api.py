@@ -61,6 +61,7 @@ MODEL_ALIAS_TO_MODE = {
     "claude-3-7-sonnet-latest": "assured",
     "claude-opus-4-1": "assured",
 }
+COMPAT_TEMPORARY_MESSAGE = "This workflow is temporarily unavailable. Please retry in a moment."
 
 BLOCKED_CHECKOUT_EMAILS = {"founder@aibridge.local", "bernard.gmny@gmail.com"}
 
@@ -93,8 +94,65 @@ def _raise_neutral_compat_error(exc: HTTPException) -> None:
     detail = exc.detail if isinstance(exc.detail, str) else ""
     lowered = detail.lower()
     if any(marker in lowered for marker in ("selected model", "does not exist", "claude-", "anthropic")):
-        raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.") from exc
+        raise HTTPException(status_code=503, detail=COMPAT_TEMPORARY_MESSAGE) from exc
     raise exc
+
+
+def _compat_context(request: Request, observed_model: str | None, rewritten_mode: str) -> dict[str, str]:
+    return {
+        "request_path": str(request.url.path),
+        "incoming_model": observed_model or "",
+        "rewritten_mode": rewritten_mode,
+        "provider_model": "",
+    }
+
+
+def _dispatch_compat_request(
+    *,
+    kind: str,
+    payload: ChatCompletionRequest | MessagesRequest,
+    request: Request,
+    authorization: str | None,
+    x_api_key: str | None,
+    db: Session,
+    settings: Settings,
+) -> dict:
+    observed_model = _apply_compat_alias(payload)
+    context_json = _compat_context(request, observed_model, payload.mode)
+    try:
+        if kind == "chat_completions":
+            return api_chat_completions(
+                payload=payload,
+                request=request,
+                authorization=authorization,
+                x_api_key=x_api_key,
+                db=db,
+                settings=settings,
+            )
+        return api_messages(
+            payload=payload,
+            request=request,
+            authorization=authorization,
+            x_api_key=x_api_key,
+            db=db,
+            settings=settings,
+        )
+    except HTTPException as exc:
+        _record_failure(
+            db,
+            str(request.url.path),
+            exc.detail if isinstance(exc.detail, str) else "compat failure",
+            context_json=context_json,
+        )
+        _raise_neutral_compat_error(exc)
+    except Exception:
+        _record_failure(
+            db,
+            str(request.url.path),
+            "compat failure",
+            context_json=context_json,
+        )
+        raise HTTPException(status_code=503, detail=COMPAT_TEMPORARY_MESSAGE)
 
 
 def _human_status(status: str) -> str:
@@ -918,32 +976,15 @@ def v1_chat_completions(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    observed_model = _apply_compat_alias(payload)
-    try:
-        return api_chat_completions(
-            payload=payload,
-            request=request,
-            authorization=authorization,
-            x_api_key=x_api_key,
-            db=db,
-            settings=settings,
-        )
-    except HTTPException as exc:
-        _record_failure(
-            db,
-            "/v1/chat/completions",
-            exc.detail if isinstance(exc.detail, str) else "compat failure",
-            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
-        )
-        _raise_neutral_compat_error(exc)
-    except Exception:
-        _record_failure(
-            db,
-            "/v1/chat/completions",
-            "compat failure",
-            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
-        )
-        raise HTTPException(status_code=503, detail="This workflow is temporarily unavailable. Please retry in a moment.")
+    return _dispatch_compat_request(
+        kind="chat_completions",
+        payload=payload,
+        request=request,
+        authorization=authorization,
+        x_api_key=x_api_key,
+        db=db,
+        settings=settings,
+    )
 
 
 @router.post("/v1/messages")
@@ -955,29 +996,12 @@ def v1_messages(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    observed_model = _apply_compat_alias(payload)
-    try:
-        return api_messages(
-            payload=payload,
-            request=request,
-            authorization=authorization,
-            x_api_key=x_api_key,
-            db=db,
-            settings=settings,
-        )
-    except HTTPException as exc:
-        _record_failure(
-            db,
-            "/v1/messages",
-            exc.detail if isinstance(exc.detail, str) else "compat failure",
-            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
-        )
-        _raise_neutral_compat_error(exc)
-    except Exception:
-        _record_failure(
-            db,
-            "/v1/messages",
-            "compat failure",
-            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
-        )
-        raise HTTPException(status_code=503, detail="This workflow is temporarily unavailable. Please retry in a moment.")
+    return _dispatch_compat_request(
+        kind="messages",
+        payload=payload,
+        request=request,
+        authorization=authorization,
+        x_api_key=x_api_key,
+        db=db,
+        settings=settings,
+    )
