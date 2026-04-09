@@ -230,6 +230,7 @@
         <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
       </div>
       <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit after key signup — no card required.</p>
+      <p style="text-align:center;margin-top:10px;color:var(--muted);font-size:13px;">Larger packs may include controlled bonus credit. Referral rewards and usage rewards post as internal balance only. <a href="/terms" style="color:var(--accent-cyan);">Terms</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy</a> · <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a></p>
     </section>
 
     <!-- 酒水层 (保持) -->
@@ -271,7 +272,7 @@
 </main>
 
 <footer style="border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--muted);font-size:14px;">
-  <div class="container">AI Bridge — Adaptive model routing for developers · <a href="mailto:hello@getaibridge.com" style="color:var(--accent-cyan);">hello@getaibridge.com</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a></div>
+  <div class="container">AI Bridge — Adaptive model routing for developers · <a href="mailto:hello@getaibridge.com" style="color:var(--accent-cyan);">hello@getaibridge.com</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a> · <a href="/terms" style="color:var(--accent-cyan);">Terms</a> · <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a></div>
 </footer>
 
 <!-- 模态框 -->
@@ -285,15 +286,15 @@
       <input type="email" id="signupEmail" placeholder="Email address">
       <input type="text" id="signupUseCase" placeholder="What are you routing? (optional)">
       <button class="modal-submit" id="modalSubmitBtn" onclick="handleModalSubmit()">Generate API Key →</button>
-      <p style="margin-top:14px;color:var(--muted);font-size:12px;">By continuing, you agree to the launch terms and <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a>.</p>
+      <p style="margin-top:14px;color:var(--muted);font-size:12px;">By continuing, you agree to the launch <a href="/terms" style="color:var(--accent-cyan);">Terms</a>, <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a>, and <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a>.</p>
     </div>
     <div id="modalSuccess" style="display:none;text-align:center;">
       <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 1: Copy API key</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
       <p id="modalSuccessCopy" style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
       <div id="onboardingBox" style="display:none;text-align:left;margin-top:20px;">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 2: Copy terminal setup commands</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 2: Copy setup commands</div>
         <div class="code-block" id="onboardingCommands" style="margin:0;"></div>
-        <div style="font-size:13px;color:var(--muted);margin-top:12px;">Step 3: Run in your terminal or existing editor workflow.</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:12px;">Step 3: Run in terminal.</div>
       </div>
     </div>
   </div>

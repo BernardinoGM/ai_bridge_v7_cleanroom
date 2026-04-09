@@ -54,6 +54,13 @@ DEMO_EXAMPLES = {
     },
 }
 
+MODEL_ALIAS_TO_MODE = {
+    "claude-sonnet-4-6": "assured",
+    "claude-sonnet-4-5": "assured",
+    "claude-3-7-sonnet-latest": "assured",
+    "claude-opus-4-1": "assured",
+}
+
 
 def _task_status_label(task: TaskSession) -> str:
     if task.last_status_label:
@@ -61,6 +68,14 @@ def _task_status_label(task: TaskSession) -> str:
     if task.pinned_lane == "assured":
         return "Verified"
     return "Checked" if task.quality_check_enabled else "In progress"
+
+
+def _normalize_requested_mode(mode: str, model: str | None) -> str:
+    if model:
+        normalized = MODEL_ALIAS_TO_MODE.get(model.strip().lower())
+        if normalized:
+            return normalized
+    return mode
 
 
 def _human_status(status: str) -> str:
@@ -410,7 +425,7 @@ def create_api_key_launch(
             "onboarding_commands": [
                 'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
                 f'export ANTHROPIC_API_KEY="{raw_key}"',
-                "# run your existing terminal or editor workflow",
+                "claude",
             ],
         }
     except HTTPException as exc:
@@ -734,7 +749,8 @@ def api_chat_completions(
     system = next((message.content for message in payload.messages if message.role == "system"), None)
     prompt = "\n".join(message.content for message in payload.messages if message.role == "user")
     profile = get_or_create_agent_profile(db, user_id)
-    visible_lane, internal_lane, quality_check = choose_initial_lane(profile, payload.mode, prompt)
+    requested_mode = _normalize_requested_mode(payload.mode, payload.model)
+    visible_lane, internal_lane, quality_check = choose_initial_lane(profile, requested_mode, prompt)
     result = _complete_chat(
         user_id,
         visible_lane,
@@ -784,7 +800,7 @@ def api_messages(
     task = resolve_task(
         db,
         user_id,
-        payload.mode,
+        _normalize_requested_mode(payload.mode, payload.model),
         prompt,
         payload.task_id,
         payload.task_action,

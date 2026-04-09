@@ -1,142 +1,179 @@
-{% extends "base.html" %}
-{% block title %}AI Bridge Dashboard{% endblock %}
-{% block body %}
-<main class="page">
-  <section class="hero slim">
-    <div class="hero-copy">
-      <p class="eyebrow">Runway Dashboard</p>
-      <h1>${{ "%.2f"|format(balance_usd) }} main balance</h1>
-      <p class="lede">{{ user_name }} · {{ user_email }} · {{ days_left }} estimated days left at current Smart pace, with {{ heavy_workdays_left }} heavy-workdays left.</p>
-    </div>
-    <div class="hero-card">
-      <div class="metric"><span>Estimated savings</span><strong>${{ "%.2f"|format(premium_savings_estimate_usd) }}</strong></div>
-      <div class="metric"><span>Recent usage</span><strong>{{ recent_usage_count }} requests · ${{ "%.2f"|format(recent_usage_spend_usd) }}</strong></div>
-      <div class="metric"><span>Growth actions</span><strong>Top up, auto-reload, invite, upgrade</strong></div>
-    </div>
-  </section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AI Bridge Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B0E14; --surface: #11161D; --border: #1F262F; --border-bright: #2E3843;
+      --text: #F0F4FA; --muted: #8A95A5;
+      --accent-cyan: #00E5FF; --accent-cyan-dim: rgba(0,229,255,0.08); --accent-cyan-border: rgba(0,229,255,0.25);
+      --accent-hot: #FF4D2E;
+      --mono: 'IBM Plex Mono', monospace; --sans: 'DM Sans', sans-serif; --display: 'Syne', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+    .container { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
+    nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+    .logo { font-family: var(--display); font-weight: 800; font-size: 20px; }
+    .nav-links { display:flex; gap:16px; align-items:center; color:var(--muted); }
+    .nav-links a { color:var(--muted); text-decoration:none; }
+    .hero { padding: 44px 0 28px; display:grid; grid-template-columns: 1.1fr 0.9fr; gap:24px; }
+    .hero h1 { margin: 0 0 14px; font-family: var(--display); font-size: clamp(40px, 5vw, 64px); line-height: 0.96; }
+    .lede { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 56ch; }
+    .hero-card, .panel, .card { background: var(--surface); border:1px solid var(--border-bright); border-radius: 24px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.28); }
+    .hero-card { display:grid; gap:14px; }
+    .metric span { display:block; color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+    .metric strong { font-size: 28px; font-family: var(--display); }
+    .grid { display:grid; gap:20px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    h2 { margin: 0 0 14px; font-family: var(--display); font-size: 28px; }
+    h3 { margin: 0 0 10px; font-size: 18px; }
+    .muted { color: var(--muted); }
+    .key-box, .code-block { background: rgba(0,0,0,0.22); border:1px solid var(--border); border-radius: 16px; padding: 16px; font-family: var(--mono); overflow:auto; }
+    .checklist { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+    .checklist li { color: var(--text); line-height: 1.5; }
+    .breakdown { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin-top:14px; }
+    .breakdown .pill { border:1px solid var(--accent-cyan-border); background: var(--accent-cyan-dim); border-radius:16px; padding:12px 14px; }
+    .breakdown .pill span { display:block; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+    .breakdown .pill strong { font-size: 18px; }
+    .ledger-row { display:flex; justify-content:space-between; gap:16px; }
+    .addons { display:grid; gap:14px; }
+    .addon { border:1px dashed var(--border-bright); border-radius:16px; padding:16px; }
+    .addon strong { display:block; margin-bottom:6px; }
+    .badge { display:inline-block; margin-top:10px; padding:6px 10px; border-radius:20px; background:var(--accent-cyan-dim); border:1px solid var(--accent-cyan-border); color:var(--accent-cyan); font-size:12px; }
+    footer { margin-top:40px; padding-top:24px; border-top:1px solid var(--border); color:var(--muted); font-size:14px; text-align:center; }
+    footer a { color: var(--accent-cyan); text-decoration:none; }
+    @media (max-width: 900px) {
+      .hero, .grid.two, .grid.three, .breakdown { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <div class="logo">AI Bridge</div>
+      <div class="nav-links">
+        <span>{{ user_email }}</span>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/acceptable-use">Acceptable Use</a>
+      </div>
+    </nav>
 
-  <section class="section grid-2">
-    <div class="panel">
-      <h2>API keys</h2>
-      {% if api_keys %}
-      <ul class="checklist">
-        {% for item in api_keys %}
-        <li>{{ item.key_prefix }}... · {{ item.label or "Launch key" }}</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="muted">No active API keys yet.</p>
-      {% endif %}
-    </div>
-    <div class="panel">
-      <h2>Referral</h2>
-      <ul class="checklist">
-        <li>Referral code: {{ referral_code }}</li>
-        <li>Referral link: {{ referral_link }}</li>
-        <li>Reward balance: ${{ "%.2f"|format(reward_balance_usd) }}</li>
-      </ul>
-      {% if recent_referral_perks %}
-      <ul class="checklist">
-        {% for perk in recent_referral_perks %}
-        <li>Earned ${{ "%.2f"|format(perk.amount_usd) }} from a qualifying first purchase</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="muted">Referral rewards are closed-loop promo credit and unlock only after a qualifying first purchase.</p>
-      {% endif %}
-    </div>
-  </section>
+    <section class="hero">
+      <div>
+        <h1>${{ "%.2f"|format(balance_usd) }} available now.</h1>
+        <p class="lede">Your current workspace is set up for terminal and editor workflows. Keep the same endpoint, use your issued key, and top up only when your routed work proves its value.</p>
+        <div class="breakdown">
+          <div class="pill"><span>Main balance</span><strong>${{ "%.2f"|format(balance_usd) }}</strong></div>
+          <div class="pill"><span>Starter credit</span><strong>${{ "%.2f"|format(starter_credit_usd) }}</strong></div>
+          <div class="pill"><span>Bonus + rewards</span><strong>${{ "%.2f"|format(bonus_credit_usd + reward_balance_usd) }}</strong></div>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="metric"><span>Recent usage</span><strong>{{ recent_usage_count }} requests</strong></div>
+        <div class="metric"><span>Recent top-ups</span><strong>{{ recent_topups|length }} recorded</strong></div>
+        <div class="metric"><span>Referral link</span><strong>{{ referral_code }}</strong></div>
+      </div>
+    </section>
 
-  <section class="section grid-2">
-    <div class="panel">
-      <h2>Recent top-ups</h2>
-      {% if recent_topups %}
-      <ul class="checklist">
-        {% for payment in recent_topups %}
-        <li>{{ payment.pack_code|replace("_", " ")|title }} · ${{ "%.2f"|format(payment.amount_usd) }}{% if payment.bonus_usd %} + ${{ "%.2f"|format(payment.bonus_usd) }} bonus{% endif %} · {{ payment.status|title }}</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="muted">No top-ups yet.</p>
-      {% endif %}
-    </div>
-    <div class="panel">
-      <h2>Recent usage</h2>
-      {% if recent_usage %}
-      <ul class="checklist">
-        {% for event in recent_usage %}
-        <li>{{ event.mode|title }} · ${{ "%.2f"|format(event.public_charge_usd) }} · {{ event.endpoint }}</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="muted">No usage yet. Your first routed requests will appear here.</p>
-      {% endif %}
-    </div>
-    <div class="panel">
-      <h2>Main balance ledger</h2>
-      {% if main_ledger %}
-      <ul class="checklist">
-        {% for entry in main_ledger %}
-        <li>{{ entry.description }} · {% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="muted">No balance activity yet.</p>
-      {% endif %}
-    </div>
-    <div class="panel">
-      <h2>Reward ledger</h2>
-      {% if reward_ledger %}
-      <ul class="checklist">
-        {% for entry in reward_ledger %}
-        <li>{{ entry.description }} · {% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="muted">No reward activity yet.</p>
-      {% endif %}
-    </div>
-  </section>
+    <section class="grid two">
+      <div class="panel">
+        <h2>Step 1: Copy API key</h2>
+        {% if api_keys %}
+        <div class="key-box">{{ api_keys[0].key_prefix }}...</div>
+        <p class="muted">Use your live key in API requests and terminal-based workflows.</p>
+        {% else %}
+        <p class="muted">No active API key available yet.</p>
+        {% endif %}
+      </div>
+      <div class="panel">
+        <h2>Step 2: Copy setup commands</h2>
+        <div class="code-block">{% for line in onboarding_commands %}{{ line }}
+{% endfor %}</div>
+        <p class="muted">Step 3: Run in terminal.</p>
+      </div>
+    </section>
 
-  <section class="section">
-    <h2>Mode comparison</h2>
-    <div class="cards three-up">
-      {% for item in mode_estimates %}
-      <article class="card">
-        <h3>{{ item.mode|title }}</h3>
-        <p>{{ item.days_left }} runway days</p>
-        <p>{{ item.heavy_workdays_left }} heavy-workdays</p>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
+    <section class="grid two" style="margin-top:20px;">
+      <div class="panel">
+        <h2>Recent top-ups</h2>
+        {% if recent_topups %}
+        <ul class="checklist">
+          {% for payment in recent_topups %}
+          <li class="ledger-row"><span>{{ payment.pack_code|replace("_", " ")|title }}</span><span>${{ "%.2f"|format(payment.amount_usd + payment.bonus_usd) }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No top-ups yet.</p>
+        {% endif %}
+      </div>
+      <div class="panel">
+        <h2>Recent usage</h2>
+        {% if recent_usage %}
+        <ul class="checklist">
+          {% for event in recent_usage %}
+          <li class="ledger-row"><span>{{ event.mode|title }} · {{ event.endpoint }}</span><span>${{ "%.2f"|format(event.public_charge_usd) }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No usage yet.</p>
+        {% endif %}
+      </div>
+    </section>
 
-  <section class="section grid-2">
-    <div class="panel">
-      <h2>Claude terminal onboarding</h2>
-      <ul class="checklist">
-        {% for line in onboarding_commands %}
-        <li><code>{{ line }}</code></li>
-        {% endfor %}
-      </ul>
-    </div>
-    <div class="panel">
-      <h2>Growth CTAs</h2>
-      <ul class="checklist">
-        <li>Top up balance</li>
-        <li>Enable auto-reload</li>
-        <li>Upgrade from Fast to Smart or Assured for selected workflows</li>
-        <li>Invite teammates into Team Vault</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <h2>Add-on upsells</h2>
-      <ul class="checklist">
-        {% for addon in upsells %}
-        <li>{{ addon.name }}: {{ addon.tagline }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </section>
-</main>
-{% endblock %}
+    <section class="grid two" style="margin-top:20px;">
+      <div class="panel">
+        <h2>Referral</h2>
+        <div class="key-box">{{ referral_link }}</div>
+        <p class="muted">Share this link. Rewards post as internal credit after a qualifying first purchase.</p>
+        {% if recent_referral_perks %}
+        <ul class="checklist">
+          {% for perk in recent_referral_perks %}
+          <li>Reward credited: ${{ "%.2f"|format(perk.amount_usd) }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No referral rewards yet.</p>
+        {% endif %}
+      </div>
+      <div class="panel">
+        <h2>Reward history</h2>
+        {% if reward_ledger %}
+        <ul class="checklist">
+          {% for entry in reward_ledger %}
+          <li class="ledger-row"><span>{{ entry.description }}</span><span>{% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No reward activity yet.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section style="margin-top:20px;">
+      <div class="panel">
+        <h2>30-day feature unlocks</h2>
+        <div class="addons">
+          {% for addon in upsells %}
+          <div class="addon">
+            <strong>{{ addon.name }}</strong>
+            <p class="muted">{{ addon.tagline }}</p>
+            <span class="badge">Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a> · <a href="/acceptable-use">Acceptable Use</a>
+    </footer>
+  </div>
+</body>
+</html>

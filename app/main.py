@@ -23,6 +23,7 @@ def bootstrap() -> None:
     Base.metadata.create_all(bind=engine)
     with session_scope() as db:
         user = ensure_seed_user(db, email="founder@aibridge.local", name="Founder", referral_code="FOUNDER10")
+        ensure_seed_user(db, email="Bernard.gmny@gmail.com", name="Bernard", referral_code="BERNARD10")
         for addon in ADD_ONS:
             exists = (
                 db.query(AddOnSubscription)

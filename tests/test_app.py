@@ -53,12 +53,11 @@ def test_dashboard_is_runway_centric() -> None:
     response = client.get("/dashboard/demo")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "runway dashboard" in body
-    assert "heavy-workdays" in body
-    assert "api keys" in body
+    assert "available now" in body
+    assert "step 1: copy api key" in body
     assert "recent top-ups" in body
     assert "recent usage" in body
-    assert "main balance ledger" in body
+    assert "reward history" in body
 
 
 def test_root_and_dashboard_routes_resolve_without_affecting_health() -> None:
@@ -112,6 +111,8 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "/v1/keys" in body
     assert "/demo/chat" in body
     assert "/api/payments/checkout" in body
+    assert "starter reward" not in body
+    assert '><h3>$10</h3>' not in body
 
 
 def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() -> None:
@@ -151,7 +152,7 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["granted_credit_usd"] == 3.0
     assert payload["onboarding_commands"][0].startswith('export ANTHROPIC_BASE_URL=')
     assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_API_KEY="ab_live_')
-    assert "terminal or editor workflow" in payload["onboarding_commands"][2].lower()
+    assert payload["onboarding_commands"][2] == "claude"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
         assert user is not None
@@ -263,10 +264,9 @@ def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -
     body = response.text.lower()
     assert "dashboarduser@example.com" in body
     assert payload["api_key"][:16].lower() in body
-    assert "$58.00 main balance".lower() in body
+    assert "$58.00 available now".lower() in body
     assert "growth" in body
-    assert "$50.00" in body
-    assert "$5.00 bonus" in body
+    assert "$55.00" in body
 
 
 def test_dashboard_root_redirects_to_launch_user_after_key_issue() -> None:
@@ -662,6 +662,10 @@ def test_privacy_page_exists_and_is_linked() -> None:
     privacy = client.get("/privacy")
     assert privacy.status_code == 200
     assert "privacy policy" in privacy.text.lower()
+    terms = client.get("/terms")
+    assert terms.status_code == 200
+    acceptable = client.get("/acceptable-use")
+    assert acceptable.status_code == 200
 
 
 def test_dashboard_user_id_route_is_not_open_for_enumeration() -> None:
@@ -681,6 +685,47 @@ def test_admin_dashboard_requires_header_or_admin_cookie_not_query_param() -> No
     assert allowed.status_code == 200
     cookie_access = session_client.get("/admin/dashboard")
     assert cookie_access.status_code == 200
+
+
+def test_bernard_email_session_has_admin_access() -> None:
+    session_client = TestClient(app)
+    signup = session_client.post("/v1/keys", json={"email": "Bernard.gmny@gmail.com", "name": "Bernard"})
+    assert signup.status_code == 200
+    admin = session_client.get("/admin/dashboard")
+    assert admin.status_code == 200
+    assert "admin dashboard" in admin.text.lower()
+
+
+def test_alias_models_are_accepted_without_raw_model_errors() -> None:
+    create = client.post("/v1/keys", json={"email": "aliasuser@example.com", "use_case": "editor flow"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    response = client.post(
+        "/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "model": "claude-sonnet-4-6",
+            "messages": [{"role": "user", "content": "Review this release note."}],
+        },
+    )
+    assert response.status_code == 200
+    assert "selected model does not exist" not in response.text.lower()
+
+
+def test_dashboard_matches_landing_user_blocks() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "dashstyle@example.com", "use_case": "ops"})
+    assert create.status_code == 200
+    response = session_client.get("/dashboard")
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "step 1: copy api key" in body
+    assert "step 2: copy setup commands" in body
+    assert "step 3: run in terminal" in body
+    assert "recent top-ups" in body
+    assert "recent usage" in body
+    assert "referral" in body
+    assert "30-day feature unlocks" in body
 
 
 def test_no_mock_provider_in_production_path_configuration() -> None:

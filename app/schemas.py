@@ -10,6 +10,7 @@ class ChatMessage(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     user_id: int | None = Field(default=None, description="AI Bridge internal user id")
+    model: str | None = None
     mode: Literal["fast", "smart", "assured"] = "smart"
     messages: list[ChatMessage]
     stream: bool = False
@@ -17,6 +18,7 @@ class ChatCompletionRequest(BaseModel):
 
 class MessagesRequest(BaseModel):
     user_id: int | None = None
+    model: str | None = None
     mode: Literal["fast", "smart", "assured"] = "smart"
     system: str | None = None
     messages: list[dict[str, Any]]

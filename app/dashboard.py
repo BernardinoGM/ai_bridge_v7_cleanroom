@@ -75,10 +75,18 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "reward_ledger": reward_ledger[:8],
         "events": events,
         "upsells": ADD_ONS,
+        "starter_credit_usd": round(
+            sum(entry.amount_usd for entry in ledger if entry.entry_type == "api_key_starter_credit"),
+            2,
+        ),
+        "bonus_credit_usd": round(
+            sum(entry.amount_usd for entry in ledger if entry.entry_type == "topup_bonus"),
+            2,
+        ),
         "onboarding_commands": [
             'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
             'export ANTHROPIC_API_KEY="YOUR_KEY_FROM_ABOVE"',
-            "# run your existing terminal or editor workflow",
+            "claude",
         ],
     }
 
@@ -104,6 +112,10 @@ def build_admin_dashboard(db: Session) -> dict:
     referral_perks = db.scalars(select(ReferralPerk).order_by(desc(ReferralPerk.created_at)).limit(20)).all()
     recent_failures = db.scalars(select(RequestFailure).order_by(desc(RequestFailure.created_at)).limit(20)).all()
     recent_trial_subsidies = db.scalars(select(TrialSubsidy).order_by(desc(TrialSubsidy.created_at)).limit(20)).all()
+    recent_users = db.scalars(select(User).order_by(desc(User.created_at)).limit(20)).all()
+    recent_ledger = db.scalars(select(WalletLedger).order_by(desc(WalletLedger.created_at)).limit(20)).all()
+    payment_failures = [failure for failure in recent_failures if "/api/payments/checkout" in failure.endpoint]
+    webhook_failures = [failure for failure in recent_failures if "/api/payments/webhook" in failure.endpoint]
     return {
         "total_users": int(total_users),
         "new_signups_7d": int(new_signups),
@@ -120,4 +132,8 @@ def build_admin_dashboard(db: Session) -> dict:
         "trial_subsidy_usd": round(sum(item.serving_cogs_usd for item in recent_trial_subsidies), 2),
         "recent_trial_subsidies": recent_trial_subsidies,
         "recent_failures": recent_failures,
+        "payment_failures": payment_failures,
+        "webhook_failures": webhook_failures,
+        "recent_users": recent_users,
+        "recent_ledger": recent_ledger,
     }

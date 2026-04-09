@@ -61,5 +61,49 @@
       {% endif %}
     </div>
   </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>Payment and webhook failures</h2>
+      <ul class="checklist">
+        <li>Payment failures: {{ payment_failures|length }}</li>
+        <li>Webhook failures: {{ webhook_failures|length }}</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>User lookup</h2>
+      <form method="get" action="/admin/dashboard">
+        <input type="text" name="lookup" value="{{ lookup_query }}" placeholder="Email or name" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid #2E3843;background:#0B0E14;color:#F0F4FA;">
+      </form>
+      {% if lookup_users %}
+      <ul class="checklist" style="margin-top:14px;">
+        {% for user in lookup_users %}
+        <li>{{ user.name }} · {{ user.email }} · {{ user.referral_code }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Search by email or name to inspect a user account.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>Recent users</h2>
+      <ul class="checklist">
+        {% for user in recent_users %}
+        <li>{{ user.name }} · {{ user.email }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Ledger visibility</h2>
+      <ul class="checklist">
+        {% for entry in recent_ledger %}
+        <li>User {{ entry.user_id }} · {{ entry.entry_type }} · {% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
 </main>
 {% endblock %}

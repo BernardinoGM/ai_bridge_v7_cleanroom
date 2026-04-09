@@ -3,31 +3,24 @@ ADD_ONS = [
         "code": "bill_guard",
         "name": "Bill Guard",
         "price_usd": 19.0,
-        "tagline": "A psychological safety layer for unexpectedly expensive usage bursts.",
+        "tagline": "30-day unlock for a psychological safety layer on expensive usage bursts.",
     },
     {
         "code": "team_vault",
         "name": "Team Vault",
-        "price_usd": 59.0,
-        "tagline": "Shared wallet, budget controls, member management, and audit trail.",
+        "price_usd": 79.0,
+        "tagline": "30-day unlock for shared wallet controls, member access, and audit history.",
     },
     {
         "code": "priority_queue",
         "name": "Priority Queue",
+        "price_usd": 9.0,
+        "tagline": "30-day unlock for faster queue position during demand spikes.",
+    },
+    {
+        "code": "xray_report",
+        "name": "X-Ray Report",
         "price_usd": 29.0,
-        "tagline": "Lower latency and better queue position during demand spikes.",
-    },
-    {
-        "code": "custom_routing",
-        "name": "Custom Routing Rules",
-        "price_usd": 79.0,
-        "tagline": "Define route policies like debug-premium or release-check-assured.",
-    },
-    {
-        "code": "analytics_pro",
-        "name": "Analytics Pro",
-        "price_usd": 39.0,
-        "tagline": "Runway forecasts, anomaly alerts, premium-use analysis, and projections.",
+        "tagline": "30-day unlock for route audits, savings visibility, and decision breakdowns.",
     },
 ]
-
