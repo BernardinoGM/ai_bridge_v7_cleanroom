@@ -105,7 +105,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "$200" in body
     assert "$500" in body
     assert "$1,000" in body
-    assert 'href="/dashboard"' not in body
+    assert "/privacy" in body
     assert 'id="playground"' in body
     assert 'id="pricing"' in body
     assert 'id="modaloverlay"' in body
@@ -151,6 +151,7 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["granted_credit_usd"] == 3.0
     assert payload["onboarding_commands"][0].startswith('export ANTHROPIC_BASE_URL=')
     assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_API_KEY="ab_live_')
+    assert "terminal or editor workflow" in payload["onboarding_commands"][2].lower()
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
         assert user is not None
@@ -284,6 +285,21 @@ def test_dashboard_root_redirects_to_launch_user_after_key_issue() -> None:
     assert str(user_id) not in me_page.url.path
 
 
+def test_dashboard_session_is_email_bound_not_user_id_bound() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "emailbound@example.com", "use_case": "ops"})
+    assert create.status_code == 200
+    user_id = create.json()["user_id"]
+    with SessionLocal() as db:
+        user = db.get(User, user_id)
+        assert user is not None
+        assert session_client.get("/dashboard/me").status_code == 200
+        other = ensure_seed_user(db, "other-dashboard@example.com", "Other Dashboard", referral_code="ODASH")
+        db.commit()
+        forbidden = session_client.get(f"/dashboard/{other.id}")
+        assert forbidden.status_code == 404
+
+
 def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypatch) -> None:
     class _FakeSession:
         id = "cs_test_checkout_real"
@@ -309,6 +325,7 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         assert payment.user_id == user.id
         assert payment.pack_code == "scale_plus"
         assert payment.amount_usd == 500.0
+        assert user.email == "checkoutuser@example.com"
 
 
 def test_checkout_is_blocked_without_authenticated_launch_session(monkeypatch) -> None:
@@ -636,6 +653,15 @@ def test_landing_has_no_hardcoded_dashboard_user_cta() -> None:
     body = response.text
     assert "/dashboard/1" not in body
     assert 'href="/dashboard"' not in body
+
+
+def test_privacy_page_exists_and_is_linked() -> None:
+    landing = client.get("/")
+    assert landing.status_code == 200
+    assert "/privacy" in landing.text
+    privacy = client.get("/privacy")
+    assert privacy.status_code == 200
+    assert "privacy policy" in privacy.text.lower()
 
 
 def test_dashboard_user_id_route_is_not_open_for_enumeration() -> None:

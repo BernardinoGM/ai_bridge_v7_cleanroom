@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.add_ons import ADD_ONS
 from app.billing import wallet_balance
-from app.models import ApiKey, DemoTrial, PaymentRecord, ReferralPerk, RequestFailure, UsageEvent, User, WalletLedger
+from app.models import ApiKey, DemoTrial, PaymentRecord, ReferralPerk, RequestFailure, TrialSubsidy, UsageEvent, User, WalletLedger
 
 
 @dataclass
@@ -78,7 +78,7 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "onboarding_commands": [
             'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
             'export ANTHROPIC_API_KEY="YOUR_KEY_FROM_ABOVE"',
-            "claude",
+            "# run your existing terminal or editor workflow",
         ],
     }
 
@@ -103,6 +103,7 @@ def build_admin_dashboard(db: Session) -> dict:
     total_savings_usd = round(sum(max(event.benchmark_cost_usd - event.serving_cogs_usd, 0) for event in recent_usage), 2)
     referral_perks = db.scalars(select(ReferralPerk).order_by(desc(ReferralPerk.created_at)).limit(20)).all()
     recent_failures = db.scalars(select(RequestFailure).order_by(desc(RequestFailure.created_at)).limit(20)).all()
+    recent_trial_subsidies = db.scalars(select(TrialSubsidy).order_by(desc(TrialSubsidy.created_at)).limit(20)).all()
     return {
         "total_users": int(total_users),
         "new_signups_7d": int(new_signups),
@@ -116,5 +117,7 @@ def build_admin_dashboard(db: Session) -> dict:
         "total_savings_usd": total_savings_usd,
         "referral_count": len(referral_perks),
         "referral_credit_usd": round(sum(perk.amount_usd for perk in referral_perks), 2),
+        "trial_subsidy_usd": round(sum(item.serving_cogs_usd for item in recent_trial_subsidies), 2),
+        "recent_trial_subsidies": recent_trial_subsidies,
         "recent_failures": recent_failures,
     }

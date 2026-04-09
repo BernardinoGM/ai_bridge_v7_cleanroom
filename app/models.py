@@ -217,6 +217,23 @@ class DemoTrial(TimestampMixin, Base):
     last_prompt_excerpt: Mapped[str | None] = mapped_column(String(255))
 
 
+class TrialSubsidy(TimestampMixin, Base):
+    __tablename__ = "trial_subsidies"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    demo_trial_id: Mapped[int] = mapped_column(ForeignKey("demo_trials.id"), index=True)
+    session_id: Mapped[str] = mapped_column(String(64), index=True)
+    request_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    prompt_excerpt: Mapped[str | None] = mapped_column(String(255))
+    execution_profile: Mapped[str] = mapped_column(String(50))
+    visible_lane: Mapped[str] = mapped_column(String(20))
+    direct_cost_usd: Mapped[float] = mapped_column(Float, nullable=False)
+    routed_cost_usd: Mapped[float] = mapped_column(Float, nullable=False)
+    serving_cogs_usd: Mapped[float] = mapped_column(Float, nullable=False)
+    benchmark_cost_usd: Mapped[float] = mapped_column(Float, nullable=False)
+    saved_pct: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class ApiKey(TimestampMixin, Base):
     __tablename__ = "api_keys"
 

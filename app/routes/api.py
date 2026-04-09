@@ -14,7 +14,7 @@ from app.dashboard import build_dashboard
 from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
 from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
-from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, UsageEvent, User
+from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, TrialSubsidy, UsageEvent, User
 from app.payments import create_checkout_session, ensure_seed_user, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
@@ -263,12 +263,12 @@ def _record_failure(
     db.commit()
 
 
-def _cookie_user_id(request: Request) -> int | None:
+def _cookie_user(request: Request, db: Session) -> User | None:
     settings = get_settings()
     raw = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    if not raw or not raw.isdigit():
+    if not raw:
         return None
-    return int(raw)
+    return db.scalar(select(User).where(User.email == raw.strip().lower()))
 
 
 def _resolve_user_id(
@@ -287,9 +287,9 @@ def _resolve_user_id(
     user = authenticate_api_key(db, settings, x_api_key or bearer)
     if user is not None:
         return user.id
-    cookie_user_id = _cookie_user_id(request)
-    if cookie_user_id is not None and db.get(User, cookie_user_id) is not None:
-        return cookie_user_id
+    cookie_user = _cookie_user(request, db)
+    if cookie_user is not None:
+        return cookie_user.id
     raise HTTPException(status_code=401, detail="Authentication required. Provide a valid API key or launch session.")
 
 
@@ -321,9 +321,38 @@ def demo_chat(
         prompt = DEMO_EXAMPLES[example_key]["prompt"]
     try:
         preview = _route_preview(prompt=prompt[:8000], mode="smart", settings=settings)
+        routed_cost_usd = float(preview["routed_cost"].replace("$", ""))
+        direct_cost_usd = float(preview["direct_cost"].replace("$", ""))
+        estimated_prompt_tokens = 160
+        estimated_completion_tokens = 220
+        serving_cost = estimate_serving_cost_usd(
+            provider_key=preview["execution_profile"],
+            prompt_tokens=estimated_prompt_tokens,
+            completion_tokens=estimated_completion_tokens,
+            public_charge_usd=routed_cost_usd,
+            quality_check=preview["quality"] == "Checked",
+            fallback_used=preview["fallback_used"],
+            retry_count=0,
+        )
+        benchmark = benchmark_cost_usd(estimated_prompt_tokens, estimated_completion_tokens, settings)
         trial.tries_used += 1
         trial.last_example = example_key
         trial.last_prompt_excerpt = prompt[:255]
+        db.add(
+            TrialSubsidy(
+                demo_trial_id=trial.id,
+                session_id=session_id,
+                request_id=uuid.uuid4().hex,
+                prompt_excerpt=prompt[:255],
+                execution_profile=preview["execution_profile"],
+                visible_lane=(preview["lane"] or "Smart").lower(),
+                direct_cost_usd=direct_cost_usd,
+                routed_cost_usd=routed_cost_usd,
+                serving_cogs_usd=serving_cost.serving_cogs_usd,
+                benchmark_cost_usd=benchmark,
+                saved_pct=int(preview["saved_pct"]),
+            )
+        )
         db.commit()
         response.set_cookie(
             key=DEMO_COOKIE_NAME,
@@ -364,7 +393,7 @@ def create_api_key_launch(
         db.commit()
         response.set_cookie(
             key=USER_SESSION_COOKIE_NAME,
-            value=issue_session_token(str(user.id), "user", settings, SESSION_MAX_AGE_SECONDS),
+            value=issue_session_token(user.email.strip().lower(), "user", settings, SESSION_MAX_AGE_SECONDS),
             max_age=60 * 60 * 24 * 30,
             httponly=True,
             samesite="lax",
@@ -381,7 +410,7 @@ def create_api_key_launch(
             "onboarding_commands": [
                 'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
                 f'export ANTHROPIC_API_KEY="{raw_key}"',
-                "claude",
+                "# run your existing terminal or editor workflow",
             ],
         }
     except HTTPException as exc:
@@ -415,15 +444,13 @@ def create_checkout(
     settings: Settings = Depends(get_settings),
 ) -> dict:
     try:
-        cookie_user_id = _cookie_user_id(request)
-        if cookie_user_id is None:
+        cookie_user = _cookie_user(request, db)
+        if cookie_user is None:
             raise HTTPException(
                 status_code=403,
                 detail="Top-up temporarily unavailable during launch verification. Sign in with a live key session first.",
             )
-        current_user = db.get(User, cookie_user_id)
-        if current_user is None:
-            raise HTTPException(status_code=403, detail="Launch session is invalid. Sign in again before topping up.")
+        current_user = cookie_user
         if payload.user_id is not None and payload.user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Checkout can only be created for the current signed-in user.")
         if payload.email and payload.email.strip().lower() != current_user.email.lower():
@@ -468,6 +495,7 @@ async def stripe_webhook(
                 event_id=event["id"],
                 stripe_session_id=session_data["id"],
                 stripe_payment_intent_id=session_data.get("payment_intent"),
+                session_metadata=session_data.get("metadata") or {},
             )
             db.commit()
             return JSONResponse({"processed": processed})
@@ -479,8 +507,8 @@ async def stripe_webhook(
 
 @router.get("/dashboard/{user_id}")
 def dashboard_api(user_id: int, request: Request, db: Session = Depends(get_db)) -> dict:
-    cookie_user_id = _cookie_user_id(request)
-    if cookie_user_id != user_id:
+    cookie_user = _cookie_user(request, db)
+    if cookie_user is None or cookie_user.id != user_id:
         raise HTTPException(status_code=404, detail="Dashboard not found.")
     data = build_dashboard(db, user_id)
     return {
@@ -498,8 +526,8 @@ def dashboard_api(user_id: int, request: Request, db: Session = Depends(get_db))
 
 @router.get("/tasks/{user_id}")
 def list_tasks(user_id: int, request: Request, archived: bool = False, db: Session = Depends(get_db)) -> dict:
-    cookie_user_id = _cookie_user_id(request)
-    if cookie_user_id != user_id:
+    cookie_user = _cookie_user(request, db)
+    if cookie_user is None or cookie_user.id != user_id:
         raise HTTPException(status_code=404, detail="Task list not found.")
     tasks = db.scalars(
         select(TaskSession)
@@ -519,8 +547,8 @@ def list_tasks(user_id: int, request: Request, archived: bool = False, db: Sessi
 
 @router.get("/tasks/{user_id}/{task_id}")
 def get_task_thread(user_id: int, task_id: str, request: Request, db: Session = Depends(get_db)) -> dict:
-    cookie_user_id = _cookie_user_id(request)
-    if cookie_user_id != user_id:
+    cookie_user = _cookie_user(request, db)
+    if cookie_user is None or cookie_user.id != user_id:
         raise HTTPException(status_code=404, detail="Task not found.")
     task = db.scalar(select(TaskSession).where(TaskSession.user_id == user_id, TaskSession.task_id == task_id))
     if task is None:

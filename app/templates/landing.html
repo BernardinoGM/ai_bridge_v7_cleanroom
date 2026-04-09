@@ -149,7 +149,7 @@
             </div>
           </div>
           <div style="margin-top:24px;padding:16px;background:var(--accent-cyan-dim);border-radius:14px;border:1px solid var(--accent-cyan-border);">
-            <div style="display:flex;align-items:center;gap:8px;color:var(--accent-cyan);font-weight:600;">🧠 Multi‑model coordination — each task gets the right brain</div>
+            <div style="display:flex;align-items:center;gap:8px;color:var(--accent-cyan);font-weight:600;">Multi‑model coordination — each task gets the right fit</div>
           </div>
         </div>
       </div>
@@ -168,10 +168,10 @@
           <span style="color: var(--green); display: flex; align-items: center; gap: 6px;"><span style="display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%;"></span> Preview</span>
         </div>
         <div class="example-chips">
-          <span class="chip" data-prompt="Explain this function: const memoize = (fn) => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] ?? (cache[key] = fn(...args)); }; };">📎 Explain function</span>
-          <span class="chip" data-prompt="Write unit tests for an email validator that checks format and domain MX records">🧪 Write tests</span>
-          <span class="chip" data-prompt="Review this diff: removed error handling from db pool, added query cache layer">🔎 Review diff</span>
-          <span class="chip" data-prompt="Refactor to async/await: function getUsers() { return fetch('/users').then(r => r.json()).catch(e => console.error(e)); }">⚡ Refactor</span>
+          <span class="chip" data-prompt="Explain this function: const memoize = (fn) => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] ?? (cache[key] = fn(...args)); }; };">Explain function</span>
+          <span class="chip" data-prompt="Write unit tests for an email validator that checks format and domain MX records">Write tests</span>
+          <span class="chip" data-prompt="Review this diff: removed error handling from db pool, added query cache layer">Review diff</span>
+          <span class="chip" data-prompt="Refactor to async/await: function getUsers() { return fetch('/users').then(r => r.json()).catch(e => console.error(e)); }">Refactor</span>
         </div>
         <div class="prompt-input-area">
           <textarea id="promptInput" class="prompt-input" placeholder="Ask anything — ⌘↵ to send  ·  3 free tries">Summarize the key features of a modern heat pump controller</textarea>
@@ -182,9 +182,9 @@
         </div>
         <div class="result-panel" id="resultPanel" style="display: none;">
           <div class="result-meta">
-            <span>🔹 Lane: <strong id="resultLane">—</strong></span>
-            <span>✅ Quality: <strong id="resultQuality">Passed</strong></span>
-            <span>⚡ Adaptive decision: <strong id="resultSavings" style="color: var(--accent-cyan);">—</strong></span>
+            <span>Lane: <strong id="resultLane">—</strong></span>
+            <span>Quality: <strong id="resultQuality">Passed</strong></span>
+            <span>Adaptive decision: <strong id="resultSavings" style="color: var(--accent-cyan);">—</strong></span>
           </div>
           <div class="result-content" id="resultContent">Your response will appear here.</div>
         </div>
@@ -212,9 +212,9 @@
     <section id="how">
       <h2 style="text-align: center;">Why developers choose AI Bridge</h2>
       <div class="card-grid">
-        <div class="card"><div class="card-icon">🎯</div><h3>Task‑adaptive models</h3><p>Simple extraction, complex reasoning, or long‑context planning — each task gets the model best suited for it.</p></div>
-        <div class="card"><div class="card-icon">🛡️</div><h3>Quality‑aware output</h3><p>On higher-risk routes, AI Bridge can check and escalate. Routine work stays lighter unless the task earns extra review.</p></div>
-        <div class="card"><div class="card-icon">🧩</div><h3>Zero config, full control</h3><p>Works with your existing OpenAI‑compatible SDKs. Add a base URL, keep your prompts. Dashboard gives full visibility.</p></div>
+        <div class="card"><div class="card-icon">Task</div><h3>Task‑adaptive models</h3><p>Simple extraction, complex reasoning, or long‑context planning — each task gets the model best suited for it.</p></div>
+        <div class="card"><div class="card-icon">Quality</div><h3>Quality‑aware output</h3><p>On higher-risk routes, AI Bridge can check and escalate. Routine work stays lighter unless the task earns extra review.</p></div>
+        <div class="card"><div class="card-icon">Control</div><h3>Zero config, full control</h3><p>Works with your existing OpenAI‑compatible SDKs. Add a base URL, keep your prompts. Dashboard gives full visibility.</p></div>
       </div>
     </section>
 
@@ -223,11 +223,11 @@
       <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
       <p class="section-subhead" style="margin-bottom: 16px;">Pre‑pay, route, save. Top up anytime.</p>
       <div class="pricing-grid">
-        <div class="pricing-card"><h3>$10</h3><div class="price">$10</div><p style="color:var(--muted);font-size:14px;">Try it out</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>$50</h3><div class="price">$50</div><p style="color:var(--muted);font-size:14px;">Solo builder</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>$200</h3><div class="price">$200</div><p style="color:var(--muted);font-size:14px;">Growing team</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Try it out</h3><div class="price">$10</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Solo builder</h3><div class="price">$50</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Growing team</h3><div class="price">$200</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>High volume</h3><div class="price">$500</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
       </div>
       <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit after key signup — no card required.</p>
     </section>
@@ -237,9 +237,9 @@
       <h2 style="text-align: center;">More control, more visibility</h2>
       <p class="section-subhead">Add‑ons for teams and power users. Coming soon.</p>
       <div class="addon-grid">
-        <div class="addon-card"><h4>🛡️ Bill Guard</h4><p>Monthly cost cap guarantee.</p><span class="badge-coming">$19/mo · Q2</span></div>
-        <div class="addon-card"><h4>👥 Team Vault</h4><p>Shared credit pools, quotas, logs.</p><span class="badge-coming">from $79/mo · Q2</span></div>
-        <div class="addon-card"><h4>📊 Analytics & Rules</h4><p>Custom routing policies.</p><span class="badge-coming">Q3</span></div>
+        <div class="addon-card"><h4>Bill Guard</h4><p>Monthly cost cap guarantee.</p><span class="badge-coming">$19/mo · Q2</span></div>
+        <div class="addon-card"><h4>Team Vault</h4><p>Shared credit pools, quotas, logs.</p><span class="badge-coming">from $79/mo · Q2</span></div>
+        <div class="addon-card"><h4>Analytics & Rules</h4><p>Custom routing policies.</p><span class="badge-coming">Q3</span></div>
       </div>
     </section>
 
@@ -271,7 +271,7 @@
 </main>
 
 <footer style="border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--muted);font-size:14px;">
-  <div class="container">AI Bridge — Adaptive model routing for developers · <a href="mailto:hello@getaibridge.com" style="color:var(--accent-cyan);">hello@getaibridge.com</a></div>
+  <div class="container">AI Bridge — Adaptive model routing for developers · <a href="mailto:hello@getaibridge.com" style="color:var(--accent-cyan);">hello@getaibridge.com</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a></div>
 </footer>
 
 <!-- 模态框 -->
@@ -285,13 +285,15 @@
       <input type="email" id="signupEmail" placeholder="Email address">
       <input type="text" id="signupUseCase" placeholder="What are you routing? (optional)">
       <button class="modal-submit" id="modalSubmitBtn" onclick="handleModalSubmit()">Generate API Key →</button>
+      <p style="margin-top:14px;color:var(--muted);font-size:12px;">By continuing, you agree to the launch terms and <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a>.</p>
     </div>
     <div id="modalSuccess" style="display:none;text-align:center;">
-      <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">YOUR API KEY (click to copy)</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
+      <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 1: Copy API key</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
       <p id="modalSuccessCopy" style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
       <div id="onboardingBox" style="display:none;text-align:left;margin-top:20px;">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Terminal onboarding</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 2: Copy terminal setup commands</div>
         <div class="code-block" id="onboardingCommands" style="margin:0;"></div>
+        <div style="font-size:13px;color:var(--muted);margin-top:12px;">Step 3: Run in your terminal or existing editor workflow.</div>
       </div>
     </div>
   </div>
@@ -508,8 +510,12 @@
   updateTrialDisplay();
   resultPanel.style.display = 'none';
   const ref = new URL(window.location.href).searchParams.get('ref');
+  const open = new URL(window.location.href).searchParams.get('open');
   if (ref) {
     window.localStorage.setItem('ab_referral_code', ref.toUpperCase());
+  }
+  if (open === 'signup') {
+    openModal('signup');
   }
   if (rewardPrompt) {
     rewardPrompt.addEventListener('click', () => openModal('signup'));

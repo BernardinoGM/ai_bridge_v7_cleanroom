@@ -17,6 +17,7 @@ from app.session_auth import (
     issue_session_token,
     read_session_token,
 )
+from sqlalchemy import select
 
 
 router = APIRouter()
@@ -43,23 +44,23 @@ def referral_redirect(referral_code: str) -> RedirectResponse:
 def dashboard_root(request: Request, db: Session = Depends(get_db)) -> RedirectResponse:
     settings = get_settings()
     session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    if session_subject and session_subject.isdigit():
-        user_id = int(session_subject)
-        if db.get(User, user_id) is not None:
+    if session_subject:
+        user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
+        if user is not None:
             return RedirectResponse(url="/dashboard/me", status_code=307)
-    return RedirectResponse(url="/", status_code=307)
+    return RedirectResponse(url="/?open=signup", status_code=307)
 
 
 @router.get("/dashboard/me", response_class=HTMLResponse)
 def dashboard_me(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     settings = get_settings()
     session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    if not session_subject or not session_subject.isdigit():
+    if not session_subject:
         raise HTTPException(status_code=401, detail="Sign in to view your dashboard.")
-    user_id = int(session_subject)
-    if db.get(User, user_id) is None:
+    user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
+    if user is None:
         raise HTTPException(status_code=401, detail="Launch session is invalid.")
-    context = build_dashboard(db, user_id)
+    context = build_dashboard(db, user.id)
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 
@@ -73,7 +74,10 @@ def dashboard_demo(request: Request, db: Session = Depends(get_db)) -> HTMLRespo
 def dashboard_page(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     settings = get_settings()
     session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    if not session_subject or not session_subject.isdigit() or int(session_subject) != user_id:
+    if not session_subject:
+        raise HTTPException(status_code=404, detail="Dashboard not found.")
+    user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
+    if user is None or user.id != user_id:
         raise HTTPException(status_code=404, detail="Dashboard not found.")
     context = build_dashboard(db, user_id)
     return templates.TemplateResponse(request, "dashboard.html", context)
@@ -107,9 +111,12 @@ def admin_dashboard(
 def chat_root(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     settings = get_settings()
     session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    if not session_subject or not session_subject.isdigit():
+    if not session_subject:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
-    return chat_surface(request, int(session_subject), db)
+    user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
+    if user is None:
+        raise HTTPException(status_code=401, detail="Sign in to continue.")
+    return chat_surface(request, user.id, db)
 
 
 @router.get("/chat/demo", response_class=HTMLResponse)
@@ -122,13 +129,27 @@ def chat_demo(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
         .limit(12)
         .all()
     )
+    return templates.TemplateResponse(
+        request,
+        "chat.html",
+        {
+            "user_id": 1,
+            "balance_usd": dashboard["balance_usd"],
+            "days_left": dashboard["days_left"],
+            "heavy_workdays_left": dashboard["heavy_workdays_left"],
+            "initial_tasks": initial_tasks,
+        },
+    )
 
 
 @router.get("/chat/{user_id}", response_class=HTMLResponse)
 def chat_surface(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     settings = get_settings()
     session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    if not session_subject or not session_subject.isdigit() or int(session_subject) != user_id:
+    if not session_subject:
+        raise HTTPException(status_code=404, detail="Chat not found.")
+    user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
+    if user is None or user.id != user_id:
         raise HTTPException(status_code=404, detail="Chat not found.")
     dashboard = build_dashboard(db, user_id)
     initial_tasks = (
@@ -149,17 +170,11 @@ def chat_surface(request: Request, user_id: int, db: Session = Depends(get_db)) 
             "initial_tasks": initial_tasks,
         },
     )
-    return templates.TemplateResponse(
-        request,
-        "chat.html",
-        {
-            "user_id": 1,
-            "balance_usd": dashboard["balance_usd"],
-            "days_left": dashboard["days_left"],
-            "heavy_workdays_left": dashboard["heavy_workdays_left"],
-            "initial_tasks": initial_tasks,
-        },
-    )
+
+
+@router.get("/privacy", response_class=HTMLResponse)
+def privacy_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(request, "privacy.html", {})
 
 
 @router.get("/payments/success", response_class=HTMLResponse)
