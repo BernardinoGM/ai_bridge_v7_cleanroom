@@ -10,19 +10,19 @@
     :root { --bg:#0B0E14; --surface:#11161D; --border:#2E3843; --text:#F0F4FA; --muted:#8A95A5; --accent:#00E5FF; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; }
-    .container { max-width:1040px; margin:0 auto; padding:32px 24px 72px; }
+    .container { max-width:920px; margin:0 auto; padding:32px 24px 72px; }
     nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
     .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; }
     .links a { color:var(--accent); text-decoration:none; margin-left:16px; }
     h1,h2 { font-family:'Syne',sans-serif; letter-spacing:-0.02em; }
     h1 { font-size:clamp(42px,5vw,64px); margin:28px 0 16px; }
     .lede,p,li { color:var(--muted); line-height:1.7; }
-    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:28px; }
-    .panel { background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:24px; }
+    h2 { font-size:28px; margin:34px 0 14px; }
+    h3 { font-size:20px; margin:24px 0 10px; font-family:'Syne',sans-serif; }
+    .content { margin-top:28px; }
     ul { margin:0; padding-left:18px; }
     footer { margin-top:28px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); }
     footer a { color:var(--accent); text-decoration:none; }
-    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -33,8 +33,7 @@
     </nav>
     <h1>Acceptable Use</h1>
     <p class="lede">AI Bridge is intended for legitimate engineering, support, product, research, and operational work. This Acceptable Use Policy explains prohibited activity and the service protections we may enforce to keep the platform safe, lawful, and commercially usable.</p>
-    <div class="grid">
-      <div class="panel">
+    <div class="content">
         <h2>Prohibited activity</h2>
         <ul>
           <li>Illegal content generation, fraud, harassment, deception, or abusive automation.</li>
@@ -42,23 +41,22 @@
           <li>Using AI Bridge to evade provider rules, billing controls, or safety systems.</li>
           <li>Bulk scraping, account sharing, key sharing, or usage laundering intended to avoid proper attribution or payment.</li>
         </ul>
-      </div>
-      <div class="panel">
+
         <h2>Operational safeguards</h2>
         <ul>
           <li>We may throttle, challenge, suspend, or terminate access when abuse, fraud, or policy violations are suspected.</li>
           <li>We may preserve logs, telemetry, request metadata, and ledger records for abuse review, incident response, and compliance.</li>
           <li>We may limit trials, top-ups, or feature access during launch verification or elevated platform risk.</li>
         </ul>
-      </div>
-      <div class="panel">
+
         <h2>High-risk use</h2>
         <p>You remain responsible for evaluating outputs before using them in legal, medical, financial, safety-critical, employment, or other high-impact settings. AI Bridge may apply additional scrutiny to some workflows, but that does not transfer decision responsibility away from the user.</p>
-      </div>
-      <div class="panel">
+
+        <h2>Fair use of the platform</h2>
+        <p>You may not use the service to disguise harmful activity behind normal product usage, flood upstream providers, or test unsafe prompt strategies in a way that degrades the service for others. AI Bridge may restrict access where behavior materially increases operational, financial, or legal risk.</p>
+
         <h2>Reporting and contact</h2>
         <p>If you believe an account or workflow is violating this policy, contact <a href="mailto:hello@getaibridge.com" style="color:var(--accent);text-decoration:none;">hello@getaibridge.com</a>. We may investigate reports, share necessary records with service providers or authorities, and take any action reasonably required to protect the service.</p>
-      </div>
     </div>
     <footer><a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
   </div>

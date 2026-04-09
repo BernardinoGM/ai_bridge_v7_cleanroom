@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.add_ons import ADD_ONS
 from app.billing import wallet_balance
-from app.models import ApiKey, DemoTrial, PaymentRecord, ReferralPerk, RequestFailure, TrialSubsidy, UsageEvent, User, WalletLedger
+from app.models import ApiKey, DemoTrial, PaymentRecord, ReferralPerk, RequestFailure, TaskSession, TrialSubsidy, UsageEvent, User, WalletLedger
 
 
 @dataclass
@@ -38,6 +38,9 @@ def build_dashboard(db: Session, user_id: int) -> dict:
     ).all()
     payments = db.scalars(
         select(PaymentRecord).where(PaymentRecord.user_id == user_id).order_by(desc(PaymentRecord.created_at)).limit(10)
+    ).all()
+    recent_tasks = db.scalars(
+        select(TaskSession).where(TaskSession.user_id == user_id).order_by(desc(TaskSession.updated_at)).limit(8)
     ).all()
     referral_perks = db.scalars(
         select(ReferralPerk).where(ReferralPerk.referrer_user_id == user_id).order_by(desc(ReferralPerk.created_at)).limit(10)
@@ -73,6 +76,7 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "recent_usage": events[:8],
         "api_keys": api_keys,
         "recent_topups": payments,
+        "recent_tasks": recent_tasks,
         "recent_referral_perks": referral_perks,
         "main_ledger": ledger[:8],
         "reward_ledger": reward_ledger[:8],

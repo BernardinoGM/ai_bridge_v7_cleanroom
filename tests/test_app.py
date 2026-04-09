@@ -102,6 +102,9 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "trained model combinations" in body
     assert "preference-aware execution" in body
     assert "your workflow, better directed" in body
+    assert 'id="freetrycta"' in body
+    assert 'id="chatthread"' in body
+    assert "3 free demos included" in body
     assert "$10" in body
     assert "$50" in body
     assert "$200" in body
@@ -117,6 +120,8 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "live · $20 / 30 days" in body
     assert "seat pricing configured in product" in body
     assert "beta · limited access" in body
+    assert "approval gate" in body
+    assert "session memory" in body
     assert "/privacy" in body
     assert "/terms" in body
     assert "/acceptable-use" in body
@@ -678,12 +683,15 @@ def test_privacy_page_exists_and_is_linked() -> None:
     assert privacy.status_code == 200
     assert "privacy policy" in privacy.text.lower()
     assert "de-identified operational analytics" in privacy.text.lower()
+    assert "prompt and content handling" in privacy.text.lower()
     terms = client.get("/terms")
     assert terms.status_code == 200
     assert "credits, bonuses, and rewards" in terms.text.lower()
+    assert "add-ons and feature unlocks" in terms.text.lower()
     acceptable = client.get("/acceptable-use")
     assert acceptable.status_code == 200
     assert "operational safeguards" in acceptable.text.lower()
+    assert "fair use of the platform" in acceptable.text.lower()
 
 
 def test_dashboard_user_id_route_is_not_open_for_enumeration() -> None:
@@ -747,11 +755,14 @@ def test_dashboard_matches_landing_user_blocks() -> None:
     assert "step 3: run in terminal" in body
     assert "recent top-ups" in body
     assert "recent usage" in body
+    assert "recent sessions" in body
     assert "referral" in body
     assert "https://getaibridge.com/signup?ref=" in body
     assert "30-day feature unlocks" in body
     assert "priority queue" in body
     assert "$20.00 / 30 days" in body
+    assert "approval gate" in body
+    assert "session memory" in body
 
 
 def test_no_mock_provider_in_production_path_configuration() -> None:

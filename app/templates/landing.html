@@ -17,7 +17,7 @@
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 
   nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid var(--border); background: rgba(11,14,20,0.92); backdrop-filter: blur(12px); }
   .logo { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.03em; display: flex; align-items: center; gap: 8px; }
@@ -26,9 +26,9 @@
   .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
   .nav-links a:hover { color: var(--accent-cyan); }
   
-  .btn-primary { background: var(--accent-cyan); color: #0B0E14; border: none; border-radius: 40px; padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+  .btn-primary { background: var(--accent-cyan); color: #0B0E14; border: none; border-radius: 40px; padding: 12px 28px; font-size: 15px; font-weight: 700; line-height: 1.2; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
   .btn-primary:hover { background: #33EBFF; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,229,255,0.4); }
-  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-bright); border-radius: 40px; padding: 12px 28px; font-size: 15px; font-weight: 500; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-bright); border-radius: 40px; padding: 12px 28px; font-size: 15px; font-weight: 600; line-height: 1.2; transition: all 0.2s; text-decoration: none; display: inline-block; }
   .btn-outline:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); }
 
   .container { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
@@ -37,8 +37,11 @@
 
   h1, h2, h3 { font-weight: 800; letter-spacing: -0.02em; }
   h1 { font-family: var(--display); font-size: clamp(48px, 6vw, 76px); line-height: 1; font-weight: 900; margin-bottom: 24px; }
-  h2 { font-family: var(--display); font-size: clamp(36px, 4.5vw, 52px); margin-bottom: 16px; font-weight: 800; }
-  .hero-sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 32px; line-height: 1.6; }
+  h2 { font-family: var(--display); font-size: clamp(34px, 4.5vw, 48px); margin-bottom: 16px; font-weight: 800; line-height: 1.05; }
+  h3 { font-size: 21px; font-weight: 800; line-height: 1.15; }
+  .hero-sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 32px; line-height: 1.65; }
+  .section-subhead { font-size: 17px; color: var(--muted); max-width: 780px; margin: 0 auto; text-align: center; }
+  .meta-text { color: var(--muted); font-size: 13px; line-height: 1.55; }
 
   .hero-panel { background: var(--surface); border: 1px solid var(--border-bright); border-radius: 28px; padding: 32px; box-shadow: 0 25px 40px -15px rgba(0,0,0,0.6); }
   .comparison-row { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
@@ -46,23 +49,34 @@
   .comparison-title { font-weight: 800; margin-bottom: 18px; font-size: 20px; }
   .comparison-item { font-size: 15px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
 
-  .live-playground { background: var(--surface); border: 1px solid var(--accent-cyan-border); border-radius: 28px; padding: 32px; margin-top: 48px; }
+  .live-playground { background: var(--surface); border: 1px solid var(--accent-cyan-border); border-radius: 28px; padding: 28px; margin-top: 48px; }
   .playground-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .trial-badge { background: var(--accent-cyan-dim); color: var(--accent-cyan); padding: 6px 16px; border-radius: 40px; font-size: 14px; font-weight: 600; border: 1px solid var(--accent-cyan-border); }
-  .prompt-input-area { display: flex; gap: 12px; margin-bottom: 20px; }
-  .prompt-input { flex: 1; background: var(--bg); border: 1px solid var(--border-bright); border-radius: 16px; padding: 16px 20px; color: var(--text); font-family: var(--mono); font-size: 15px; resize: vertical; min-height: 100px; }
+  .chat-shell { background: var(--bg); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; }
+  .chat-thread { min-height: 360px; max-height: 520px; overflow-y: auto; padding: 22px; display: grid; gap: 14px; }
+  .message-row { display: flex; }
+  .message-row.user { justify-content: flex-end; }
+  .message-row.assistant { justify-content: flex-start; }
+  .bubble { max-width: min(720px, 92%); padding: 16px 18px; border-radius: 18px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+  .message-row.user .bubble { background: var(--accent-cyan-dim); border-color: var(--accent-cyan-border); }
+  .message-role { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .message-text { font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
+  .message-meta { margin-top: 10px; font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+  .composer-wrap { position: sticky; bottom: 0; padding: 16px; border-top: 1px solid var(--border); background: linear-gradient(180deg, rgba(11,14,20,0.7), rgba(11,14,20,0.96)); backdrop-filter: blur(8px); }
+  .prompt-input-area { display: flex; gap: 12px; align-items: flex-end; }
+  .prompt-input { flex: 1; background: var(--surface); border: 1px solid var(--border-bright); border-radius: 18px; padding: 16px 18px; color: var(--text); font-family: var(--sans); font-size: 16px; resize: vertical; min-height: 88px; max-height: 220px; }
   .example-chips { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
   .chip { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 40px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
   .chip:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); }
-  .result-panel { background: var(--bg); border-radius: 18px; padding: 24px; border: 1px solid var(--border); }
-  .result-meta { display: flex; gap: 24px; margin-bottom: 16px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
-  .result-content { font-family: var(--mono); font-size: 14px; line-height: 1.7; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border-left: 3px solid var(--accent-cyan); }
+  .result-panel { background: rgba(255,255,255,0.02); border-radius: 18px; padding: 18px; border: 1px solid var(--border); margin-top: 18px; }
+  .result-meta { display: flex; gap: 24px; margin-bottom: 12px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .result-content { font-family: var(--mono); font-size: 13px; line-height: 1.65; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border-left: 3px solid var(--accent-cyan); }
 
   .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; font-family: var(--mono); font-size: 14px; margin: 24px 0; overflow-x: auto; }
   .card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 56px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 32px; transition: all 0.2s; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 28px; transition: all 0.2s; }
   .card:hover { border-color: var(--accent-cyan-border); transform: translateY(-3px); }
-  .card-icon { font-size: 36px; margin-bottom: 20px; }
+  .card-icon { font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-cyan); margin-bottom: 14px; font-family: var(--mono); }
   .card h3 { font-size: 22px; margin-bottom: 12px; }
 
   .pricing-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; margin-top: 40px; }
@@ -91,10 +105,10 @@
   .modal-overlay.open { display: flex; }
   .modal { background: var(--surface); border: 1px solid var(--border-bright); border-radius: 24px; padding: 48px; max-width: 440px; width: 90%; position: relative; }
   .modal-close { position: absolute; top: 24px; right: 24px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; }
-  .modal input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; color: var(--text); margin-bottom: 16px; font-size: 16px; }
+  .modal input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; color: var(--text); margin-bottom: 16px; font-size: 16px; font-family: var(--sans); }
   .modal-submit { width: 100%; padding: 14px; background: var(--accent-cyan); color: #0B0E14; border: none; border-radius: 40px; font-weight: 700; cursor: pointer; font-size: 16px; }
 
-  @media (max-width: 1100px) { .pricing-grid { grid-template-columns: repeat(2,1fr); } .addon-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 1100px) { .pricing-grid { grid-template-columns: repeat(2,1fr); } .addon-grid { grid-template-columns: repeat(2,1fr); } }
   @media (max-width: 900px) { nav { padding: 14px 20px; } .nav-links { display: none; } .container { padding: 0 20px; } section { padding: 64px 0; } .card-grid, .pricing-grid { grid-template-columns: 1fr; } h1 { font-size: 44px; } }
 </style>
 </head>
@@ -128,7 +142,7 @@
           <h1>Right model.<br>Right task.<br>Fewer mistakes.</h1>
           <p class="hero-sub">AI Bridge uses trained model combinations based on task shape, complexity, user preference, and routing history. It is not a random router and not a generic agent layer. Control stays with the user while execution gets more specific over time.</p>
           <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-            <a href="#playground" class="btn-primary">Try 3 free demos →</a>
+            <a href="#playground" class="btn-primary" id="freeTryCta">Try 3 free demos →</a>
             <button class="btn-outline" onclick="openModal()">Get API Key</button>
           </div>
           <p style="color: var(--muted); font-size: 14px; margin-top: 24px; border-left: 3px solid var(--accent-cyan); padding-left: 16px;">Built for developers who want trained model combinations, preference-aware execution, and control that stays with the user.</p>
@@ -173,12 +187,25 @@
           <span class="chip" data-prompt="Review this diff: removed error handling from db pool, added query cache layer">Review diff</span>
           <span class="chip" data-prompt="Refactor to async/await: function getUsers() { return fetch('/users').then(r => r.json()).catch(e => console.error(e)); }">Refactor</span>
         </div>
-        <div class="prompt-input-area">
-          <textarea id="promptInput" class="prompt-input" placeholder="Ask anything — ⌘↵ to send  ·  3 free tries">Summarize the key features of a modern heat pump controller</textarea>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <button class="btn-primary" id="sendPromptBtn">Send (⌘↵)</button>
-          <span id="trialMessage" style="color: var(--muted); font-size: 14px;"></span>
+        <div class="chat-shell">
+          <div class="chat-thread" id="chatThread">
+            <div class="message-row assistant">
+              <div class="bubble">
+                <div class="message-role">AI Bridge preview</div>
+                <div class="message-text">Ask a real prompt and the preview will show the chosen lane, the routing reason, the direct premium comparison, and the routed result. Your current demo thread stays visible for this session.</div>
+              </div>
+            </div>
+          </div>
+          <div class="composer-wrap">
+            <div class="prompt-input-area">
+              <textarea id="promptInput" class="prompt-input" placeholder="Ask anything — Enter to send · Shift+Enter for newline">Summarize the key features of a modern heat pump controller</textarea>
+              <button class="btn-primary" id="sendPromptBtn">Send</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+              <span id="trialMessage" class="meta-text"></span>
+              <span class="meta-text">3 free demos included</span>
+            </div>
+          </div>
         </div>
         <div class="result-panel" id="resultPanel" style="display: none;">
           <div class="result-meta">
@@ -242,6 +269,8 @@
         <div class="addon-card"><h4>Priority Queue</h4><p>Faster handling on harder work, preferred queueing during high load, and smoother completion on higher-risk tasks.</p><span class="badge-coming">Live · $20 / 30 days</span></div>
         <div class="addon-card"><h4>Team Vault</h4><p>Seat-based team wallet controls, role budgets, and clean visibility for founders, CTOs, and team operators.</p><span class="badge-coming">Skeleton live · seat pricing configured in product</span></div>
         <div class="addon-card"><h4>X-Ray</h4><p>Usage Intelligence for workflow insights, routing outcomes, spend trends, and repeated workload opportunities.</p><span class="badge-coming">Beta · limited access</span></div>
+        <div class="addon-card"><h4>Approval Gate</h4><p>Hold higher-risk output behind a lightweight approval step before it reaches the next user, customer, or deploy action.</p><span class="badge-coming">Coming next</span></div>
+        <div class="addon-card"><h4>Session Memory</h4><p>Keep repeated work more consistent across turns with stronger continuity for recurring task patterns and user direction.</p><span class="badge-coming">Coming next</span></div>
       </div>
     </section>
 
@@ -306,10 +335,12 @@
   let selectedPackCode = null;
   let modalMode = 'signup';
   let signupTimer = null;
+  const DEMO_THREAD_KEY = 'ab_demo_thread_v1';
   const trialCounter = document.getElementById('trialCounter');
   const trialMessage = document.getElementById('trialMessage');
   const promptInput = document.getElementById('promptInput');
   const sendBtn = document.getElementById('sendPromptBtn');
+  const chatThread = document.getElementById('chatThread');
   const resultPanel = document.getElementById('resultPanel');
   const resultLane = document.getElementById('resultLane');
   const resultQuality = document.getElementById('resultQuality');
@@ -329,6 +360,51 @@
     scale_plus: '$500',
     volume: '$1,000',
   };
+
+  function loadDemoThread() {
+    try {
+      const stored = window.sessionStorage.getItem(DEMO_THREAD_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveDemoThread(messages) {
+    window.sessionStorage.setItem(DEMO_THREAD_KEY, JSON.stringify(messages.slice(-12)));
+  }
+
+  function renderDemoThread() {
+    const messages = loadDemoThread();
+    chatThread.innerHTML = '';
+    if (!messages.length) {
+      chatThread.innerHTML = `<div class="message-row assistant">
+        <div class="bubble">
+          <div class="message-role">AI Bridge preview</div>
+          <div class="message-text">Ask a real prompt and the preview will show the chosen lane, the routing reason, the direct premium comparison, and the routed result. Your current demo thread stays visible for this session.</div>
+        </div>
+      </div>`;
+      return;
+    }
+    messages.forEach((message) => {
+      const row = document.createElement('div');
+      row.className = `message-row ${message.role}`;
+      row.innerHTML = `<div class="bubble">
+        <div class="message-role">${message.role === 'user' ? 'You' : 'AI Bridge preview'}</div>
+        <div class="message-text">${message.text}</div>
+        ${message.meta ? `<div class="message-meta">${message.meta.map(item => `<span>${item}</span>`).join('')}</div>` : ''}
+      </div>`;
+      chatThread.appendChild(row);
+    });
+    chatThread.scrollTop = chatThread.scrollHeight;
+  }
+
+  function pushThreadMessage(message) {
+    const messages = loadDemoThread();
+    messages.push(message);
+    saveDemoThread(messages);
+    renderDemoThread();
+  }
 
   function updateTrialDisplay() {
     trialCounter.textContent = `${trialsLeft} FREE ${trialsLeft === 1 ? 'TRY' : 'TRIES'} — no signup`;
@@ -364,6 +440,7 @@
   async function sendPrompt(promptText) {
     if (!promptText.trim()) return;
     clearSignupTimer();
+    pushThreadMessage({ role: 'user', text: promptText.trim() });
 
     resultPanel.style.display = 'block';
     resultLane.textContent = 'Analyzing...';
@@ -388,6 +465,11 @@
         resultQuality.textContent = 'Signup required';
         resultSavings.textContent = 'Open account path';
         resultContent.textContent = data.detail || 'Anonymous trial limit reached.';
+        pushThreadMessage({
+          role: 'assistant',
+          text: data.detail || 'Anonymous trial limit reached.',
+          meta: ['Trial exhausted', 'Signup required']
+        });
         signupTimer = window.setTimeout(openNextStepAfterTrial, 1200);
         return;
       }
@@ -396,6 +478,18 @@
       resultQuality.textContent = data.quality || 'Checked';
       resultSavings.textContent = `${data.reason || data.why || 'Adaptive routing'} · Direct ${data.direct_cost || '$0.00'} · Routed ${data.routed_cost || '$0.00'} · Saved ${typeof data.saved_pct === 'number' ? data.saved_pct + '%' : '0%'}`;
       resultContent.textContent = data.reply || 'No response content.';
+      pushThreadMessage({
+        role: 'assistant',
+        text: data.reply || 'No response content.',
+        meta: [
+          `Lane: ${data.lane || 'Smart'}`,
+          `Quality: ${data.quality || 'Checked'}`,
+          `Direct: ${data.direct_cost || '$0.00'}`,
+          `Routed: ${data.routed_cost || '$0.00'}`,
+          `Saved: ${typeof data.saved_pct === 'number' ? data.saved_pct + '%' : '0%'}`,
+          data.reason || data.why || 'Adaptive routing'
+        ]
+      });
       trialsLeft = Number.isFinite(data.trial_remaining) ? data.trial_remaining : trialsLeft;
       updateTrialDisplay();
       if (data.trial_exhausted && data.show_signup_after_ms) {
@@ -406,7 +500,12 @@
       resultLane.textContent = 'Error';
       resultQuality.textContent = 'Unavailable';
       resultSavings.textContent = '—';
-      resultContent.textContent = 'Something went wrong. Please try again.';
+      resultContent.textContent = 'The preview is temporarily unavailable. Please try again in a moment.';
+      pushThreadMessage({
+        role: 'assistant',
+        text: 'The preview is temporarily unavailable. Please try again in a moment.',
+        meta: ['Temporary issue']
+      });
     } finally {
       sendBtn.disabled = false;
       sendBtn.style.opacity = '1';
@@ -415,7 +514,7 @@
 
   sendBtn.addEventListener('click', () => sendPrompt(promptInput.value));
   promptInput.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendPrompt(promptInput.value);
     }
@@ -509,7 +608,20 @@
     q.addEventListener('click', () => q.parentElement.classList.toggle('open'));
   });
 
+  document.getElementById('freeTryCta').addEventListener('click', (event) => {
+    event.preventDefault();
+    const playground = document.getElementById('playground');
+    const rect = playground.getBoundingClientRect();
+    if (rect.top < 120 && rect.bottom > 160) {
+      promptInput.focus();
+      return;
+    }
+    playground.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => promptInput.focus(), 450);
+  });
+
   updateTrialDisplay();
+  renderDemoThread();
   resultPanel.style.display = 'none';
   const ref = new URL(window.location.href).searchParams.get('ref');
   const open = new URL(window.location.href).searchParams.get('open');

@@ -93,7 +93,16 @@ def admin_dashboard(
     settings = get_settings()
     admin_session = read_session_token(request.cookies.get(ADMIN_SESSION_COOKIE_NAME), settings, "admin")
     user_session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
-    bernard_authorized = bool(user_session_subject and user_session_subject.strip().lower() == "bernard.gmny@gmail.com")
+    bernard_authorized = False
+    if user_session_subject:
+        admin_user = db.scalar(select(User).where(User.email == user_session_subject.strip().lower()))
+        bernard_authorized = bool(
+            admin_user
+            and (
+                admin_user.email.strip().lower() == "bernard.gmny@gmail.com"
+                or admin_user.name.strip().lower() == "bernard"
+            )
+        )
     if admin_session != "owner":
         if x_admin_key != settings.admin_api_key and not bernard_authorized:
             raise HTTPException(status_code=403, detail="Admin access required.")

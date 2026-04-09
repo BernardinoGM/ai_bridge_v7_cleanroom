@@ -15,15 +15,15 @@
       --mono: 'IBM Plex Mono', monospace; --sans: 'DM Sans', sans-serif; --display: 'Syne', sans-serif;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; }
     .container { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
     nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
     .logo { font-family: var(--display); font-weight: 800; font-size: 20px; }
     .nav-links { display:flex; gap:16px; align-items:center; color:var(--muted); }
     .nav-links a { color:var(--muted); text-decoration:none; }
     .hero { padding: 44px 0 28px; display:grid; grid-template-columns: 1.1fr 0.9fr; gap:24px; }
-    .hero h1 { margin: 0 0 14px; font-family: var(--display); font-size: clamp(40px, 5vw, 64px); line-height: 0.96; }
-    .lede { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 56ch; }
+    .hero h1 { margin: 0 0 14px; font-family: var(--display); font-size: clamp(48px, 6vw, 76px); line-height: 1; }
+    .lede { color: var(--muted); font-size: 18px; line-height: 1.65; max-width: 56ch; }
     .hero-card, .panel, .card { background: var(--surface); border:1px solid var(--border-bright); border-radius: 24px; padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.28); }
     .hero-card { display:grid; gap:14px; }
     .metric span { display:block; color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
@@ -31,9 +31,9 @@
     .grid { display:grid; gap:20px; }
     .grid.two { grid-template-columns: repeat(2, minmax(0,1fr)); }
     .grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
-    h2 { margin: 0 0 14px; font-family: var(--display); font-size: 28px; }
-    h3 { margin: 0 0 10px; font-size: 18px; }
-    .muted { color: var(--muted); }
+    h2 { margin: 0 0 14px; font-family: var(--display); font-size: clamp(34px, 4.5vw, 48px); line-height: 1.05; }
+    h3 { margin: 0 0 10px; font-size: 21px; line-height: 1.15; }
+    .muted { color: var(--muted); font-size: 15px; }
     .key-box, .code-block { background: rgba(0,0,0,0.22); border:1px solid var(--border); border-radius: 16px; padding: 16px; font-family: var(--mono); overflow:auto; }
     .checklist { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
     .checklist li { color: var(--text); line-height: 1.5; }
@@ -137,6 +137,18 @@
         <p class="muted">No usage yet.</p>
         {% endif %}
       </div>
+      <div class="panel">
+        <h2>Recent sessions</h2>
+        {% if recent_tasks %}
+        <ul class="checklist">
+          {% for task in recent_tasks %}
+          <li class="ledger-row"><span>{{ task.summary or task.last_assistant_excerpt or task.task_mode|title }}</span><span>{{ task.last_status_label or task.continuity_status|replace("_", " ")|title }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No saved session history yet.</p>
+        {% endif %}
+      </div>
     </section>
 
     <section class="grid two" style="margin-top:20px;">
@@ -179,6 +191,16 @@
             <span class="badge">{% if addon.status == "beta" %}Limited access · {% elif addon.status == "skeleton" %}Seat-based · {% endif %}Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
           </div>
           {% endfor %}
+          <div class="addon">
+            <strong>Approval Gate</strong>
+            <p class="muted">Hold higher-risk output behind a lightweight approval step before it moves into the next workflow.</p>
+            <span class="badge">Preview</span>
+          </div>
+          <div class="addon">
+            <strong>Session Memory</strong>
+            <p class="muted">Carry more user direction across recurring task patterns without turning the product into a generic autonomous agent.</p>
+            <span class="badge">Preview</span>
+          </div>
         </div>
       </div>
     </section>
