@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -9,6 +9,14 @@ from app.dashboard import build_admin_dashboard, build_dashboard
 from app.db import get_db
 from app.models import TaskSession, User
 from app.pricing import TOP_UP_PACKS
+from app.session_auth import (
+    ADMIN_SESSION_COOKIE_NAME,
+    ADMIN_SESSION_MAX_AGE_SECONDS,
+    SESSION_MAX_AGE_SECONDS,
+    USER_SESSION_COOKIE_NAME,
+    issue_session_token,
+    read_session_token,
+)
 
 
 router = APIRouter()
@@ -17,7 +25,8 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
 @router.get("/", response_class=HTMLResponse)
 def landing(request: Request) -> HTMLResponse:
-    launch_user_id = request.cookies.get("ab_launch_user", "")
+    settings = get_settings()
+    launch_user_id = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user") or ""
     return templates.TemplateResponse(
         request,
         "landing.html",
@@ -32,15 +41,26 @@ def referral_redirect(referral_code: str) -> RedirectResponse:
 
 @router.get("/dashboard")
 def dashboard_root(request: Request, db: Session = Depends(get_db)) -> RedirectResponse:
-    raw_user_id = request.cookies.get("ab_launch_user")
-    if raw_user_id:
-        try:
-            user_id = int(raw_user_id)
-        except ValueError:
-            user_id = None
-        if user_id is not None and db.get(User, user_id) is not None:
-            return RedirectResponse(url=f"/dashboard/{user_id}", status_code=307)
-    return RedirectResponse(url="/dashboard/demo", status_code=307)
+    settings = get_settings()
+    session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if session_subject and session_subject.isdigit():
+        user_id = int(session_subject)
+        if db.get(User, user_id) is not None:
+            return RedirectResponse(url="/dashboard/me", status_code=307)
+    return RedirectResponse(url="/", status_code=307)
+
+
+@router.get("/dashboard/me", response_class=HTMLResponse)
+def dashboard_me(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    settings = get_settings()
+    session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if not session_subject or not session_subject.isdigit():
+        raise HTTPException(status_code=401, detail="Sign in to view your dashboard.")
+    user_id = int(session_subject)
+    if db.get(User, user_id) is None:
+        raise HTTPException(status_code=401, detail="Launch session is invalid.")
+    context = build_dashboard(db, user_id)
+    return templates.TemplateResponse(request, "dashboard.html", context)
 
 
 @router.get("/dashboard/demo", response_class=HTMLResponse)
@@ -51,21 +71,65 @@ def dashboard_demo(request: Request, db: Session = Depends(get_db)) -> HTMLRespo
 
 @router.get("/dashboard/{user_id}", response_class=HTMLResponse)
 def dashboard_page(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    settings = get_settings()
+    session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if not session_subject or not session_subject.isdigit() or int(session_subject) != user_id:
+        raise HTTPException(status_code=404, detail="Dashboard not found.")
     context = build_dashboard(db, user_id)
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 
 @router.get("/admin/dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request, key: str | None = None, db: Session = Depends(get_db)) -> HTMLResponse:
+def admin_dashboard(
+    request: Request,
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
     settings = get_settings()
-    if key != settings.admin_api_key:
-        raise HTTPException(status_code=403, detail="Admin access required.")
-    context = build_admin_dashboard(db)
-    return templates.TemplateResponse(request, "admin_dashboard.html", context)
+    admin_session = read_session_token(request.cookies.get(ADMIN_SESSION_COOKIE_NAME), settings, "admin")
+    if admin_session != "owner":
+        if x_admin_key != settings.admin_api_key:
+            raise HTTPException(status_code=403, detail="Admin access required.")
+    response = templates.TemplateResponse(request, "admin_dashboard.html", build_admin_dashboard(db))
+    if admin_session != "owner":
+        response.set_cookie(
+            key=ADMIN_SESSION_COOKIE_NAME,
+            value=issue_session_token("owner", "admin", settings, ADMIN_SESSION_MAX_AGE_SECONDS),
+            max_age=ADMIN_SESSION_MAX_AGE_SECONDS,
+            httponly=True,
+            samesite="strict",
+            secure=settings.app_env == "production",
+        )
+    return response
+
+
+@router.get("/chat", response_class=HTMLResponse)
+def chat_root(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    settings = get_settings()
+    session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if not session_subject or not session_subject.isdigit():
+        raise HTTPException(status_code=401, detail="Sign in to continue.")
+    return chat_surface(request, int(session_subject), db)
+
+
+@router.get("/chat/demo", response_class=HTMLResponse)
+def chat_demo(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    dashboard = build_dashboard(db, 1)
+    initial_tasks = (
+        db.query(TaskSession)
+        .filter(TaskSession.user_id == 1, TaskSession.archived.is_(False))
+        .order_by(TaskSession.starred.desc(), TaskSession.updated_at.desc())
+        .limit(12)
+        .all()
+    )
 
 
 @router.get("/chat/{user_id}", response_class=HTMLResponse)
 def chat_surface(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
+    settings = get_settings()
+    session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if not session_subject or not session_subject.isdigit() or int(session_subject) != user_id:
+        raise HTTPException(status_code=404, detail="Chat not found.")
     dashboard = build_dashboard(db, user_id)
     initial_tasks = (
         db.query(TaskSession)
@@ -85,11 +149,17 @@ def chat_surface(request: Request, user_id: int, db: Session = Depends(get_db)) 
             "initial_tasks": initial_tasks,
         },
     )
-
-
-@router.get("/chat/demo", response_class=HTMLResponse)
-def chat_demo(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
-    return chat_surface(request, 1, db)
+    return templates.TemplateResponse(
+        request,
+        "chat.html",
+        {
+            "user_id": 1,
+            "balance_usd": dashboard["balance_usd"],
+            "days_left": dashboard["days_left"],
+            "heavy_workdays_left": dashboard["heavy_workdays_left"],
+            "initial_tasks": initial_tasks,
+        },
+    )
 
 
 @router.get("/payments/success", response_class=HTMLResponse)

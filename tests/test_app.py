@@ -50,7 +50,7 @@ def test_health() -> None:
 
 
 def test_dashboard_is_runway_centric() -> None:
-    response = client.get("/dashboard/1")
+    response = client.get("/dashboard/demo")
     assert response.status_code == 200
     body = response.text.lower()
     assert "runway dashboard" in body
@@ -67,13 +67,16 @@ def test_root_and_dashboard_routes_resolve_without_affecting_health() -> None:
     assert "text/html" in root.headers["content-type"]
     dashboard = client.get("/dashboard", follow_redirects=True)
     assert dashboard.status_code == 200
-    assert "runway dashboard" in dashboard.text.lower()
+    assert "adaptive model routing for developers" in dashboard.text.lower()
     health = client.get("/api/health")
     assert health.status_code == 200
 
 
 def test_chat_surface_loads_as_product_ui() -> None:
-    response = client.get("/chat/1")
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "chatuser@example.com", "use_case": "task chat"})
+    assert create.status_code == 200
+    response = session_client.get("/chat")
     assert response.status_code == 200
     body = response.text.lower()
     assert "ai bridge chat" in body
@@ -142,8 +145,8 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     payload = response.json()
     assert payload["api_key"].startswith("ab_live_")
     assert payload["email"] == "newbuilder@example.com"
-    assert payload["dashboard_url"].startswith("/dashboard/")
-    assert payload["chat_url"].startswith("/chat/")
+    assert payload["dashboard_url"] == "/dashboard"
+    assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
     assert payload["onboarding_commands"][0].startswith('export ANTHROPIC_BASE_URL=')
     assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_API_KEY="ab_live_')
@@ -274,7 +277,10 @@ def test_dashboard_root_redirects_to_launch_user_after_key_issue() -> None:
     user_id = create.json()["user_id"]
     response = session_client.get("/dashboard", follow_redirects=False)
     assert response.status_code == 307
-    assert response.headers["location"] == f"/dashboard/{user_id}"
+    assert response.headers["location"] == "/dashboard/me"
+    me_page = session_client.get("/dashboard/me")
+    assert me_page.status_code == 200
+    assert str(user_id) not in me_page.url.path
 
 
 def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypatch) -> None:
@@ -298,10 +304,11 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         assert payment is not None
         assert payment.user_id == user.id
         assert payment.pack_code == "scale_plus"
+        assert payment.amount_usd == 500.0
 
 
 def test_admin_dashboard_route_shows_aggregate_metrics() -> None:
-    response = client.get("/admin/dashboard?key=admin-test-key")
+    response = client.get("/admin/dashboard", headers={"X-Admin-Key": "admin-test-key"})
     assert response.status_code == 200
     body = response.text.lower()
     assert "admin dashboard" in body
@@ -432,8 +439,11 @@ def test_messages_task_continuity_stays_pinned_and_hides_internal_routes() -> No
 
 
 def test_task_thread_api_maps_visible_messages_to_task_turns() -> None:
-    founder_id = _user_id("founder@aibridge.local")
-    first = client.post(
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "threaduser@example.com", "use_case": "chat"})
+    assert create.status_code == 200
+    founder_id = create.json()["user_id"]
+    first = session_client.post(
         "/api/messages",
         json={
             "user_id": founder_id,
@@ -444,7 +454,7 @@ def test_task_thread_api_maps_visible_messages_to_task_turns() -> None:
     )
     assert first.status_code == 200
     task_id = first.json()["task_id"]
-    second = client.post(
+    second = session_client.post(
         "/api/messages",
         json={
             "user_id": founder_id,
@@ -456,7 +466,7 @@ def test_task_thread_api_maps_visible_messages_to_task_turns() -> None:
         },
     )
     assert second.status_code == 200
-    thread = client.get(f"/api/tasks/{founder_id}/{task_id}")
+    thread = session_client.get(f"/api/tasks/{founder_id}/{task_id}")
     assert thread.status_code == 200
     payload = thread.json()
     assert payload["task"]["task_id"] == task_id
@@ -606,6 +616,25 @@ def test_landing_has_no_hardcoded_dashboard_user_cta() -> None:
     body = response.text
     assert "/dashboard/1" not in body
     assert "/dashboard" in body
+
+
+def test_dashboard_user_id_route_is_not_open_for_enumeration() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "guarduser@example.com"})
+    assert create.status_code == 200
+    response = session_client.get("/dashboard/999999")
+    assert response.status_code == 404
+
+
+def test_admin_dashboard_requires_header_or_admin_cookie_not_query_param() -> None:
+    isolated = TestClient(app)
+    forbidden = isolated.get("/admin/dashboard?key=admin-test-key")
+    assert forbidden.status_code == 403
+    session_client = TestClient(app)
+    allowed = session_client.get("/admin/dashboard", headers={"X-Admin-Key": "admin-test-key"})
+    assert allowed.status_code == 200
+    cookie_access = session_client.get("/admin/dashboard")
+    assert cookie_access.status_code == 200
 
 
 def test_no_mock_provider_in_production_path_configuration() -> None:

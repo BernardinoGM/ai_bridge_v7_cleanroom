@@ -22,6 +22,12 @@ from app.providers.real import ProviderExecutionError, build_provider_clients
 from app.providers.mock import build_mock_clients
 from app.routing import RouteDecision, decide_route
 from app.schemas import ApiKeyCreateRequest, ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
+from app.session_auth import (
+    SESSION_MAX_AGE_SECONDS,
+    USER_SESSION_COOKIE_NAME,
+    issue_session_token,
+    read_session_token,
+)
 from app.tasks import record_task_turn, resolve_task
 
 
@@ -31,7 +37,6 @@ demo_router = APIRouter()
 
 DEMO_COOKIE_NAME = "ab_demo_session"
 DEMO_TRIAL_LIMIT = 3
-LAUNCH_USER_COOKIE_NAME = "ab_launch_user"
 
 
 DEMO_EXAMPLES = {
@@ -259,13 +264,11 @@ def _record_failure(
 
 
 def _cookie_user_id(request: Request) -> int | None:
-    raw = request.cookies.get(LAUNCH_USER_COOKIE_NAME)
-    if not raw:
+    settings = get_settings()
+    raw = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if not raw or not raw.isdigit():
         return None
-    try:
-        return int(raw)
-    except ValueError:
-        return None
+    return int(raw)
 
 
 def _resolve_user_id(
@@ -360,11 +363,12 @@ def create_api_key_launch(
         )
         db.commit()
         response.set_cookie(
-            key=LAUNCH_USER_COOKIE_NAME,
-            value=str(user.id),
+            key=USER_SESSION_COOKIE_NAME,
+            value=issue_session_token(str(user.id), "user", settings, SESSION_MAX_AGE_SECONDS),
             max_age=60 * 60 * 24 * 30,
             httponly=True,
             samesite="lax",
+            secure=settings.app_env == "production",
         )
         return {
             "api_key": raw_key,
@@ -372,8 +376,8 @@ def create_api_key_launch(
             "email": user.email,
             "granted_credit_usd": round(granted_credit, 2),
             "balance_usd": round(balance_usd, 2),
-            "dashboard_url": f"/dashboard/{user.id}",
-            "chat_url": f"/chat/{user.id}",
+            "dashboard_url": "/dashboard",
+            "chat_url": "/chat",
             "onboarding_commands": [
                 'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
                 f'export ANTHROPIC_API_KEY="{raw_key}"',
@@ -427,11 +431,12 @@ def create_checkout(
         if resolved_user_id is None:
             raise HTTPException(status_code=400, detail="Email is required to start checkout before full sign-in.")
         response.set_cookie(
-            key=LAUNCH_USER_COOKIE_NAME,
-            value=str(resolved_user_id),
+            key=USER_SESSION_COOKIE_NAME,
+            value=issue_session_token(str(resolved_user_id), "user", settings, SESSION_MAX_AGE_SECONDS),
             max_age=60 * 60 * 24 * 30,
             httponly=True,
             samesite="lax",
+            secure=settings.app_env == "production",
         )
         result = create_checkout_session(
             db=db,
@@ -481,7 +486,10 @@ async def stripe_webhook(
 
 
 @router.get("/dashboard/{user_id}")
-def dashboard_api(user_id: int, db: Session = Depends(get_db)) -> dict:
+def dashboard_api(user_id: int, request: Request, db: Session = Depends(get_db)) -> dict:
+    cookie_user_id = _cookie_user_id(request)
+    if cookie_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Dashboard not found.")
     data = build_dashboard(db, user_id)
     return {
         "balance_usd": data["balance_usd"],
@@ -497,7 +505,10 @@ def dashboard_api(user_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/tasks/{user_id}")
-def list_tasks(user_id: int, archived: bool = False, db: Session = Depends(get_db)) -> dict:
+def list_tasks(user_id: int, request: Request, archived: bool = False, db: Session = Depends(get_db)) -> dict:
+    cookie_user_id = _cookie_user_id(request)
+    if cookie_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Task list not found.")
     tasks = db.scalars(
         select(TaskSession)
         .where(TaskSession.user_id == user_id, TaskSession.archived == archived)
@@ -515,7 +526,10 @@ def list_tasks(user_id: int, archived: bool = False, db: Session = Depends(get_d
 
 
 @router.get("/tasks/{user_id}/{task_id}")
-def get_task_thread(user_id: int, task_id: str, db: Session = Depends(get_db)) -> dict:
+def get_task_thread(user_id: int, task_id: str, request: Request, db: Session = Depends(get_db)) -> dict:
+    cookie_user_id = _cookie_user_id(request)
+    if cookie_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Task not found.")
     task = db.scalar(select(TaskSession).where(TaskSession.user_id == user_id, TaskSession.task_id == task_id))
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found.")

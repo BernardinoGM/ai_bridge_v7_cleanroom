@@ -122,7 +122,7 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;">
         <div>
           <h1>Right model.<br>Right task.<br>Fewer mistakes.</h1>
-          <p class="hero-sub">AI Bridge adapts model selection to the actual task — not the other way around. You get a multi‑model system that keeps outputs on target, reduces hallucinations, and handles long‑context reasoning without manual switching.</p>
+          <p class="hero-sub">AI Bridge adapts model selection to the actual task — not the other way around. You get a multi‑model system that keeps outputs on target, helps reduce avoidable mistakes, and handles long‑context reasoning without manual switching.</p>
           <div style="display: flex; gap: 16px; flex-wrap: wrap;">
             <a href="#playground" class="btn-primary">Try 3 free demos →</a>
             <button class="btn-outline" onclick="openModal()">Get API Key</button>
@@ -140,8 +140,8 @@
             <div class="comparison-col">
               <div class="comparison-title" style="color: var(--accent-cyan);">AI Bridge</div>
               <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> task‑adaptive model selection</div>
-              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> verified output quality</div>
-              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> long‑context stability</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> quality checks where needed</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> stronger long‑context handling</div>
             </div>
           </div>
           <div style="margin-top:24px;padding:16px;background:var(--accent-cyan-dim);border-radius:14px;border:1px solid var(--accent-cyan-border);">
@@ -189,8 +189,8 @@
 
     <!-- Claude Code 专版 (保持) -->
     <section id="claude-code">
-      <h2 style="text-align: center;">Claude Code users: fewer hallucinations, lower bills</h2>
-      <p class="section-subhead">AI Bridge automatically upgrades long‑context tasks to the right model. Your session stays coherent.</p>
+      <h2 style="text-align: center;">Claude Code users: fewer avoidable misses, lower bills</h2>
+      <p class="section-subhead">AI Bridge can upgrade long‑context tasks to a stronger model when needed. Threads stay more coherent when the work earns escalation.</p>
       <div style="max-width: 800px; margin: 0 auto;">
         <div class="code-block">
           <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add to ~/.zshrc — that's it</div>
@@ -226,7 +226,7 @@
         <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','scale_plus')">Start →</button></div>
         <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','volume')">Start →</button></div>
       </div>
-      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit — no card required.</p>
+      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit after key signup — no card required.</p>
     </section>
 
     <!-- 酒水层 (保持) -->
@@ -253,7 +253,7 @@
 
     <!-- Referral -->
     <div class="referral-box">
-      <h3 style="font-family: var(--display); font-size: 24px;">👥 Invite friends, both get credit</h3>
+      <h3 style="font-family: var(--display); font-size: 24px;">Invite friends, both get credit</h3>
       <p style="color: var(--muted); margin: 16px 0;">Refer a developer, they make a purchase, you both get credit. Closed‑loop rewards.</p>
       <button class="btn-primary" onclick="openModal()">Get your referral link →</button>
     </div>
@@ -274,7 +274,7 @@
 <!-- 模态框 -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     <div id="modalForm">
       <h3 style="font-size:28px;font-weight:800;margin-bottom:12px;">Get your API key</h3>
       <p id="modalIntro" style="margin-bottom:28px;color:var(--muted);">Start with $3 free credit. No card required.</p>
@@ -298,6 +298,7 @@
   let trialsLeft = 3;
   let selectedPackCode = null;
   let modalMode = 'signup';
+  let signupTimer = null;
   const trialCounter = document.getElementById('trialCounter');
   const trialMessage = document.getElementById('trialMessage');
   const promptInput = document.getElementById('promptInput');
@@ -329,14 +330,33 @@
     trialMessage.textContent = trialsLeft === 0 ? 'Create an account or top up to keep routing real work.' : '';
   }
 
+  function clearSignupTimer() {
+    if (signupTimer) {
+      window.clearTimeout(signupTimer);
+      signupTimer = null;
+    }
+  }
+
+  function openNextStepAfterTrial() {
+    if (window.localStorage.getItem('ab_user_id')) {
+      openModal('checkout', 'starter');
+      return;
+    }
+    openModal('signup');
+  }
+
   async function sendPrompt(promptText) {
     if (!promptText.trim()) return;
+    clearSignupTimer();
 
     resultPanel.style.display = 'block';
     resultLane.textContent = 'Analyzing...';
     resultQuality.textContent = 'Checking...';
     resultSavings.textContent = '...';
     resultContent.textContent = 'Thinking...';
+    sendBtn.disabled = true;
+    sendBtn.style.opacity = '0.7';
+    trialMessage.textContent = 'Running live route preview...';
 
     try {
       const res = await fetch('/demo/chat', {
@@ -352,25 +372,28 @@
         resultQuality.textContent = 'Signup required';
         resultSavings.textContent = 'Open account path';
         resultContent.textContent = data.detail || 'Anonymous trial limit reached.';
-        window.setTimeout(() => openModal('signup'), 1200);
+        signupTimer = window.setTimeout(openNextStepAfterTrial, 1200);
         return;
       }
 
       resultLane.textContent = data.lane || 'Smart';
       resultQuality.textContent = data.quality || 'Checked';
-      resultSavings.textContent = data.reason || data.why || 'Adaptive routing';
+      resultSavings.textContent = `${data.reason || data.why || 'Adaptive routing'} · Direct ${data.direct_cost || '$0.00'} · Routed ${data.routed_cost || '$0.00'} · Saved ${typeof data.saved_pct === 'number' ? data.saved_pct + '%' : '0%'}`;
       resultContent.textContent = data.reply || 'No response content.';
       trialsLeft = Number.isFinite(data.trial_remaining) ? data.trial_remaining : trialsLeft;
       updateTrialDisplay();
       if (data.trial_exhausted && data.show_signup_after_ms) {
-        trialMessage.textContent = 'This was your last free demo. Opening signup next.';
-        window.setTimeout(() => openModal('signup'), data.show_signup_after_ms);
+        trialMessage.textContent = 'This was your last free demo. Keep reading — signup opens after the preview window.';
+        signupTimer = window.setTimeout(openNextStepAfterTrial, data.show_signup_after_ms);
       }
     } catch (error) {
       resultLane.textContent = 'Error';
       resultQuality.textContent = 'Unavailable';
       resultSavings.textContent = '—';
       resultContent.textContent = 'Something went wrong. Please try again.';
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.style.opacity = '1';
     }
   }
 
@@ -448,7 +471,7 @@
       const keyBox = document.querySelector('#modalSuccess .key-box');
       keyBox.textContent = data.api_key;
       keyBox.dataset.originalKey = data.api_key;
-      modalSuccessCopy.textContent = `Your key includes $${Number(data.granted_credit_usd || 0).toFixed(2)} credit. Current balance: $${Number(data.balance_usd || 0).toFixed(2)}.`;
+      modalSuccessCopy.textContent = `Your key includes $${Number(data.granted_credit_usd || 0).toFixed(2)} starter credit. Current balance: $${Number(data.balance_usd || 0).toFixed(2)}.`;
       if (Array.isArray(data.onboarding_commands)) {
         onboardingBox.style.display = 'block';
         onboardingCommands.textContent = data.onboarding_commands.join('\n');

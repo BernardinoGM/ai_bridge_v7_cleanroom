@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import uuid
 
 import stripe
 from sqlalchemy import select
@@ -45,6 +46,17 @@ def create_checkout_session(
     if effective_referred_by_code is None and user and user.referred_by_user_id:
         referrer = db.get(User, user.referred_by_user_id)
         effective_referred_by_code = referrer.referral_code if referrer else None
+    payment = PaymentRecord(
+        user_id=user_id,
+        pack_code=pack_code,
+        amount_usd=pack.price_usd,
+        bonus_usd=pack.bonus_usd,
+        status="pending",
+        stripe_session_id=f"pending:{uuid.uuid4().hex}",
+        referred_by_code=effective_referred_by_code,
+    )
+    db.add(payment)
+    db.flush()
     configure_stripe(settings)
     session = stripe.checkout.Session.create(
         mode="payment",
@@ -60,19 +72,17 @@ def create_checkout_session(
                 "quantity": 1,
             }
         ],
-        metadata={"user_id": str(user_id), "pack_code": pack_code, "referred_by_code": effective_referred_by_code or ""},
+        metadata={
+            "payment_record_id": str(payment.id),
+            "user_id": str(user_id),
+            "tier": pack_code,
+            "pack_code": pack_code,
+            "amount_usd": f"{pack.price_usd:.2f}",
+            "bonus_usd": f"{pack.bonus_usd:.2f}",
+            "referred_by_code": effective_referred_by_code or "",
+        },
     )
-    payment = PaymentRecord(
-        user_id=user_id,
-        pack_code=pack_code,
-        amount_usd=pack.price_usd,
-        bonus_usd=pack.bonus_usd,
-        status="pending",
-        stripe_session_id=session.id,
-        referred_by_code=effective_referred_by_code,
-    )
-    db.add(payment)
-    db.flush()
+    payment.stripe_session_id = session.id
     return CheckoutResult(checkout_url=session.url, session_id=session.id)
 
 
@@ -106,12 +116,23 @@ def process_checkout_completed(
     event_id: str,
     stripe_session_id: str,
     stripe_payment_intent_id: str | None,
+    session_metadata: dict | None = None,
 ) -> bool:
     if db.scalar(select(ProcessedWebhook).where(ProcessedWebhook.event_id == event_id)):
         return False
     payment = db.scalar(select(PaymentRecord).where(PaymentRecord.stripe_session_id == stripe_session_id))
     if payment is None:
         raise ValueError("Unknown Stripe session")
+    if session_metadata:
+        metadata_user_id = session_metadata.get("user_id")
+        metadata_pack_code = session_metadata.get("pack_code") or session_metadata.get("tier")
+        metadata_amount = session_metadata.get("amount_usd")
+        if metadata_user_id and str(payment.user_id) != str(metadata_user_id):
+            raise ValueError("Stripe metadata user mismatch")
+        if metadata_pack_code and payment.pack_code != metadata_pack_code:
+            raise ValueError("Stripe metadata pack mismatch")
+        if metadata_amount and float(payment.amount_usd) != float(metadata_amount):
+            raise ValueError("Stripe metadata amount mismatch")
     payment.stripe_payment_intent_id = stripe_payment_intent_id
     _credit_payment_if_needed(db, payment)
     db.add(ProcessedWebhook(event_id=event_id, event_type="checkout.session.completed"))
