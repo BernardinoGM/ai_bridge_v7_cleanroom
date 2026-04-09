@@ -78,6 +78,13 @@
       </div>
 
       <form class="composer panel" id="composer">
+        <div class="quick-actions">
+          <button class="quick-action" type="button" data-quick-prompt="Summarize the latest task update into three crisp bullets.">Summarize</button>
+          <button class="quick-action" type="button" data-quick-prompt="Continue this task and tighten the action plan.">Continue</button>
+          <button class="quick-action" type="button" data-quick-prompt="Review this task for risk and missing details.">Review</button>
+          <button class="quick-action" type="button" data-quick-prompt="Draft a customer-facing reply from the current task context.">Draft reply</button>
+        </div>
+        <div class="composer-error" id="composer-error"></div>
         <label class="sr-only" for="message-input">Message</label>
         <textarea
           id="message-input"
@@ -111,6 +118,7 @@
   const messageInput = document.getElementById("message-input");
   const modeSelector = document.getElementById("mode-selector");
   const sendButton = document.getElementById("send-button");
+  const composerError = document.getElementById("composer-error");
   const titleEl = document.getElementById("thread-title");
   const summaryEl = document.getElementById("thread-summary");
   const statusEl = document.getElementById("thread-status");
@@ -120,6 +128,16 @@
   const newTaskButton = document.getElementById("new-task-button");
 
   let activeTaskId = null;
+
+  function setComposerError(message = "") {
+    if (!message) {
+      composerError.textContent = "";
+      composerError.classList.remove("visible");
+      return;
+    }
+    composerError.textContent = message;
+    composerError.classList.add("visible");
+  }
 
   function escapeHtml(text) {
     return text
@@ -215,6 +233,7 @@
 
     sendButton.disabled = true;
     sendButton.textContent = "Sending...";
+    setComposerError("");
     try {
       const response = await fetch("/api/messages", {
         method: "POST",
@@ -239,7 +258,7 @@
       statusEl.textContent = payload.ab.task_state || payload.ab.status;
       runwayBalance.textContent = `$${Number(payload.ab.billing.balance_remaining_usd).toFixed(2)}`;
     } catch (error) {
-      window.alert(error.message);
+      setComposerError(error.message || "Unable to continue the task right now.");
     } finally {
       sendButton.disabled = false;
       sendButton.textContent = "Send";
@@ -260,9 +279,22 @@
     statusEl.textContent = "In progress";
     renderMessages([]);
     messageInput.focus();
+    setComposerError("");
   });
 
   composer.addEventListener("submit", sendMessage);
+  messageInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      composer.requestSubmit();
+    }
+  });
+  document.querySelectorAll(".quick-action").forEach((button) => {
+    button.addEventListener("click", () => {
+      messageInput.value = button.dataset.quickPrompt || "";
+      messageInput.focus();
+    });
+  });
 
   const firstTask = taskList.querySelector(".task-item");
   if (firstTask) {

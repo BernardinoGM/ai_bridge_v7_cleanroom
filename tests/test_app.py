@@ -117,9 +117,9 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "$1,000 → includes $130 bonus credit" in body
     assert "bill guard" in body
     assert "priority queue" in body
-    assert "live · $20 / 30 days" in body
-    assert "seat pricing configured in product" in body
-    assert "beta · limited access" in body
+    assert "available now · $20 / 30 days" in body
+    assert "early access · seat pricing in product" in body
+    assert "early access · limited access" in body
     assert "approval gate" in body
     assert "session memory" in body
     assert "/privacy" in body
@@ -763,6 +763,31 @@ def test_dashboard_matches_landing_user_blocks() -> None:
     assert "$20.00 / 30 days" in body
     assert "approval gate" in body
     assert "session memory" in body
+    assert "available now" in body
+    assert "early access" in body
+
+
+def test_chat_surface_feels_like_core_product_shell() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "chatux@example.com", "use_case": "editor"})
+    assert create.status_code == 200
+    response = session_client.get("/chat")
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "new task" in body
+    assert "task status stays visible." in body
+    assert "quick-action" in body
+    assert "recent messages visible" not in body
+    assert "approval gate" not in body
+
+
+def test_admin_dashboard_uses_shared_product_shell_styles() -> None:
+    response = client.get("/admin/dashboard", headers={"X-Admin-Key": "admin-test-key"})
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "admin dashboard" in body
+    assert "total users" in body
+    assert "funnel" in body
 
 
 def test_no_mock_provider_in_production_path_configuration() -> None:

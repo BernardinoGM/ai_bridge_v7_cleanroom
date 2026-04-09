@@ -188,18 +188,18 @@
           <div class="addon">
             <strong>{{ addon.name }}</strong>
             <p class="muted">{{ addon.tagline }}</p>
-            <span class="badge">{% if addon.status == "beta" %}Limited access · {% elif addon.status == "skeleton" %}Seat-based · {% endif %}Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
+            <span class="badge">{% if addon.code == "bill_guard" %}Live{% elif addon.code == "priority_queue" %}Available now{% else %}Early access{% endif %} · {% if addon.status == "skeleton" %}Seat-based · {% elif addon.status == "beta" %}Limited access · {% endif %}Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
           </div>
           {% endfor %}
           <div class="addon">
             <strong>Approval Gate</strong>
             <p class="muted">Hold higher-risk output behind a lightweight approval step before it moves into the next workflow.</p>
-            <span class="badge">Preview</span>
+            <span class="badge">Early access</span>
           </div>
           <div class="addon">
             <strong>Session Memory</strong>
             <p class="muted">Carry more user direction across recurring task patterns without turning the product into a generic autonomous agent.</p>
-            <span class="badge">Preview</span>
+            <span class="badge">Early access</span>
           </div>
         </div>
       </div>
