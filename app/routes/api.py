@@ -83,6 +83,14 @@ def _normalize_requested_mode(mode: str, model: str | None) -> str:
     return mode
 
 
+def _apply_compat_alias(payload: ChatCompletionRequest | MessagesRequest) -> str | None:
+    incoming_model = payload.model.strip().lower() if payload.model else None
+    payload.mode = _normalize_requested_mode(payload.mode, payload.model)
+    if incoming_model in MODEL_ALIAS_TO_MODE:
+        payload.model = None
+    return incoming_model
+
+
 def _raise_neutral_compat_error(exc: HTTPException) -> None:
     detail = exc.detail if isinstance(exc.detail, str) else ""
     lowered = detail.lower()
@@ -932,6 +940,7 @@ def v1_chat_completions(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
+    observed_model = _apply_compat_alias(payload)
     try:
         return api_chat_completions(
             payload=payload,
@@ -942,7 +951,21 @@ def v1_chat_completions(
             settings=settings,
         )
     except HTTPException as exc:
+        _record_failure(
+            db,
+            "/v1/chat/completions",
+            exc.detail if isinstance(exc.detail, str) else "compat failure",
+            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
+        )
         _raise_neutral_compat_error(exc)
+    except Exception:
+        _record_failure(
+            db,
+            "/v1/chat/completions",
+            "compat failure",
+            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
+        )
+        raise HTTPException(status_code=503, detail="This workflow is temporarily unavailable. Please retry in a moment.")
 
 
 @compat_router.post("/messages")
@@ -954,6 +977,7 @@ def v1_messages(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
+    observed_model = _apply_compat_alias(payload)
     try:
         return api_messages(
             payload=payload,
@@ -964,4 +988,18 @@ def v1_messages(
             settings=settings,
         )
     except HTTPException as exc:
+        _record_failure(
+            db,
+            "/v1/messages",
+            exc.detail if isinstance(exc.detail, str) else "compat failure",
+            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
+        )
         _raise_neutral_compat_error(exc)
+    except Exception:
+        _record_failure(
+            db,
+            "/v1/messages",
+            "compat failure",
+            context_json={"request_path": str(request.url.path), "incoming_model": observed_model or ""},
+        )
+        raise HTTPException(status_code=503, detail="This workflow is temporarily unavailable. Please retry in a moment.")

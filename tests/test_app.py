@@ -778,6 +778,69 @@ def test_alias_models_are_accepted_without_raw_model_errors() -> None:
     assert "selected model does not exist" not in response.text.lower()
 
 
+def test_outer_compat_boundary_rewrites_chat_completion_alias_before_deeper_path(monkeypatch) -> None:
+    create = client.post("/v1/keys", json={"email": "compatchat@example.com", "use_case": "terminal"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    captured: dict[str, object] = {}
+
+    def _fake_chat(payload, request, authorization, x_api_key, db, settings):
+        captured["path"] = str(request.url.path)
+        captured["mode"] = payload.mode
+        captured["model"] = payload.model
+        return {
+            "id": "ab_test",
+            "object": "chat.completion",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": "hello"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            "ab": {"mode": "Assured", "status": "In progress", "billing": {"public_charge_usd": 0.0, "balance_remaining_usd": 3.0}},
+        }
+
+    monkeypatch.setattr("app.routes.api.api_chat_completions", _fake_chat)
+    response = client.post(
+        "/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"model": "claude-sonnet-4-6", "messages": [{"role": "user", "content": "hello"}]},
+    )
+    assert response.status_code == 200
+    assert captured["path"] == "/v1/chat/completions"
+    assert captured["mode"] == "assured"
+    assert captured["model"] is None
+
+
+def test_outer_compat_boundary_rewrites_messages_alias_before_deeper_path(monkeypatch) -> None:
+    create = client.post("/v1/keys", json={"email": "compatmessages@example.com", "use_case": "terminal"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    captured: dict[str, object] = {}
+
+    def _fake_messages(payload, request, authorization, x_api_key, db, settings):
+        captured["path"] = str(request.url.path)
+        captured["mode"] = payload.mode
+        captured["model"] = payload.model
+        return {
+            "id": "ab_test",
+            "type": "message",
+            "role": "assistant",
+            "task_id": "task_test",
+            "content": [{"type": "text", "text": "hello"}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+            "ab": {"mode": "Assured", "status": "In progress", "task_state": "Verified", "billing": {"public_charge_usd": 0.0, "balance_remaining_usd": 3.0}},
+            "task": {"task_id": "task_test"},
+        }
+
+    monkeypatch.setattr("app.routes.api.api_messages", _fake_messages)
+    response = client.post(
+        "/v1/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"model": "claude-sonnet-4-5", "messages": [{"role": "user", "content": "hello"}]},
+    )
+    assert response.status_code == 200
+    assert captured["path"] == "/v1/messages"
+    assert captured["mode"] == "assured"
+    assert captured["model"] is None
+
+
 def test_terminal_hello_flow_uses_alias_without_exposing_model_errors() -> None:
     create = client.post("/v1/keys", json={"email": "helloalias@example.com", "use_case": "terminal hello"})
     assert create.status_code == 200
@@ -813,6 +876,27 @@ def test_terminal_hello_messages_flow_uses_alias_without_vendor_leakage() -> Non
     assert "selected model does not exist" not in body
     assert "claude-sonnet-4-5" not in body
     assert "anthropic" not in body
+
+
+def test_outer_compat_boundary_returns_only_neutral_message_on_model_failure(monkeypatch) -> None:
+    create = client.post("/v1/keys", json={"email": "neutralerror@example.com", "use_case": "terminal"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+
+    def _fail_chat(*args, **kwargs):
+        raise HTTPException(status_code=400, detail="There's an issue with the selected model (claude-sonnet-4-6). It may not exist or you may not have access.")
+
+    monkeypatch.setattr("app.routes.api.api_chat_completions", _fail_chat)
+    response = client.post(
+        "/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"model": "claude-sonnet-4-6", "messages": [{"role": "user", "content": "hello"}]},
+    )
+    assert response.status_code == 503
+    body = response.text.lower()
+    assert "temporarily unavailable" in body
+    assert "selected model" not in body
+    assert "claude-sonnet-4-6" not in body
 
 
 def test_dashboard_matches_landing_user_blocks() -> None:
