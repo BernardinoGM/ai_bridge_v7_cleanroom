@@ -50,6 +50,11 @@ def test_health() -> None:
     assert response.json()["vpn_required"] is False
 
 
+def test_bootstrap_can_fail_softly_for_noncritical_startup_issues(monkeypatch) -> None:
+    monkeypatch.setattr("app.main.init_database", lambda: (_ for _ in ()).throw(RuntimeError("db offline")))
+    bootstrap(strict=False)
+
+
 def test_dashboard_is_runway_centric() -> None:
     response = client.get("/dashboard/demo")
     assert response.status_code == 200
