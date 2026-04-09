@@ -11,8 +11,10 @@ from app.config import Settings
 
 USER_SESSION_COOKIE_NAME = "ab_launch_session"
 ADMIN_SESSION_COOKIE_NAME = "ab_admin_session"
+SETUP_SESSION_COOKIE_NAME = "ab_setup_session"
 SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 8
+SETUP_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 
 
 def _b64encode(data: bytes) -> str:

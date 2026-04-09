@@ -24,7 +24,7 @@ def estimate_runway(balance_usd: float, daily_spend_usd: float, heavy_day_multip
     return max(days, 0), max(heavy_days, 0)
 
 
-def build_dashboard(db: Session, user_id: int) -> dict:
+def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> dict:
     user = db.get(User, user_id)
     balance = wallet_balance(db, user_id, "main")
     ledger = db.scalars(
@@ -75,6 +75,7 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "recent_usage_spend_usd": round(total_recent_spend, 2),
         "recent_usage": events[:8],
         "api_keys": api_keys,
+        "display_api_key": raw_key or (f"{api_keys[0].key_prefix}..." if api_keys else None),
         "recent_topups": payments,
         "recent_tasks": recent_tasks,
         "recent_referral_perks": referral_perks,
@@ -95,7 +96,7 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         "rewards_posted_usd": rewards_posted,
         "onboarding_commands": [
             'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
-            'export ANTHROPIC_API_KEY="YOUR_KEY_FROM_ABOVE"',
+            f'export ANTHROPIC_API_KEY="{raw_key}"' if raw_key else '# Generate a fresh key to get a copy-ready setup block with your live key.',
             "claude",
         ],
     }

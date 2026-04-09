@@ -5,63 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>AI Bridge Terms of Service</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#0B0E14; --surface:#11161D; --border:#2E3843; --text:#F0F4FA; --muted:#8A95A5; --accent:#00E5FF; }
+    :root { --bg:#0B0E14; --surface:#11161D; --border:#2E3843; --text:#F0F4FA; --muted:#8A95A5; --accent:#00E5FF; --sans:'DM Sans',sans-serif; --display:'Syne',sans-serif; }
     * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; }
-    .container { max-width:920px; margin:0 auto; padding:32px 24px 72px; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.7; }
+    .container { max-width:1280px; margin:0 auto; padding:32px 24px 80px; }
     nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
-    .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; }
-    .links a { color:var(--accent); text-decoration:none; margin-left:16px; }
-    h1,h2 { font-family:'Syne',sans-serif; letter-spacing:-0.02em; }
-    h1 { font-size:clamp(42px,5vw,64px); margin:28px 0 16px; }
-    .lede,p,li { color:var(--muted); line-height:1.7; }
-    h2 { font-size:28px; margin:34px 0 14px; }
-    h3 { font-size:20px; margin:24px 0 10px; font-family:'Syne',sans-serif; }
-    .content { margin-top:28px; }
-    ul { margin:0; padding-left:18px; }
-    footer { margin-top:28px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); }
-    footer a { color:var(--accent); text-decoration:none; }
+    .logo { font-family:var(--display); font-size:20px; font-weight:800; display:flex; align-items:center; gap:8px; }
+    .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 18px var(--accent),0 0 4px rgba(255,255,255,0.3); }
+    .links a, footer a, .side-nav a { color:var(--accent); text-decoration:none; }
+    .links a { margin-left:16px; }
+    h1 { font-family:var(--display); font-size:clamp(48px,6vw,76px); line-height:1; margin:0 0 14px; letter-spacing:-0.03em; }
+    h2 { font-family:var(--display); font-size:clamp(28px,3vw,38px); line-height:1.08; margin:0 0 12px; }
+    p, li { color:var(--muted); margin:0 0 14px; }
+    .lede { max-width:70ch; font-size:18px; line-height:1.7; }
+    .shell { display:grid; grid-template-columns: 240px minmax(0, 1fr); gap:36px; margin-top:18px; }
+    .side-nav { position:sticky; top:24px; align-self:start; padding-right:10px; }
+    .side-nav span { display:block; color:var(--muted); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px; }
+    .side-nav a { display:block; margin-bottom:12px; font-size:14px; }
+    .doc { max-width:820px; }
+    .doc section { padding:24px 0; border-top:1px solid var(--border); }
+    .doc section:first-child { border-top:none; padding-top:0; }
+    ul { padding-left:20px; }
+    footer { margin-top:40px; padding-top:24px; border-top:1px solid var(--border); color:var(--muted); font-size:14px; }
+    @media (max-width: 900px) { .shell { grid-template-columns:1fr; } .side-nav { position:static; } }
   </style>
 </head>
 <body>
   <div class="container">
     <nav>
-      <div class="logo">AI Bridge</div>
+      <div class="logo"><div class="logo-dot"></div>AI Bridge</div>
       <div class="links"><a href="/">Home</a><a href="/privacy">Privacy</a><a href="/acceptable-use">Acceptable Use</a></div>
     </nav>
-    <h1>Terms of Service</h1>
-    <p class="lede">These Terms govern your use of AI Bridge, including routed model access, issued API keys, internal credit balances, bonus credits, rewards, add-on unlocks, dashboards, and related services. By using the service, you agree to these Terms.</p>
-    <div class="content">
-        <h2>Accounts and access</h2>
-        <ul>
-          <li>You are responsible for account information, API key security, and actions taken through your account.</li>
-          <li>AI Bridge may suspend, rotate, or revoke keys and sessions to protect service integrity, prevent abuse, or respond to billing or security risk.</li>
-          <li>Admin and user access are controlled by signed sessions and platform rules, not by public query-string access.</li>
-        </ul>
-
-        <h2>Credits, bonuses, and rewards</h2>
-        <ul>
-          <li>Main balance, bonus credits, starter credits, and referral rewards are internal service balances, not stored-value accounts or cash equivalents.</li>
-          <li>Promo or reward balances are non-withdrawable unless AI Bridge explicitly states otherwise in writing.</li>
-          <li>Bonus credits, rewards, and add-on unlocks may have eligibility conditions, expiration windows, or usage restrictions.</li>
-        </ul>
-
-        <h2>Payments and ledger correctness</h2>
-        <p>Top-ups are tied to the authenticated user who initiated checkout. Stripe sessions, payment records, webhooks, and balance application are matched through recorded metadata and idempotent ledger handling. AI Bridge may hold, reject, or reverse credits where payment verification fails, chargebacks occur, or fraud is suspected.</p>
-
-        <h2>Service behavior</h2>
-        <p>AI Bridge may adapt provider mix, routing history logic, quality checks, trial limits, fallback behavior, and launch safeguards. We aim to improve outcome fit and cost control, but we do not guarantee uninterrupted service, identical results to any single model, or universal savings across every workload.</p>
-
-        <h2>Use restrictions and enforcement</h2>
-        <p>You may not use the service for unlawful activity, payment evasion, credential abuse, scraping intended to bypass usage controls, or attempts to compromise users, providers, or the platform. AI Bridge may investigate misuse, preserve evidence, and cooperate with legal or compliance requirements.</p>
-
-        <h2>Add-ons and feature unlocks</h2>
-        <p>Optional add-ons and time-bounded feature unlocks are part of the service layer. Availability, price, scope, and eligibility may change. Some features may remain beta, limited-access, or operationally restricted while AI Bridge validates them under real usage.</p>
-
-        <h2>Liability and contact</h2>
-        <p>To the maximum extent permitted by law, AI Bridge is provided on an as-available basis. We limit liability for indirect, consequential, or punitive damages, and for outages or provider-side failures outside our reasonable control. Questions about these Terms may be sent to <a href="mailto:hello@getaibridge.com" style="color:var(--accent);text-decoration:none;">hello@getaibridge.com</a>.</p>
+    <div class="hero">
+      <h1>Terms of Service</h1>
+      <p class="lede">These Terms govern use of AI Bridge, including routed model access, issued API keys, internal credit balances, starter and bonus credits, referral rewards, add-on unlocks, dashboards, and related services. By using AI Bridge, you agree to these Terms.</p>
+    </div>
+    <div class="shell">
+      <aside class="side-nav">
+        <span>Sections</span>
+        <a href="#accounts">Accounts</a>
+        <a href="#credits">Credits and rewards</a>
+        <a href="#payments">Payments</a>
+        <a href="#service">Service behavior</a>
+        <a href="#addons">Add-ons</a>
+        <a href="#restrictions">Restrictions</a>
+        <a href="#liability">Liability</a>
+      </aside>
+      <main class="doc">
+        <section id="accounts">
+          <h2>Accounts and access</h2>
+          <p>You are responsible for account information, session security, API key handling, and actions taken through your account. AI Bridge may suspend, rotate, or revoke keys and sessions to protect service integrity, prevent abuse, respond to billing risk, or comply with legal obligations.</p>
+        </section>
+        <section id="credits">
+          <h2>Credits, bonuses, and rewards</h2>
+          <p>Main balance, starter credit, bonus credit, referral rewards, and other promotional balances are internal service balances. They are not stored-value accounts, cash balances, or bank substitutes. Promo and reward balances are non-withdrawable unless AI Bridge explicitly states otherwise in writing.</p>
+          <p>Bonus credits, rewards, and add-on unlocks may have eligibility conditions, expiration windows, usage restrictions, and operational limitations. AI Bridge may adjust or discontinue them for abuse prevention, billing correctness, product changes, or launch safeguards.</p>
+        </section>
+        <section id="payments">
+          <h2>Payments and ledger correctness</h2>
+          <p>Top-ups are tied to the authenticated user who initiates checkout. Stripe sessions, payment records, webhook events, and balance application are matched through recorded metadata and idempotent ledger handling. AI Bridge may hold, reject, reverse, or delay credits where payment verification fails, fraud is suspected, a chargeback occurs, or the initiating identity cannot be trusted.</p>
+        </section>
+        <section id="service">
+          <h2>Service behavior and product limits</h2>
+          <p>AI Bridge may adapt provider mix, routing history logic, quality checks, trial limits, fallback behavior, launch safeguards, and compatibility behavior over time. We aim to improve outcome fit, continuity, and spend control, but we do not guarantee uninterrupted service, identical results to any single model, or universal savings across every workflow.</p>
+        </section>
+        <section id="addons">
+          <h2>Add-ons and feature unlocks</h2>
+          <p>Optional add-ons and time-bounded feature unlocks are part of the service layer. Availability, price, scope, seat structure, and eligibility may change. Some features may remain live, available now, early access, beta, or otherwise operationally limited while AI Bridge validates them under real usage.</p>
+        </section>
+        <section id="restrictions">
+          <h2>Use restrictions and enforcement</h2>
+          <p>You may not use AI Bridge for unlawful activity, payment evasion, credential abuse, scraping intended to bypass usage controls, or attempts to compromise users, vendors, or infrastructure. AI Bridge may investigate misuse, preserve evidence, limit access, and cooperate with legal or compliance requirements.</p>
+        </section>
+        <section id="liability">
+          <h2>Liability and contact</h2>
+          <p>To the maximum extent permitted by law, AI Bridge is provided on an as-available basis. We limit liability for indirect, consequential, or punitive damages, and for outages or provider-side failures outside our reasonable control. Questions about these Terms may be sent to <a href="mailto:hello@getaibridge.com">hello@getaibridge.com</a>.</p>
+        </section>
+      </main>
     </div>
     <footer><a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/acceptable-use">Acceptable Use</a></footer>
   </div>

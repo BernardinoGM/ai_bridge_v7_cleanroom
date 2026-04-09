@@ -18,7 +18,8 @@
     body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; }
     .container { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
     nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
-    .logo { font-family: var(--display); font-weight: 800; font-size: 20px; }
+    .logo { font-family: var(--display); font-weight: 800; font-size: 20px; display:flex; align-items:center; gap:8px; }
+    .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent-cyan); box-shadow:0 0 12px var(--accent-cyan); }
     .nav-links { display:flex; gap:16px; align-items:center; color:var(--muted); }
     .nav-links a { color:var(--muted); text-decoration:none; }
     .hero { padding: 44px 0 28px; display:grid; grid-template-columns: 1.1fr 0.9fr; gap:24px; }
@@ -35,6 +36,8 @@
     h3 { margin: 0 0 10px; font-size: 21px; line-height: 1.15; }
     .muted { color: var(--muted); font-size: 15px; }
     .key-box, .code-block { background: rgba(0,0,0,0.22); border:1px solid var(--border); border-radius: 16px; padding: 16px; font-family: var(--mono); overflow:auto; }
+    .copy-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .copy-button { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius:999px; border:1px solid var(--accent-cyan-border); background:var(--accent-cyan-dim); color:var(--accent-cyan); cursor:pointer; font-size:13px; font-weight:700; }
     .checklist { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
     .checklist li { color: var(--text); line-height: 1.5; }
     .breakdown { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin-top:14px; }
@@ -56,7 +59,7 @@
 <body>
   <div class="container">
     <nav>
-      <div class="logo">AI Bridge</div>
+      <div class="logo"><div class="logo-dot"></div>AI Bridge</div>
       <div class="nav-links">
         <span>{{ user_email }}</span>
         <a href="/privacy">Privacy</a>
@@ -85,18 +88,24 @@
     <section class="grid two">
       <div class="panel">
         <h2>Step 1: Copy API key</h2>
-        {% if api_keys %}
-        <div class="key-box">{{ api_keys[0].key_prefix }}...</div>
-        <p class="muted">Use your live key in API requests and terminal-based workflows.</p>
+        {% if display_api_key %}
+        <div class="copy-row">
+          <p class="muted" style="margin:0;">Use your live key in API requests and terminal-based workflows.</p>
+          <button class="copy-button" type="button" data-copy="{{ display_api_key }}">Copy key</button>
+        </div>
+        <div class="key-box">{{ display_api_key }}</div>
         {% else %}
         <p class="muted">No active API key available yet.</p>
         {% endif %}
       </div>
       <div class="panel">
         <h2>Step 2: Copy setup commands</h2>
+        <div class="copy-row">
+          <p class="muted" style="margin:0;">Step 3: Run in terminal.</p>
+          <button class="copy-button" type="button" data-copy="{% for line in onboarding_commands %}{{ line }}{% if not loop.last %}&#10;{% endif %}{% endfor %}">Copy full setup</button>
+        </div>
         <div class="code-block">{% for line in onboarding_commands %}{{ line }}
 {% endfor %}</div>
-        <p class="muted">Step 3: Run in terminal.</p>
       </div>
     </section>
 
@@ -154,41 +163,29 @@
     <section class="grid two" style="margin-top:20px;">
       <div class="panel">
         <h2>Referral</h2>
+        <div class="copy-row">
+          <p class="muted" style="margin:0;">Share this sign-up link. Rewards post as internal credit after a qualifying first purchase.</p>
+          <button class="copy-button" type="button" data-copy="{{ referral_link }}">Copy link</button>
+        </div>
         <div class="key-box">{{ referral_link }}</div>
-        <p class="muted">Share this sign-up link. Rewards post as internal credit after a qualifying first purchase.</p>
         {% if recent_referral_perks %}
-        <ul class="checklist">
+        <ul class="checklist" style="margin-top:14px;">
           {% for perk in recent_referral_perks %}
-          <li>Reward credited: ${{ "%.2f"|format(perk.amount_usd) }}</li>
+          <li class="ledger-row"><span>Reward credited</span><span>${{ "%.2f"|format(perk.amount_usd) }}</span></li>
           {% endfor %}
         </ul>
         {% else %}
-        <p class="muted">No referral rewards yet.</p>
+        <p class="muted" style="margin-top:14px;">No referral rewards yet.</p>
         {% endif %}
       </div>
       <div class="panel">
-        <h2>Reward history</h2>
-        {% if reward_ledger %}
-        <ul class="checklist">
-          {% for entry in reward_ledger %}
-          <li class="ledger-row"><span>{{ entry.description }}</span><span>{% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</span></li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="muted">No reward activity yet.</p>
-        {% endif %}
-      </div>
-    </section>
-
-    <section style="margin-top:20px;">
-      <div class="panel">
-        <h2>30-day feature unlocks</h2>
+        <h2>Feature store</h2>
         <div class="addons">
           {% for addon in upsells %}
           <div class="addon">
             <strong>{{ addon.name }}</strong>
             <p class="muted">{{ addon.tagline }}</p>
-            <span class="badge">{% if addon.code == "bill_guard" %}Live{% elif addon.code == "priority_queue" %}Available now{% else %}Early access{% endif %} · {% if addon.status == "skeleton" %}Seat-based · {% elif addon.status == "beta" %}Limited access · {% endif %}Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
+            <span class="badge">{% if addon.code == "bill_guard" %}Live{% elif addon.code == "priority_queue" %}Available now{% else %}Early access{% endif %} · {% if addon.status == "skeleton" %}Seat-based · {% elif addon.status == "beta" %}Limited access · {% endif %}${{ "%.2f"|format(addon.price_usd) }}/mo</span>
           </div>
           {% endfor %}
           <div class="addon">
@@ -209,5 +206,17 @@
       <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a> · <a href="/acceptable-use">Acceptable Use</a>
     </footer>
   </div>
+  <script>
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(button.dataset.copy || '');
+          const previous = button.textContent;
+          button.textContent = 'Copied';
+          window.setTimeout(() => { button.textContent = previous; }, 1200);
+        } catch {}
+      });
+    });
+  </script>
 </body>
 </html>

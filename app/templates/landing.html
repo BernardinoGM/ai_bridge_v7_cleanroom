@@ -21,7 +21,7 @@
 
   nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid var(--border); background: rgba(11,14,20,0.92); backdrop-filter: blur(12px); }
   .logo { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.03em; display: flex; align-items: center; gap: 8px; }
-  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 12px var(--accent-cyan); }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 18px var(--accent-cyan), 0 0 4px rgba(255,255,255,0.3); }
   .nav-links { display: flex; align-items: center; gap: 32px; }
   .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
   .nav-links a:hover { color: var(--accent-cyan); }
@@ -225,7 +225,7 @@
         <div class="code-block">
           <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add to ~/.zshrc — that's it</div>
           <div>export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"</div>
-          <div>export ANTHROPIC_API_KEY="your-bridge-key"</div>
+          <div>export ANTHROPIC_API_KEY="ab_live_..."</div>
         </div>
         <p style="color: var(--muted); margin: 24px 0;"><strong>Preference-aware execution.</strong> When context grows harder, AI Bridge adapts underneath while keeping your workflow shape and direction intact.</p>
         <div style="display: flex; gap: 24px; justify-content: center; margin-top: 32px;">
@@ -265,8 +265,8 @@
       <h2 style="text-align: center;">More control, more visibility</h2>
       <p class="section-subhead">Add-ons that raise confidence, smooth harder work, and expand control without exposing internal cost math.</p>
       <div class="addon-grid">
-        <div class="addon-card"><h4>Bill Guard</h4><p>Spend Guard, Benchmark Guard, and a Weekly Digest so usage stays confident without exposing provider cost detail.</p><span class="badge-coming">Live · $19 / 30 days</span></div>
-        <div class="addon-card"><h4>Priority Queue</h4><p>Faster handling on harder work, preferred queueing during high load, and smoother completion on higher-risk tasks.</p><span class="badge-coming">Available now · $20 / 30 days</span></div>
+        <div class="addon-card"><h4>Bill Guard</h4><p>Spend Guard, Benchmark Guard, and a Weekly Digest so usage stays confident without exposing provider cost detail.</p><span class="badge-coming">Live · $19/mo</span></div>
+        <div class="addon-card"><h4>Priority Queue</h4><p>Faster handling on harder work, preferred queueing during high load, and smoother completion on higher-risk tasks.</p><span class="badge-coming">Available now · $20/mo</span></div>
         <div class="addon-card"><h4>Team Vault</h4><p>Seat-based team wallet controls, role budgets, and clean visibility for founders, CTOs, and team operators.</p><span class="badge-coming">Early access · seat pricing in product</span></div>
         <div class="addon-card"><h4>X-Ray</h4><p>Usage Intelligence for workflow insights, routing outcomes, spend trends, and repeated workload opportunities.</p><span class="badge-coming">Early access · limited access</span></div>
         <div class="addon-card"><h4>Approval Gate</h4><p>Hold higher-risk output behind a lightweight approval step before it reaches the next user, customer, or deploy action.</p><span class="badge-coming">Early access</span></div>
@@ -274,14 +274,18 @@
       </div>
     </section>
 
-    <!-- FAQ (精简) -->
+    <!-- FAQ -->
     <section>
       <h2 style="text-align: center;">Common questions</h2>
       <div style="max-width:720px;margin:48px auto 0;">
         <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It uses trained model combinations informed by task shape, complexity, user preference, and routing history. The goal is better fit and better direction, not random routing.</div></div>
-        <div class="faq-item"><div class="faq-question">What if the output isn't good enough?</div><div class="faq-answer">On selected routes we run checks and may escalate or retry. Higher-risk work gets more scrutiny than routine turns, while user control stays available.</div></div>
-        <div class="faq-item"><div class="faq-question">Does this work with my existing code?</div><div class="faq-answer">Yes. Change your base_url to https://getaibridge.com/v1. Your SDK and prompts stay exactly the same.</div></div>
-        <div class="faq-item"><div class="faq-question">Do you store my prompts?</div><div class="faq-answer">Public landing demos avoid prompt storage. Signed-in product flows keep limited request and task records for continuity, billing, and support.</div></div>
+        <div class="faq-item"><div class="faq-question">Is this a router or an autonomous agent?</div><div class="faq-answer">Neither in the generic sense. AI Bridge keeps control with the user and adapts model combinations underneath based on task shape, complexity, preference signals, and routing history.</div></div>
+        <div class="faq-item"><div class="faq-question">What happens on harder work?</div><div class="faq-answer">On selected routes we run checks and may escalate or retry. Higher-risk work gets more scrutiny than routine turns, while the visible workflow stays consistent.</div></div>
+        <div class="faq-item"><div class="faq-question">Does this work with my existing terminal or editor flow?</div><div class="faq-answer">Yes. Change your base URL to https://getaibridge.com/v1, use your issued key, and keep your prompts and workflow shape the same.</div></div>
+        <div class="faq-item"><div class="faq-question">What do starter credit, bonus credit, and rewards actually mean?</div><div class="faq-answer">Starter credit appears after key signup. Larger top-ups can include bonus credit. Referral and reward credits post to internal balance automatically and stay inside the product.</div></div>
+        <div class="faq-item"><div class="faq-question">How does Team Vault work?</div><div class="faq-answer">Team Vault is the seat-based workspace layer for shared wallet controls, role budgets, and team visibility. It is meant for founders, CTOs, and operators who want tighter control without changing the underlying workflow.</div></div>
+        <div class="faq-item"><div class="faq-question">What data do you keep?</div><div class="faq-answer">Public landing demos avoid prompt storage. Signed-in product flows keep limited request, continuity, billing, and support records so the service can route work, keep sessions stable, and maintain correct ledger history.</div></div>
+        <div class="faq-item"><div class="faq-question">Do you train on raw user prompts?</div><div class="faq-answer">The public product does not promise unrestricted training on raw user content. We retain operational data, routing outcomes, de-identified analytics, and abuse-prevention telemetry as described in the legal pages.</div></div>
       </div>
     </section>
 
@@ -322,7 +326,10 @@
       <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 1: Copy API key</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
       <p id="modalSuccessCopy" style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
       <div id="onboardingBox" style="display:none;text-align:left;margin-top:20px;">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 2: Copy setup commands</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
+          <div style="font-size:13px;color:var(--muted);">Step 2: Copy setup commands</div>
+          <button class="btn-outline" type="button" id="copySetupBtn" style="padding:8px 14px;font-size:13px;">Copy full setup</button>
+        </div>
         <div class="code-block" id="onboardingCommands" style="margin:0;"></div>
         <div style="font-size:13px;color:var(--muted);margin-top:12px;">Step 3: Run in terminal.</div>
       </div>
@@ -351,6 +358,7 @@
   const modalSuccessCopy = document.getElementById('modalSuccessCopy');
   const onboardingBox = document.getElementById('onboardingBox');
   const onboardingCommands = document.getElementById('onboardingCommands');
+  const copySetupBtn = document.getElementById('copySetupBtn');
   const signupUseCase = document.getElementById('signupUseCase');
   const rewardPrompt = document.querySelector('.referral-box .btn-primary');
   const packCodeMap = {
@@ -602,6 +610,16 @@
     window.setTimeout(() => {
       el.textContent = original;
     }, 1500);
+  }
+  if (copySetupBtn) {
+    copySetupBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(onboardingCommands.textContent || '');
+        const previous = copySetupBtn.textContent;
+        copySetupBtn.textContent = 'Copied';
+        window.setTimeout(() => { copySetupBtn.textContent = previous; }, 1200);
+      } catch {}
+    });
   }
 
   document.querySelectorAll('.faq-question').forEach(q => {

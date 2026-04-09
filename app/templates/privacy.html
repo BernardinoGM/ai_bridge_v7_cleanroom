@@ -7,60 +7,90 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    :root { --bg:#0B0E14; --surface:#11161D; --border:#2E3843; --text:#F0F4FA; --muted:#8A95A5; --accent:#00E5FF; }
+    :root { --bg:#0B0E14; --surface:#11161D; --border:#2E3843; --text:#F0F4FA; --muted:#8A95A5; --accent:#00E5FF; --mono:'IBM Plex Mono',monospace; --sans:'DM Sans',sans-serif; --display:'Syne',sans-serif; }
     * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; }
-    .container { max-width:920px; margin:0 auto; padding:32px 24px 72px; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.7; }
+    .container { max-width:1280px; margin:0 auto; padding:32px 24px 80px; }
     nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
-    .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; }
-    .links a { color:var(--accent); text-decoration:none; margin-left:16px; }
-    h1,h2 { font-family:'Syne',sans-serif; letter-spacing:-0.02em; }
-    h1 { font-size:clamp(42px,5vw,64px); margin:28px 0 16px; }
-    .lede,p,li { color:var(--muted); line-height:1.7; }
-    h2 { font-size:28px; margin:34px 0 14px; }
-    h3 { font-size:20px; margin:24px 0 10px; font-family:'Syne',sans-serif; }
-    .content { margin-top:28px; }
-    ul { margin:0; padding-left:18px; }
-    footer { margin-top:28px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); }
-    footer a { color:var(--accent); text-decoration:none; }
+    .logo { font-family:var(--display); font-size:20px; font-weight:800; display:flex; align-items:center; gap:8px; }
+    .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 18px var(--accent),0 0 4px rgba(255,255,255,0.3); }
+    .links a, footer a, .side-nav a { color:var(--accent); text-decoration:none; }
+    .links a { margin-left:16px; }
+    .hero { padding:28px 0 24px; }
+    h1 { font-family:var(--display); font-size:clamp(48px,6vw,76px); line-height:1; margin:0 0 14px; letter-spacing:-0.03em; }
+    h2 { font-family:var(--display); font-size:clamp(28px,3vw,38px); line-height:1.08; margin:0 0 12px; }
+    p, li { color:var(--muted); margin:0 0 14px; }
+    .lede { max-width:70ch; font-size:18px; line-height:1.7; }
+    .shell { display:grid; grid-template-columns: 240px minmax(0, 1fr); gap:36px; margin-top:18px; }
+    .side-nav { position:sticky; top:24px; align-self:start; padding-right:10px; }
+    .side-nav span { display:block; color:var(--muted); font-size:12px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px; }
+    .side-nav a { display:block; margin-bottom:12px; font-size:14px; }
+    .doc { max-width:820px; }
+    .doc section { padding:24px 0; border-top:1px solid var(--border); }
+    .doc section:first-child { border-top:none; padding-top:0; }
+    ul { padding-left:20px; }
+    footer { margin-top:40px; padding-top:24px; border-top:1px solid var(--border); color:var(--muted); font-size:14px; }
+    @media (max-width: 900px) { .shell { grid-template-columns:1fr; } .side-nav { position:static; } }
   </style>
 </head>
 <body>
   <div class="container">
     <nav>
-      <div class="logo">AI Bridge</div>
+      <div class="logo"><div class="logo-dot"></div>AI Bridge</div>
       <div class="links"><a href="/">Home</a><a href="/terms">Terms</a><a href="/acceptable-use">Acceptable Use</a></div>
     </nav>
-    <h1>Privacy Policy</h1>
-    <p class="lede">AI Bridge processes account data, routed usage records, payment records, referral attribution, security events, and de-identified operational analytics so the service can run safely, bill correctly, improve routing outcomes, and protect the platform. This policy explains what we collect, why we collect it, and how we use it.</p>
-    <div class="content">
-        <h2>Information we collect</h2>
-        <h3>Account and identity data</h3>
-        <ul>
-          <li>Account details such as name, email, issued keys, referral code, and session identifiers.</li>
-          <li>Billing and ledger records such as top-ups, bonus credits, rewards, webhook events, and payment state.</li>
-        </ul>
-        <h3>Operational and usage data</h3>
-        <ul>
-          <li>Usage telemetry such as endpoint used, mode, timing, route outcome, estimated spend, and failure events.</li>
-          <li>Task continuity records needed to preserve multi-turn work, replay support incidents, and keep routing stable.</li>
-        </ul>
-
-        <h2>How we use information</h2>
-        <p>We use collected information to operate routed model access, issue keys, maintain balances, enforce product safeguards, attribute referrals, process payments, and preserve continuity across sessions. We also use it to detect abuse, investigate failed requests or payment events, and maintain a reliable ledger of credits and debits.</p>
-        <p>AI Bridge may generate and retain routing outcomes, spend trends, repeated-workload patterns, de-identified usage summaries, and failure statistics so the product can improve model selection, reliability, abuse prevention, and operational decision making.</p>
-
-        <h2>Prompt and content handling</h2>
-        <p>Public landing demos avoid prompt storage beyond limited anonymous trial accounting and internal subsidy inspection. Signed-in product flows may retain prompt and response excerpts, task state, request payloads, and derived routing outcomes when needed for continuity, support, billing correctness, safety review, and service improvement. We do not publicly promise unrestricted model training on raw user content.</p>
-
-        <h2>Operational rights and disclosures</h2>
-        <p>AI Bridge may use de-identified and aggregated telemetry, routing outcomes, derived usage patterns, failure signals, abuse indicators, and operational metadata for analytics, product improvement, benchmarking, abuse prevention, compliance, and service protection. We may share necessary records with processors, payment providers, infrastructure vendors, and legal authorities where required.</p>
-
-        <h2>Retention and security</h2>
-        <p>We retain records for as long as reasonably necessary to provide the service, resolve disputes, comply with legal obligations, investigate abuse, and maintain accurate billing and ledger history. Access is limited by role, session controls, and operational need. No system is perfectly secure, but we use layered controls appropriate for a commercial launch service.</p>
-
-        <h2>Your choices</h2>
-        <p>You may contact us to request account assistance, key rotation, or account closure. Some operational records, payment records, ledger entries, and security logs may be retained where legally required or operationally necessary. Questions can be sent to <a href="mailto:hello@getaibridge.com" style="color:var(--accent);text-decoration:none;">hello@getaibridge.com</a>.</p>
+    <div class="hero">
+      <h1>Privacy Policy</h1>
+      <p class="lede">AI Bridge processes account data, routed usage records, payment records, referral attribution, security events, and de-identified operational analytics so the service can run safely, bill correctly, improve routing outcomes, and protect the platform. This Privacy Policy explains what information we collect, how we use it, what operational rights we retain, and what choices users have.</p>
+    </div>
+    <div class="shell">
+      <aside class="side-nav">
+        <span>Sections</span>
+        <a href="#collection">Collection</a>
+        <a href="#use">Use of information</a>
+        <a href="#content">Prompt and content handling</a>
+        <a href="#analytics">Telemetry and analytics</a>
+        <a href="#sharing">Sharing</a>
+        <a href="#retention">Retention and security</a>
+        <a href="#rights">User choices</a>
+      </aside>
+      <main class="doc">
+        <section id="collection">
+          <h2>Information we collect</h2>
+          <p>We collect account identifiers such as name, email address, referral code, session identifiers, and issued API keys. We also collect billing and ledger records such as top-ups, starter credits, bonus credits, rewards, webhook events, and payment state so the service can maintain a correct internal balance.</p>
+          <p>AI Bridge also records operational usage data such as endpoint used, mode selected, routing outcome, latency, spend estimates, failure events, and task continuity records. These records help preserve multi-turn work, support account recovery, investigate payment failures, and keep routing stable.</p>
+        </section>
+        <section id="use">
+          <h2>How we use information</h2>
+          <p>We use collected information to provide routed model access, issue keys, maintain balances, attribute referrals, process payments, preserve continuity across sessions, detect abuse, investigate failures, and maintain an accurate ledger of credits and debits.</p>
+          <p>We also use operational information to monitor service quality, evaluate routing outcomes, identify repeated workload patterns, improve spend control, and make product and operational decisions. This includes derived usage patterns, routing outcomes, and de-identified analytics needed to improve reliability and protect the platform.</p>
+        </section>
+        <section id="content">
+          <h2>Prompt and content handling</h2>
+          <p>Public landing demos avoid prompt storage beyond limited anonymous trial accounting and internal subsidy inspection. Signed-in product flows may retain prompt excerpts, response excerpts, task state, request payloads, and derived routing outcomes where reasonably necessary for continuity, billing correctness, support, safety review, service improvement, or abuse prevention.</p>
+          <p>AI Bridge does not publicly promise unrestricted training on raw user content. When we use product data for service improvement, we focus on operational telemetry, routing outcomes, repeated workload patterns, de-identified analytics, and abuse-prevention signals rather than a blanket right to train on raw prompt text without limit.</p>
+        </section>
+        <section id="analytics">
+          <h2>Telemetry, routing outcomes, and de-identified analytics</h2>
+          <p>AI Bridge retains broad lawful rights to use telemetry, routing outcomes, derived usage patterns, benchmark comparisons, spend trends, failure signals, and de-identified analytics for service protection, abuse prevention, compliance, service improvement, product planning, and operational monitoring. These rights are necessary to run a routing product safely and commercially.</p>
+          <p>Where reasonably possible, analytics and product learning use aggregated or de-identified records. Some user-linked operational data must still be retained for billing correctness, fraud investigation, support, and legal compliance.</p>
+        </section>
+        <section id="sharing">
+          <h2>When we share information</h2>
+          <p>We may share necessary records with payment processors, infrastructure providers, model providers, fraud-prevention vendors, professional advisors, and legal authorities where reasonably required to operate the service, investigate abuse, comply with law, protect our rights, or respond to security incidents.</p>
+          <p>We do not sell personal information in the ordinary consumer-ad-tech sense described by some privacy regimes. Operational sharing is limited to what is reasonably necessary to provide and protect the service.</p>
+        </section>
+        <section id="retention">
+          <h2>Retention and security</h2>
+          <p>We retain records for as long as reasonably necessary to provide the service, resolve disputes, maintain accurate billing and ledger history, investigate abuse, and comply with legal obligations. Retention periods may differ depending on the type of data involved, including payment records, fraud signals, request failures, and continuity records.</p>
+          <p>No service is perfectly secure, but AI Bridge uses layered controls appropriate for a commercial launch product, including session controls, internal access limitations, payment verification, and failure logging.</p>
+        </section>
+        <section id="rights">
+          <h2>Your choices and contact</h2>
+          <p>You may contact us to request account assistance, key rotation, or account closure. Some operational records, ledger entries, payment records, and security logs may be retained where legally required or operationally necessary.</p>
+          <p>Questions about this Privacy Policy can be sent to <a href="mailto:hello@getaibridge.com">hello@getaibridge.com</a>.</p>
+        </section>
+      </main>
     </div>
     <footer><a href="/">Home</a> · <a href="/terms">Terms</a> · <a href="/acceptable-use">Acceptable Use</a></footer>
   </div>

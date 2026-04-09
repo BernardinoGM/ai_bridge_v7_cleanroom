@@ -13,6 +13,7 @@ from app.session_auth import (
     ADMIN_SESSION_COOKIE_NAME,
     ADMIN_SESSION_MAX_AGE_SECONDS,
     SESSION_MAX_AGE_SECONDS,
+    SETUP_SESSION_COOKIE_NAME,
     USER_SESSION_COOKIE_NAME,
     issue_session_token,
     read_session_token,
@@ -60,13 +61,14 @@ def dashboard_me(request: Request, db: Session = Depends(get_db)) -> HTMLRespons
     user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
     if user is None:
         raise HTTPException(status_code=401, detail="Launch session is invalid.")
-    context = build_dashboard(db, user.id)
+    raw_key = read_session_token(request.cookies.get(SETUP_SESSION_COOKIE_NAME), settings, "setup")
+    context = build_dashboard(db, user.id, raw_key=raw_key)
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 
 @router.get("/dashboard/demo", response_class=HTMLResponse)
 def dashboard_demo(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
-    context = build_dashboard(db, 1)
+    context = build_dashboard(db, 1, raw_key=None)
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 
@@ -79,7 +81,8 @@ def dashboard_page(request: Request, user_id: int, db: Session = Depends(get_db)
     user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
     if user is None or user.id != user_id:
         raise HTTPException(status_code=404, detail="Dashboard not found.")
-    context = build_dashboard(db, user_id)
+    raw_key = read_session_token(request.cookies.get(SETUP_SESSION_COOKIE_NAME), settings, "setup")
+    context = build_dashboard(db, user_id, raw_key=raw_key)
     return templates.TemplateResponse(request, "dashboard.html", context)
 
 

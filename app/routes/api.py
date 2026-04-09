@@ -24,6 +24,8 @@ from app.routing import RouteDecision, decide_route
 from app.schemas import ApiKeyCreateRequest, ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
 from app.session_auth import (
     SESSION_MAX_AGE_SECONDS,
+    SETUP_SESSION_COOKIE_NAME,
+    SETUP_SESSION_MAX_AGE_SECONDS,
     USER_SESSION_COOKIE_NAME,
     issue_session_token,
     read_session_token,
@@ -410,6 +412,14 @@ def create_api_key_launch(
             key=USER_SESSION_COOKIE_NAME,
             value=issue_session_token(user.email.strip().lower(), "user", settings, SESSION_MAX_AGE_SECONDS),
             max_age=60 * 60 * 24 * 30,
+            httponly=True,
+            samesite="lax",
+            secure=settings.app_env == "production",
+        )
+        response.set_cookie(
+            key=SETUP_SESSION_COOKIE_NAME,
+            value=issue_session_token(raw_key, "setup", settings, SETUP_SESSION_MAX_AGE_SECONDS),
+            max_age=SETUP_SESSION_MAX_AGE_SECONDS,
             httponly=True,
             samesite="lax",
             secure=settings.app_env == "production",

@@ -57,7 +57,7 @@ def test_dashboard_is_runway_centric() -> None:
     assert "step 1: copy api key" in body
     assert "recent top-ups" in body
     assert "recent usage" in body
-    assert "reward history" in body
+    assert "feature store" in body
 
 
 def test_root_and_dashboard_routes_resolve_without_affecting_health() -> None:
@@ -93,6 +93,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "right task." in body
     assert "fewer mistakes." in body
     assert "try 3 free demos" in body
+    assert "try 3 free demos →" in body
     assert "adaptive model routing for developers" in body
     assert "demo preview" in body
     assert "dashboard" in body
@@ -117,11 +118,17 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "$1,000 → includes $130 bonus credit" in body
     assert "bill guard" in body
     assert "priority queue" in body
-    assert "available now · $20 / 30 days" in body
+    assert "available now · $20/mo" in body
     assert "early access · seat pricing in product" in body
     assert "early access · limited access" in body
     assert "approval gate" in body
     assert "session memory" in body
+    assert "is this a router or an autonomous agent?" in body
+    assert "what do starter credit, bonus credit, and rewards actually mean?" in body
+    assert "do you train on raw user prompts?" in body
+    assert "copy full setup" in body
+    assert "your-bridge-key" not in body
+    assert "your_key_from_above" not in body
     assert "/privacy" in body
     assert "/terms" in body
     assert "/acceptable-use" in body
@@ -684,13 +691,16 @@ def test_privacy_page_exists_and_is_linked() -> None:
     assert "privacy policy" in privacy.text.lower()
     assert "de-identified operational analytics" in privacy.text.lower()
     assert "prompt and content handling" in privacy.text.lower()
+    assert "sections" in privacy.text.lower()
+    assert "retention and security" in privacy.text.lower()
     terms = client.get("/terms")
     assert terms.status_code == 200
     assert "credits, bonuses, and rewards" in terms.text.lower()
     assert "add-ons and feature unlocks" in terms.text.lower()
+    assert "payments and ledger correctness" in terms.text.lower()
     acceptable = client.get("/acceptable-use")
     assert acceptable.status_code == 200
-    assert "operational safeguards" in acceptable.text.lower()
+    assert "security and abuse prevention" in acceptable.text.lower()
     assert "fair use of the platform" in acceptable.text.lower()
 
 
@@ -754,15 +764,27 @@ def test_dashboard_matches_landing_user_blocks() -> None:
     assert "step 2: copy setup commands" in body
     assert "step 3: run in terminal" in body
     assert "recent top-ups" in body
-    assert "recent usage" in body
     assert "recent sessions" in body
     assert "referral" in body
     assert "https://getaibridge.com/signup?ref=" in body
-    assert "30-day feature unlocks" in body
+    assert "feature store" in body
     assert "priority queue" in body
-    assert "$20.00 / 30 days" in body
+    assert "$20.00/mo" in body
     assert "approval gate" in body
     assert "session memory" in body
+    assert "your_key_from_above" not in body
+    assert "copy full setup" in body
+
+
+def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "realsetup@example.com", "use_case": "terminal"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    page = session_client.get("/dashboard")
+    assert page.status_code == 200
+    body = page.text.lower()
+    assert api_key in page.text
     assert "available now" in body
     assert "early access" in body
 
