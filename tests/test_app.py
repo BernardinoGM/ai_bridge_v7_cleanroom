@@ -10,6 +10,7 @@ os.environ["APP_ENV"] = "testing"
 os.environ["PROVIDER_MOCK_ENABLED"] = "true"
 os.environ["PROVIDER_LOCAL_ENABLED"] = "false"
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
@@ -163,6 +164,17 @@ def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() 
     fourth = demo_client.post("/demo/chat", json={"example": "spec"})
     assert fourth.status_code == 429
     assert "anonymous demo limit reached" in fourth.json()["detail"].lower()
+
+
+def test_demo_chat_still_returns_preview_if_provider_path_is_unavailable(monkeypatch) -> None:
+    monkeypatch.setattr("app.routes.api._execute_with_fallback", lambda *args, **kwargs: (_ for _ in ()).throw(HTTPException(status_code=503, detail="selected model does not exist")))
+    demo_client = TestClient(app)
+    response = demo_client.post("/demo/chat", json={"message": "hello"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["reply"]
+    assert payload["lane"] in {"Fast", "Smart", "Assured"}
+    assert "selected model" not in response.text.lower()
 
 
 def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
@@ -354,6 +366,23 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         assert payment.pack_code == "scale_plus"
         assert payment.amount_usd == 500.0
         assert user.email == "checkoutuser@example.com"
+
+
+def test_checkout_is_blocked_for_inherited_admin_or_seed_identity(monkeypatch) -> None:
+    class _FakeSession:
+        id = "cs_should_not_exist_admin"
+        url = "https://checkout.stripe.test/session"
+
+    monkeypatch.setattr("app.payments.stripe.checkout.Session.create", lambda **_: _FakeSession())
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "Bernard.gmny@gmail.com", "name": "Bernard"})
+    assert create.status_code == 200
+    response = session_client.post(
+        "/api/payments/checkout",
+        json={"email": "Bernard.gmny@gmail.com", "pack_code": "starter"},
+    )
+    assert response.status_code == 403
+    assert "launch verification" in response.json()["detail"].lower()
 
 
 def test_checkout_is_blocked_without_authenticated_launch_session(monkeypatch) -> None:

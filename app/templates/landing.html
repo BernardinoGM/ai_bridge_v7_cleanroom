@@ -251,11 +251,11 @@
       <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
       <p class="section-subhead" style="margin-bottom: 16px;">Pre-pay, route real work, and top up only when it proves itself.</p>
       <div class="pricing-grid">
-        <div class="pricing-card"><h3>Try it out</h3><div class="price">$10</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>Solo builder</h3><div class="price">$50</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>Growing team</h3><div class="price">$200</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>High volume</h3><div class="price">$500</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Try it out</h3><div class="price">$10</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Solo builder</h3><div class="price">$50</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Growing team</h3><div class="price">$200</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>High volume</h3><div class="price">$500</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
       </div>
       <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">Starter credit appears after key signup. Bigger top-ups include bonus credit. Rewards and referral credits post to your internal balance automatically.</p>
       <p style="text-align:center;margin-top:10px;color:var(--muted);font-size:13px;">$10 → no bonus · $50 → includes $5 bonus credit · $200 → includes $20 bonus credit · $500 → includes $60 bonus credit · $1,000 → includes $130 bonus credit. <a href="/terms" style="color:var(--accent-cyan);">Terms</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy</a> · <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a></p>
@@ -339,6 +339,8 @@
 </div>
 
 <script>
+  let hasLaunchSession = {{ 'true' if launch_user_id else 'false' }};
+  let checkoutEnabled = {{ 'true' if checkout_enabled else 'false' }};
   let trialsLeft = 3;
   let selectedPackCode = null;
   let modalMode = 'signup';
@@ -430,7 +432,7 @@
   }
 
   function openNextStepAfterTrial() {
-    if (window.localStorage.getItem('ab_user_id')) {
+    if (checkoutEnabled || hasLaunchSession) {
       showCheckoutUnavailable();
       return;
     }
@@ -580,11 +582,9 @@
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({ email, pack_code: selectedPackCode, referred_by_code: referral || null })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Checkout unavailable');
-        window.localStorage.setItem('ab_launch_email', email);
-        window.localStorage.setItem('ab_user_id', String(data.user_id));
-        window.location.href = data.checkout_url;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Checkout unavailable');
+      window.location.href = data.checkout_url;
       } catch(e) {
         modalIntro.textContent = e.message || 'Checkout unavailable during launch verification.';
       }
@@ -599,8 +599,8 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Signup error');
-      window.localStorage.setItem('ab_launch_email', email);
-      window.localStorage.setItem('ab_user_id', String(data.user_id));
+      hasLaunchSession = true;
+      checkoutEnabled = true;
       document.querySelector('#modalForm').style.display = 'none';
       document.querySelector('#modalSuccess').style.display = 'block';
       const keyBox = document.querySelector('#modalSuccess .key-box');

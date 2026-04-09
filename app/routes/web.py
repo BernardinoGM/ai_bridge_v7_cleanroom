@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.config import BASE_DIR
 from app.config import get_settings
+from app.api_keys import authenticate_api_key
 from app.dashboard import build_admin_dashboard, build_dashboard
 from app.db import get_db
 from app.models import TaskSession, User
@@ -23,16 +24,38 @@ from sqlalchemy import select
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
+BLOCKED_CHECKOUT_EMAILS = {"founder@aibridge.local", "bernard.gmny@gmail.com"}
+
+
+def _checkout_enabled_for_request(request: Request, db: Session) -> bool:
+    settings = get_settings()
+    if read_session_token(request.cookies.get(ADMIN_SESSION_COOKIE_NAME), settings, "admin"):
+        return False
+    session_subject = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user")
+    if not session_subject:
+        return False
+    user = db.scalar(select(User).where(User.email == session_subject.strip().lower()))
+    if user is None or user.email.strip().lower() in BLOCKED_CHECKOUT_EMAILS:
+        return False
+    setup_key = read_session_token(request.cookies.get(SETUP_SESSION_COOKIE_NAME), settings, "setup")
+    if not setup_key:
+        return False
+    setup_user = authenticate_api_key(db, settings, setup_key)
+    return bool(setup_user and setup_user.id == user.id)
 
 
 @router.get("/", response_class=HTMLResponse)
-def landing(request: Request) -> HTMLResponse:
+def landing(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     settings = get_settings()
     launch_user_id = read_session_token(request.cookies.get(USER_SESSION_COOKIE_NAME), settings, "user") or ""
     return templates.TemplateResponse(
         request,
         "landing.html",
-        {"packs": list(TOP_UP_PACKS.values()), "launch_user_id": launch_user_id},
+        {
+            "packs": list(TOP_UP_PACKS.values()),
+            "launch_user_id": launch_user_id,
+            "checkout_enabled": _checkout_enabled_for_request(request, db),
+        },
     )
 
 

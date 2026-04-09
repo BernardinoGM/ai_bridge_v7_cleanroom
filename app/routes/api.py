@@ -23,6 +23,7 @@ from app.providers.mock import build_mock_clients
 from app.routing import RouteDecision, decide_route
 from app.schemas import ApiKeyCreateRequest, ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
 from app.session_auth import (
+    ADMIN_SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
     SETUP_SESSION_COOKIE_NAME,
     SETUP_SESSION_MAX_AGE_SECONDS,
@@ -62,6 +63,8 @@ MODEL_ALIAS_TO_MODE = {
     "claude-3-7-sonnet-latest": "assured",
     "claude-opus-4-1": "assured",
 }
+
+BLOCKED_CHECKOUT_EMAILS = {"founder@aibridge.local", "bernard.gmny@gmail.com"}
 
 
 def _task_status_label(task: TaskSession) -> str:
@@ -240,7 +243,22 @@ def _route_preview(
     visible_lane, internal_lane, quality_check = choose_initial_lane(effective_profile, mode, prompt)
     route = decide_route(prompt, visible_lane, internal_lane=internal_lane, quality_check_override=quality_check)
     registry = _provider_registry(settings)
-    provider_response, execution_profile_used, fallback_used = _execute_with_fallback(route, registry, prompt, system)
+    try:
+        provider_response, execution_profile_used, fallback_used = _execute_with_fallback(route, registry, prompt, system)
+    except HTTPException:
+        provider_response = ProviderResponse(
+            text=(
+                "AI Bridge preview is temporarily running in compatibility mode. "
+                "The lane choice, quality posture, and blended comparison are still available for this task."
+            ),
+            latency_ms=0,
+            prompt_tokens_est=max(24, len(prompt) // 4),
+            completion_tokens_est=96,
+            retry_count=0,
+            fallback_used=True,
+        )
+        execution_profile_used = "preview_fallback"
+        fallback_used = True
     routed_cost = estimate_public_charge(
         mode=visible_lane,
         prompt_tokens=provider_response.prompt_tokens_est,
@@ -297,6 +315,23 @@ def _cookie_user(request: Request, db: Session) -> User | None:
     if not raw:
         return None
     return db.scalar(select(User).where(User.email == raw.strip().lower()))
+
+
+def _trusted_checkout_user(request: Request, db: Session, settings: Settings) -> User | None:
+    if read_session_token(request.cookies.get(ADMIN_SESSION_COOKIE_NAME), settings, "admin"):
+        return None
+    cookie_user = _cookie_user(request, db)
+    if cookie_user is None:
+        return None
+    if cookie_user.email.strip().lower() in BLOCKED_CHECKOUT_EMAILS:
+        return None
+    setup_key = read_session_token(request.cookies.get(SETUP_SESSION_COOKIE_NAME), settings, "setup")
+    if not setup_key:
+        return None
+    setup_user = authenticate_api_key(db, settings, setup_key)
+    if setup_user is None or setup_user.id != cookie_user.id:
+        return None
+    return cookie_user
 
 
 def _resolve_user_id(
@@ -435,6 +470,7 @@ def create_api_key_launch(
             samesite="lax",
             secure=settings.app_env == "production",
         )
+        response.delete_cookie(ADMIN_SESSION_COOKIE_NAME)
         return {
             "api_key": raw_key,
             "user_id": user.id,
@@ -481,11 +517,11 @@ def create_checkout(
     settings: Settings = Depends(get_settings),
 ) -> dict:
     try:
-        cookie_user = _cookie_user(request, db)
+        cookie_user = _trusted_checkout_user(request, db, settings)
         if cookie_user is None:
             raise HTTPException(
                 status_code=403,
-                detail="Top-up temporarily unavailable during launch verification. Sign in with a live key session first.",
+                detail="Top-up temporarily unavailable during launch verification.",
             )
         current_user = cookie_user
         if payload.user_id is not None and payload.user_id != current_user.id:
