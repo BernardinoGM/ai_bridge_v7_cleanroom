@@ -177,9 +177,10 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["dashboard_url"] == "/dashboard"
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
-    assert payload["onboarding_commands"][0].startswith('export ANTHROPIC_BASE_URL=')
-    assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][2] == "claude"
+    assert payload["onboarding_commands"][0] == "unset ANTHROPIC_MODEL"
+    assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_BASE_URL=')
+    assert payload["onboarding_commands"][2].startswith('export ANTHROPIC_API_KEY="ab_live_')
+    assert payload["onboarding_commands"][3] == "claude"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
         assert user is not None
@@ -748,6 +749,24 @@ def test_alias_models_are_accepted_without_raw_model_errors() -> None:
     assert "selected model does not exist" not in response.text.lower()
 
 
+def test_terminal_hello_flow_uses_alias_without_exposing_model_errors() -> None:
+    create = client.post("/v1/keys", json={"email": "helloalias@example.com", "use_case": "terminal hello"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    response = client.post(
+        "/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "model": "claude-3-7-sonnet-latest",
+            "messages": [{"role": "user", "content": "hello"}],
+        },
+    )
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "selected model does not exist" not in body
+    assert "service temporarily unavailable" not in body
+
+
 def test_dashboard_matches_landing_user_blocks() -> None:
     session_client = TestClient(app)
     create = session_client.post("/v1/keys", json={"email": "dashstyle@example.com", "use_case": "ops"})
@@ -785,8 +804,27 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     assert page.status_code == 200
     body = page.text.lower()
     assert api_key in page.text
+    assert 'unset anthropic_model' in body
+    assert 'export anthropic_base_url=' in body
+    assert 'https://getaibridge.com/v1' in body
+    assert 'export anthropic_api_key=' in body
+    assert api_key in page.text
+    assert "your_key_from_above" not in body
     assert "available now" in body
     assert "early access" in body
+
+
+def test_home_logo_links_back_to_root_on_live_surfaces() -> None:
+    landing = client.get("/")
+    assert landing.status_code == 200
+    assert 'href="/" class="logo"' in landing.text
+
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "logouser@example.com", "use_case": "home link"})
+    assert create.status_code == 200
+    dashboard = session_client.get("/dashboard")
+    assert dashboard.status_code == 200
+    assert 'href="/" class="logo"' in dashboard.text
 
 
 def test_chat_surface_feels_like_core_product_shell() -> None:

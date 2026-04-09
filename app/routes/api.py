@@ -207,14 +207,17 @@ def _execute_with_fallback(
     primary_key = route.execution_profile
     fallback_key = "remote_balanced" if primary_key == "premium_anthropic" else "premium_anthropic"
     if primary_key not in registry:
-        raise HTTPException(status_code=503, detail="Provider execution profile is unavailable.")
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
     try:
         return registry[primary_key].generate(prompt=prompt, system=system), primary_key, False
     except ProviderExecutionError:
         if fallback_key not in registry:
-            raise HTTPException(status_code=503, detail="No fallback provider available.")
-        fallback_response = registry[fallback_key].generate(prompt=prompt, system=system)
-        return fallback_response, fallback_key, True
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
+        try:
+            fallback_response = registry[fallback_key].generate(prompt=prompt, system=system)
+            return fallback_response, fallback_key, True
+        except ProviderExecutionError as exc:
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.") from exc
 
 
 def _route_preview(
@@ -433,6 +436,7 @@ def create_api_key_launch(
             "dashboard_url": "/dashboard",
             "chat_url": "/chat",
             "onboarding_commands": [
+                "unset ANTHROPIC_MODEL",
                 'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
                 f'export ANTHROPIC_API_KEY="{raw_key}"',
                 "claude",

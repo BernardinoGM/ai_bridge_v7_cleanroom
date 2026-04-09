@@ -95,6 +95,7 @@ def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> di
         "used_this_month_usd": used_this_month,
         "rewards_posted_usd": rewards_posted,
         "onboarding_commands": [
+            "unset ANTHROPIC_MODEL",
             'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
             f'export ANTHROPIC_API_KEY="{raw_key}"' if raw_key else '# Generate a fresh key to get a copy-ready setup block with your live key.',
             "claude",
