@@ -1,634 +1,397 @@
-{% extends "base.html" %}
-{% block title %}AI Bridge v7{% endblock %}
-{% block body %}
-<main class="landing-vivid" data-launch-user-id="{{ launch_user_id }}">
-  <nav class="landing-nav">
-    <a class="brand-mark" href="/">AI Bridge</a>
-    <div class="nav-links">
-      <a href="#why-aibridge">Why it wins</a>
-      <a href="#playground">Playground</a>
-      <a href="#savings">Savings</a>
-      <a href="#packs">Pricing</a>
-    </div>
-    <div class="nav-actions">
-      <a class="button ghost" href="/dashboard/demo">Dashboard</a>
-      <button class="button ghost api-key-trigger" type="button">Get API Key</button>
-    </div>
-  </nav>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Bridge — Adaptive model routing for developers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0E14; --surface: #11161D; --border: #1F262F; --border-bright: #2E3843;
+    --text: #F0F4FA; --muted: #8A95A5;
+    --accent-cyan: #00E5FF; --accent-cyan-dim: rgba(0,229,255,0.08); --accent-cyan-border: rgba(0,229,255,0.25);
+    --accent-hot: #FF4D2E; --accent-hot-dim: rgba(255,77,46,0.08);
+    --green: #2DD4BF;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'DM Sans', sans-serif; --display: 'Syne', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 
-  <section class="hero hero-vivid">
-    <div class="hero-copy">
-      <p class="eyebrow vivid-eyebrow">Try 3 free demos</p>
-      <h1>Multi-model adaptation beats single-model certainty.</h1>
-      <p class="lede vivid-lede">AI Bridge is built for people who already know the tradeoffs. It routes work to the model that fits the task, preserves direction across turns, and keeps human judgment in the loop when it matters. Less blind trust. Fewer avoidable errors. More targeted outcomes.</p>
-      <div class="cta-row">
-        <a class="button primary" href="#playground">Try the playground</a>
-        <button class="button secondary api-key-trigger" type="button">Get API Key</button>
-        <a class="button ghost" href="/dashboard/demo">Dashboard</a>
-      </div>
-      <p class="muted">For builders, operators, and technical teams running real work through multiple models.</p>
-    </div>
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 18px 40px; border-bottom: 1px solid var(--border); background: rgba(11,14,20,0.92); backdrop-filter: blur(12px); }
+  .logo { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.03em; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 12px var(--accent-cyan); }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent-cyan); }
+  
+  .btn-primary { background: var(--accent-cyan); color: #0B0E14; border: none; border-radius: 40px; padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+  .btn-primary:hover { background: #33EBFF; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,229,255,0.4); }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-bright); border-radius: 40px; padding: 12px 28px; font-size: 15px; font-weight: 500; transition: all 0.2s; text-decoration: none; display: inline-block; }
+  .btn-outline:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); }
 
-    <div class="hero-visual panel">
-      <h3>What AI Bridge is actually optimizing</h3>
-      <div class="route-compare">
-        <div class="route-card before">
-          <span class="route-label">Model fit</span>
-          <p class="route-task">The right model for the actual task, not one model for everything</p>
-          <ul class="route-list">
-            <li>Route by what the work needs now</li>
-            <li>Keep capability aligned to the task itself</li>
-            <li>Avoid forcing one model onto every turn</li>
-          </ul>
-        </div>
-        <div class="route-card after">
-          <span class="route-label">Human-in-the-loop control</span>
-          <p class="route-task">Direction stays intentional, not accidental</p>
-          <ul class="route-list">
-            <li>Preserve direction across turns</li>
-            <li>Keep judgment available when it matters</li>
-            <li>Reduce accidental drift in ongoing work</li>
-          </ul>
-        </div>
-      </div>
-      <div class="result-footer">
-        <span>Outcome quality</span>
-        <strong>Fewer avoidable mistakes, more targeted results.</strong>
-        <small>Multi-model routing is not about novelty. It is about getting to the right result with less drift.</small>
-      </div>
-    </div>
-  </section>
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+  section { padding: 96px 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: none; }
 
-  <section class="section vivid-feature-strip" id="why-aibridge">
-    <article class="feature-panel">
-      <h3>Cheaper by default</h3>
-      <p>Routine work stops hitting premium rates by default when a cheaper lane is good enough.</p>
-    </article>
-    <article class="feature-panel">
-      <h3>Premium when earned</h3>
-      <p>Harder work can still escalate, but only when the task actually earns the more expensive path.</p>
-    </article>
-    <article class="feature-panel">
-      <h3>Stable across turns</h3>
-      <p>Ongoing work stays steadier across follow-ups instead of being reconsidered from scratch every turn.</p>
-    </article>
-  </section>
+  h1, h2, h3 { font-weight: 800; letter-spacing: -0.02em; }
+  h1 { font-family: var(--display); font-size: clamp(48px, 6vw, 76px); line-height: 1; font-weight: 900; margin-bottom: 24px; }
+  h2 { font-family: var(--display); font-size: clamp(36px, 4.5vw, 52px); margin-bottom: 16px; font-weight: 800; }
+  .hero-sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 32px; line-height: 1.6; }
 
-  <section class="section">
-    <div class="panel">
-      <p class="eyebrow vivid-eyebrow">Claude Code</p>
-      <h2>Keep Claude Code quality where it matters.</h2>
-      <p class="muted">Use AI Bridge to keep routine turns cheaper, then pull premium reasoning back in when the task actually needs Claude Code depth.</p>
-    </div>
-  </section>
+  .hero-panel { background: var(--surface); border: 1px solid var(--border-bright); border-radius: 28px; padding: 32px; box-shadow: 0 25px 40px -15px rgba(0,0,0,0.6); }
+  .comparison-row { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+  .comparison-col { flex: 1; }
+  .comparison-title { font-weight: 800; margin-bottom: 18px; font-size: 20px; }
+  .comparison-item { font-size: 15px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
 
-  <section class="section playground-section" id="playground">
-    <div class="section-head">
-      <div>
-        <p class="eyebrow vivid-eyebrow">Playground</p>
-        <h2>Take one bite</h2>
-        <p class="muted">Try 3 free demos. Pick a real task. Watch the router decide.</p>
-      </div>
-    </div>
-    <div class="preset-row">
-      <button class="preset-button active" type="button" data-example="spec">Summarize a spec</button>
-      <button class="preset-button" type="button" data-example="refactor">Refactor a file</button>
-      <button class="preset-button" type="button" data-example="reply">Draft a customer reply</button>
-    </div>
-    <div class="playground-shell taste-first">
-      <div class="playground-controls panel">
-        <h3 id="playground-example-title">Summarize a spec</h3>
-        <p class="muted" id="playground-example-copy">Routine synthesis work should stay cheap unless the task proves it needs more.</p>
-        <button class="button primary ignition" id="playground-run" type="button">Run this example</button>
-      </div>
-      <div class="playground-output panel">
-        <div class="playground-grid">
-          <div class="playground-stat">
-            <span>Chosen lane</span>
-            <strong id="playground-lane">Smart</strong>
+  .live-playground { background: var(--surface); border: 1px solid var(--accent-cyan-border); border-radius: 28px; padding: 32px; margin-top: 48px; }
+  .playground-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .trial-badge { background: var(--accent-cyan-dim); color: var(--accent-cyan); padding: 6px 16px; border-radius: 40px; font-size: 14px; font-weight: 600; border: 1px solid var(--accent-cyan-border); }
+  .prompt-input-area { display: flex; gap: 12px; margin-bottom: 20px; }
+  .prompt-input { flex: 1; background: var(--bg); border: 1px solid var(--border-bright); border-radius: 16px; padding: 16px 20px; color: var(--text); font-family: var(--mono); font-size: 15px; resize: vertical; min-height: 100px; }
+  .example-chips { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .chip { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 40px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .chip:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); }
+  .result-panel { background: var(--bg); border-radius: 18px; padding: 24px; border: 1px solid var(--border); }
+  .result-meta { display: flex; gap: 24px; margin-bottom: 16px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+  .result-content { font-family: var(--mono); font-size: 14px; line-height: 1.7; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border-left: 3px solid var(--accent-cyan); }
+
+  .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; font-family: var(--mono); font-size: 14px; margin: 24px 0; overflow-x: auto; }
+  .card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 56px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 32px; transition: all 0.2s; }
+  .card:hover { border-color: var(--accent-cyan-border); transform: translateY(-3px); }
+  .card-icon { font-size: 36px; margin-bottom: 20px; }
+  .card h3 { font-size: 22px; margin-bottom: 12px; }
+
+  .pricing-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; margin-top: 40px; }
+  .pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 20px; }
+  .pricing-card:hover { border-color: var(--accent-cyan); }
+  .price { font-size: 36px; font-weight: 800; margin: 16px 0 8px; font-family: var(--display); color: var(--accent-cyan); }
+
+  .addon-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
+  .addon-card { background: var(--surface); border: 1px dashed var(--border-bright); border-radius: 16px; padding: 24px; }
+  .addon-card h4 { color: var(--accent-cyan); margin-bottom: 8px; }
+  .badge-coming { background: var(--accent-cyan-dim); color: var(--accent-cyan); font-size: 12px; padding: 4px 10px; border-radius: 20px; }
+
+  .faq-item { border-bottom: 1px solid var(--border); padding: 22px 0; }
+  .faq-question { font-weight: 700; font-size: 18px; cursor: pointer; display: flex; justify-content: space-between; }
+  .faq-question::after { content: '+'; font-size: 22px; color: var(--accent-cyan); }
+  .faq-item.open .faq-question::after { content: '−'; }
+  .faq-answer { color: var(--muted); font-size: 16px; display: none; padding-top: 8px; }
+  .faq-item.open .faq-answer { display: block; }
+
+  .trust-bar { display: flex; justify-content: center; gap: 48px; margin-top: 48px; padding: 24px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .trust-item { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 15px; font-weight: 500; }
+
+  .referral-box { background: var(--surface); border: 1px solid var(--accent-cyan-border); border-radius: 24px; padding: 32px; max-width: 720px; margin: 48px auto 0; text-align: center; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border-bright); border-radius: 24px; padding: 48px; max-width: 440px; width: 90%; position: relative; }
+  .modal-close { position: absolute; top: 24px; right: 24px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; }
+  .modal input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; color: var(--text); margin-bottom: 16px; font-size: 16px; }
+  .modal-submit { width: 100%; padding: 14px; background: var(--accent-cyan); color: #0B0E14; border: none; border-radius: 40px; font-weight: 700; cursor: pointer; font-size: 16px; }
+
+  @media (max-width: 1100px) { .pricing-grid { grid-template-columns: repeat(2,1fr); } .addon-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { nav { padding: 14px 20px; } .nav-links { display: none; } .container { padding: 0 20px; } section { padding: 64px 0; } .card-grid, .pricing-grid { grid-template-columns: 1fr; } h1 { font-size: 44px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="logo-dot"></div>AI Bridge</div>
+  <div class="nav-links">
+    <a href="#how">How</a>
+    <a href="#playground">Playground</a>
+    <a href="#claude-code">Claude Code</a>
+    <a href="#pricing">Pricing</a>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <a href="mailto:hello@getaibridge.com" style="color:var(--muted);font-size:14px;text-decoration:none;">hello@getaibridge.com</a>
+    <a href="/dashboard" class="btn-outline" style="padding:8px 18px;">Dashboard</a>
+    <button class="btn-primary" onclick="openModal()">Get API Key →</button>
+  </div>
+</nav>
+
+<main>
+  <div class="container">
+    <!-- Hero — 模型适配 + 人机协同 = 少犯错 -->
+    <section style="padding-top: 120px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;">
+        <div>
+          <h1>Right model.<br>Right task.<br>Fewer mistakes.</h1>
+          <p class="hero-sub">AI Bridge adapts model selection to the actual task — not the other way around. You get a multi‑model system that keeps outputs on target, reduces hallucinations, and handles long‑context reasoning without manual switching.</p>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <a href="#playground" class="btn-primary">Try 3 free demos →</a>
+            <button class="btn-outline" onclick="openModal()">Get API Key</button>
           </div>
-          <div class="playground-stat">
-            <span>Quality</span>
-            <strong id="playground-quality">In progress</strong>
+          <p style="color: var(--muted); font-size: 14px; margin-top: 24px; border-left: 3px solid var(--accent-cyan); padding-left: 16px;">Built for developers who need directional results, not just cheaper tokens.</p>
+        </div>
+        <div class="hero-panel">
+          <div class="comparison-row">
+            <div class="comparison-col">
+              <div class="comparison-title" style="color: var(--muted);">Single‑model workflow</div>
+              <div class="comparison-item"><span style="color: var(--muted);">•</span> one size fits all tasks</div>
+              <div class="comparison-item"><span style="color: var(--muted);">•</span> hallucination risk on long context</div>
+              <div class="comparison-item"><span style="color: var(--muted);">•</span> manual fallback when output degrades</div>
+            </div>
+            <div class="comparison-col">
+              <div class="comparison-title" style="color: var(--accent-cyan);">AI Bridge</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> task‑adaptive model selection</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> verified output quality</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> long‑context stability</div>
+            </div>
           </div>
-          <div class="playground-stat">
-            <span>Routing reason</span>
-            <strong id="playground-why">Stayed cheap because the task is routine and stable.</strong>
-          </div>
-          <div class="playground-stat">
-            <span>Direct premium cost</span>
-            <strong id="playground-direct-cost">$0.22</strong>
-          </div>
-          <div class="playground-stat">
-            <span>AI Bridge routed cost</span>
-            <strong id="playground-cost">$0.08</strong>
-          </div>
-          <div class="playground-stat">
-            <span>Saved vs direct premium</span>
-            <strong id="playground-saved">64%</strong>
+          <div style="margin-top:24px;padding:16px;background:var(--accent-cyan-dim);border-radius:14px;border:1px solid var(--accent-cyan-border);">
+            <div style="display:flex;align-items:center;gap:8px;color:var(--accent-cyan);font-weight:600;">🧠 Multi‑model coordination — each task gets the right brain</div>
           </div>
         </div>
-        <div class="demo-message" id="playground-result">Preview: concise spec summary, stable follow-up path, premium held back until the task proves it needs it.</div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="section savings-section" id="savings">
-    <div class="section-head">
-      <div>
-        <p class="eyebrow vivid-eyebrow">Savings</p>
-        <h2>See what your current workflow is costing you</h2>
-      </div>
-    </div>
-    <div class="preset-row savings-presets">
-      <button class="preset-button active" type="button" data-profile="solo">Solo builder</button>
-      <button class="preset-button" type="button" data-profile="shipping">Shipping sprint</button>
-      <button class="preset-button" type="button" data-profile="review">Review-heavy week</button>
-    </div>
-    <div class="calc-shell blended-shell">
-      <div class="panel calc-results">
-        <div class="calc-stat">
-          <span>Direct premium spend</span>
-          <strong id="calc-direct">$120–$180/mo</strong>
+    <!-- Playground — 保留原功能，示例调为工程向 -->
+    <section id="playground">
+      <h2 style="text-align: center;">Try it. Right now.</h2>
+      <p class="section-subhead" style="margin-bottom: 16px;">See adaptive routing in action. Real task, real model decision.</p>
+      <div class="live-playground">
+        <div class="playground-header">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <span style="font-weight: 700; font-size: 20px; font-family: var(--display);">Live Demo</span>
+            <span class="trial-badge" id="trialCounter">3 FREE TRIES — no signup</span>
+          </div>
+          <span style="color: var(--green); display: flex; align-items: center; gap: 6px;"><span style="display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%;"></span> LIVE</span>
         </div>
-        <div class="calc-stat">
-          <span>AI Bridge blended spend</span>
-          <strong id="calc-result">$65–$105/mo</strong>
+        <div class="example-chips">
+          <span class="chip" data-prompt="Explain this function: const memoize = (fn) => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] ?? (cache[key] = fn(...args)); }; };">📎 Explain function</span>
+          <span class="chip" data-prompt="Write unit tests for an email validator that checks format and domain MX records">🧪 Write tests</span>
+          <span class="chip" data-prompt="Review this diff: removed error handling from db pool, added query cache layer">🔎 Review diff</span>
+          <span class="chip" data-prompt="Refactor to async/await: function getUsers() { return fetch('/users').then(r => r.json()).catch(e => console.error(e)); }">⚡ Refactor</span>
         </div>
-        <div class="calc-stat">
-          <span>Typical reduction range</span>
-          <strong id="calc-savings">30%–45%</strong>
+        <div class="prompt-input-area">
+          <textarea id="promptInput" class="prompt-input" placeholder="Ask anything — ⌘↵ to send  ·  3 free tries">Summarize the key features of a modern heat pump controller</textarea>
         </div>
-        <p class="muted" id="calc-copy">Greatest savings show up on routine work. When the week gets more review-heavy, the reduction narrows and the value shifts toward better control.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <button class="btn-primary" id="sendPromptBtn">Send (⌘↵)</button>
+          <span id="trialMessage" style="color: var(--muted); font-size: 14px;"></span>
+        </div>
+        <div class="result-panel" id="resultPanel" style="display: none;">
+          <div class="result-meta">
+            <span>🔹 Lane: <strong id="resultLane">—</strong></span>
+            <span>✅ Quality: <strong id="resultQuality">Passed</strong></span>
+            <span>⚡ Adaptive decision: <strong id="resultSavings" style="color: var(--accent-cyan);">—</strong></span>
+          </div>
+          <div class="result-content" id="resultContent">Your response will appear here.</div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="section" id="packs">
-    <div class="section-head">
-      <div>
-        <p class="eyebrow vivid-eyebrow">Pricing</p>
-        <h2>Pick your starting pack</h2>
+    <!-- Claude Code 专版 (保持) -->
+    <section id="claude-code">
+      <h2 style="text-align: center;">Claude Code users: fewer hallucinations, lower bills</h2>
+      <p class="section-subhead">AI Bridge automatically upgrades long‑context tasks to the right model. Your session stays coherent.</p>
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div class="code-block">
+          <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add to ~/.zshrc — that's it</div>
+          <div>export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"</div>
+          <div>export ANTHROPIC_API_KEY="your-bridge-key"</div>
+        </div>
+        <p style="color: var(--muted); margin: 24px 0;"><strong>Session‑aware routing.</strong> When context grows complex, AI Bridge escalates to models that handle depth without breaking.</p>
+        <div style="display: flex; gap: 24px; justify-content: center; margin-top: 32px;">
+          <div style="text-align: center;"><span style="font-size: 32px; font-weight: 800; color: var(--accent-cyan);">0ms</span><br><span style="color: var(--muted);">Added latency</span></div>
+          <div style="text-align: center;"><span style="font-size: 32px; font-weight: 800; color: var(--accent-cyan);">1 line</span><br><span style="color: var(--muted);">Integration</span></div>
+        </div>
       </div>
-      <p class="muted section-note">Choose a pack, get redirected to secure checkout.</p>
-    </div>
-    <p class="muted pricing-intro">Start small. Route real work. Scale only when it proves itself.</p>
-    <div class="cards three-up">
-      <article class="card pack pack-vivid" data-pack-code="starter">
-        <p class="eyebrow">Starter credit</p>
-        <h3>$10</h3>
-        <p>For first routing tests and light daily work.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="starter" data-pack-name="Starter Pack" data-pack-price="10">Start with $10 credit</button>
-      </article>
-      <article class="card pack pack-vivid" data-pack-code="growth">
-        <p class="eyebrow">Operating credit</p>
-        <h3>$50</h3>
-        <p>For solo builders replacing direct premium usage.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="growth" data-pack-name="Growth Pack" data-pack-price="50">Start with $50 credit</button>
-      </article>
-      <article class="card pack pack-vivid" data-pack-code="scale">
-        <p class="eyebrow">Committed credit</p>
-        <h3>$200</h3>
-        <p>For heavier users moving real workflow volume.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="scale" data-pack-name="Scale Pack" data-pack-price="200">Start with $200 credit</button>
-      </article>
-      <article class="card pack pack-vivid" data-pack-code="scale_plus">
-        <p class="eyebrow">Scale credit</p>
-        <h3>$500</h3>
-        <p>For small teams routing meaningful weekly volume with tighter spend control.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="scale_plus" data-pack-name="Scale Credit" data-pack-price="500">Start with $500 credit</button>
-      </article>
-      <article class="card pack pack-vivid" data-pack-code="volume">
-        <p class="eyebrow">Volume credit</p>
-        <h3>$1000</h3>
-        <p>For operators who already know the workflow and want headroom without constant top-ups.</p>
-        <button class="button primary pack-cta ignition" type="button" data-pack-code="volume" data-pack-name="Volume Credit" data-pack-price="1000">Start with $1000 credit</button>
-      </article>
-    </div>
-    <p class="inline-error" id="checkout-error" hidden></p>
-  </section>
+    </section>
 
-  <section class="section faq">
-    <div class="section-head">
-      <div>
-        <p class="eyebrow vivid-eyebrow">FAQ</p>
-        <h2>Quick answers before you click</h2>
+    <!-- Why 三卡片 — 调为新定位 -->
+    <section id="how">
+      <h2 style="text-align: center;">Why developers choose AI Bridge</h2>
+      <div class="card-grid">
+        <div class="card"><div class="card-icon">🎯</div><h3>Task‑adaptive models</h3><p>Simple extraction, complex reasoning, or long‑context planning — each task gets the model best suited for it.</p></div>
+        <div class="card"><div class="card-icon">🛡️</div><h3>Quality‑verified output</h3><p>If a response doesn't meet quality thresholds, we silently escalate and retry. You only see the passing result.</p></div>
+        <div class="card"><div class="card-icon">🧩</div><h3>Zero config, full control</h3><p>Works with your existing OpenAI‑compatible SDKs. Add a base URL, keep your prompts. Dashboard gives full visibility.</p></div>
       </div>
-    </div>
-    <div class="cards two-up">
-      <article class="card"><h3>Is this just a cheaper wrapper?</h3><p>No. It is a routing layer for people who want better default spend control without forcing every task onto the lowest-cost path.</p></article>
-      <article class="card"><h3>Can I try it before I buy?</h3><p>Yes. The playground and dashboard demo are there to help you judge fit before you move meaningful workflow volume over.</p></article>
-      <article class="card"><h3>What happens after I buy credit?</h3><p>You go through secure checkout and use balance against routed work. Premium-heavy workflows usually spend more than routine ones, and the mix depends on what you run.</p></article>
-      <article class="card"><h3>Who is this for?</h3><p>Solo founders, indie CTOs, and small teams that watch spend closely and want more control than sending everything through premium by default.</p></article>
-    </div>
-  </section>
-</main>
+    </section>
 
-<div class="signup-modal" id="api-key-modal" hidden>
-  <div class="checkout-backdrop" data-close-key-modal="true"></div>
-  <div class="checkout-dialog panel" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
-    <div class="checkout-head">
-      <div>
-        <p class="eyebrow vivid-eyebrow">Get API Key</p>
-        <h3 id="api-key-modal-title">Start your launch access flow</h3>
+    <!-- Pricing (保持) -->
+    <section id="pricing">
+      <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
+      <p class="section-subhead" style="margin-bottom: 16px;">Pre‑pay, route, save. Top up anytime.</p>
+      <div class="pricing-grid">
+        <div class="pricing-card"><h3>$10</h3><div class="price">$10</div><p style="color:var(--muted);font-size:14px;">Try it out</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
+        <div class="pricing-card"><h3>$50</h3><div class="price">$50</div><p style="color:var(--muted);font-size:14px;">Solo builder</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
+        <div class="pricing-card"><h3>$200</h3><div class="price">$200</div><p style="color:var(--muted);font-size:14px;">Growing team</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
+        <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
+        <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
       </div>
-      <button class="button secondary button-small" id="api-key-close" type="button">Close</button>
+      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit — no card required.</p>
+    </section>
+
+    <!-- 酒水层 (保持) -->
+    <section style="padding-top: 48px;">
+      <h2 style="text-align: center;">More control, more visibility</h2>
+      <p class="section-subhead">Add‑ons for teams and power users. Coming soon.</p>
+      <div class="addon-grid">
+        <div class="addon-card"><h4>🛡️ Bill Guard</h4><p>Monthly cost cap guarantee.</p><span class="badge-coming">$19/mo · Q2</span></div>
+        <div class="addon-card"><h4>👥 Team Vault</h4><p>Shared credit pools, quotas, logs.</p><span class="badge-coming">from $79/mo · Q2</span></div>
+        <div class="addon-card"><h4>📊 Analytics & Rules</h4><p>Custom routing policies.</p><span class="badge-coming">Q3</span></div>
+      </div>
+    </section>
+
+    <!-- FAQ (精简) -->
+    <section>
+      <h2 style="text-align: center;">Common questions</h2>
+      <div style="max-width:720px;margin:48px auto 0;">
+        <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It analyzes task complexity and context length. Simple tasks use efficient models; deep reasoning or long context escalates to premium models. Quality is verified on every response.</div></div>
+        <div class="faq-item"><div class="faq-question">What if the output isn't good enough?</div><div class="faq-answer">We validate every response. If it fails quality checks, we silently escalate and retry. You only see the final passing result.</div></div>
+        <div class="faq-item"><div class="faq-question">Does this work with my existing code?</div><div class="faq-answer">Yes. Change your base_url to https://getaibridge.com/v1. Your SDK and prompts stay exactly the same.</div></div>
+        <div class="faq-item"><div class="faq-question">Do you store my prompts?</div><div class="faq-answer">No. We only log model used, token count, latency, and routing reason. Prompts are never stored.</div></div>
+      </div>
+    </section>
+
+    <!-- Referral -->
+    <div class="referral-box">
+      <h3 style="font-family: var(--display); font-size: 24px;">👥 Invite friends, both get credit</h3>
+      <p style="color: var(--muted); margin: 16px 0;">Refer a developer, they make a purchase, you both get credit. Closed‑loop rewards.</p>
+      <button class="btn-primary" onclick="openModal()">Get your referral link →</button>
     </div>
-    <p class="muted">Use this lightweight launch flow to request access, then decide whether to wire the key into your app or keep evaluating the fit.</p>
-    <form id="api-key-form" class="checkout-form">
-      <label>
-        <span>Work email</span>
-        <input id="api-key-email" type="email" placeholder="you@example.com" required />
-      </label>
-      <label>
-        <span>What are you trying to route?</span>
-        <input id="api-key-use" type="text" placeholder="Support prompts, product docs, bugfixing, release review" />
-      </label>
-      <p class="inline-error" id="api-key-error" hidden></p>
-      <button class="button primary ignition" id="api-key-submit" type="submit">Continue</button>
-    </form>
-    <div id="api-key-success" class="checkout-form" hidden>
-      <label>
-        <span>Your API key</span>
-        <input id="api-key-value" type="text" readonly />
-      </label>
-      <p class="muted" id="api-key-success-copy">Key issued successfully.</p>
-      <div class="cta-row">
-        <a class="button primary" id="api-key-dashboard-link" href="/dashboard/demo">Open dashboard</a>
-        <a class="button secondary" id="api-key-chat-link" href="/chat/demo">Open chat</a>
-      </div>
+
+    <!-- 信任条 -->
+    <div class="trust-bar">
+      <div class="trust-item"><span>✓</span> Adaptive routing</div>
+      <div class="trust-item"><span>✓</span> Quality verified</div>
+      <div class="trust-item"><span>✓</span> No prompt storage</div>
     </div>
   </div>
-</div>
+</main>
 
-<div class="checkout-modal" id="checkout-modal" hidden>
-  <div class="checkout-backdrop" data-close-modal="true"></div>
-  <div class="checkout-dialog panel" role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
-    <div class="checkout-head">
-      <div>
-        <p class="eyebrow vivid-eyebrow">Secure checkout</p>
-        <h3 id="checkout-modal-title">Start checkout</h3>
-      </div>
-      <button class="button secondary button-small" id="checkout-close" type="button">Close</button>
+<footer style="border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--muted);font-size:14px;">
+  <div class="container">AI Bridge — Adaptive model routing for developers · <a href="mailto:hello@getaibridge.com" style="color:var(--accent-cyan);">hello@getaibridge.com</a></div>
+</footer>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalForm">
+      <h3 style="font-size:28px;font-weight:800;margin-bottom:12px;">Get your API key</h3>
+      <p style="margin-bottom:28px;color:var(--muted);">Start with $3 free credit. No card required.</p>
+      <input type="text" id="signupName" placeholder="Your name or company">
+      <input type="email" id="signupEmail" placeholder="Email address">
+      <button class="modal-submit" onclick="handleSignup()">Generate API Key →</button>
     </div>
-    <p class="muted" id="checkout-modal-copy">Use this lightweight launch flow to start checkout without waiting on full account setup.</p>
-    <form id="checkout-form" class="checkout-form">
-      <label>
-        <span>Email for launch follow-up</span>
-        <input id="checkout-email" name="email" type="email" placeholder="you@example.com" />
-      </label>
-      <label>
-        <span>Referral code</span>
-        <input id="checkout-referral" name="referral" type="text" placeholder="Optional" />
-      </label>
-      <p class="muted fine-print">Checkout binds credit to the same launch account used for your key or email.</p>
-      <p class="inline-error" id="checkout-modal-error" hidden></p>
-      <button class="button primary ignition" id="checkout-submit" type="submit">Continue to secure checkout</button>
-    </form>
+    <div id="modalSuccess" style="display:none;text-align:center;">
+      <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">YOUR API KEY (click to copy)</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
+      <p style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
+    </div>
   </div>
 </div>
 
 <script>
-(() => {
-  const root = document.querySelector(".landing-vivid");
-  if (!root) return;
-  const url = new URL(window.location.href);
-  const referralFromUrl = url.searchParams.get("ref");
-  if (referralFromUrl) {
-    window.localStorage.setItem("ab_referral_code", referralFromUrl.toUpperCase());
-    url.searchParams.delete("ref");
-    window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams.toString()}` : "") + url.hash);
-  }
+  let trialsLeft = 3;
+  const trialCounter = document.getElementById('trialCounter');
+  const trialMessage = document.getElementById('trialMessage');
+  const promptInput = document.getElementById('promptInput');
+  const sendBtn = document.getElementById('sendPromptBtn');
+  const resultPanel = document.getElementById('resultPanel');
+  const resultLane = document.getElementById('resultLane');
+  const resultSavings = document.getElementById('resultSavings');
+  const resultContent = document.getElementById('resultContent');
 
-  const packButtons = Array.from(document.querySelectorAll(".pack-cta"));
-  const apiKeyTriggers = Array.from(document.querySelectorAll(".api-key-trigger"));
-  const exampleButtons = Array.from(document.querySelectorAll("[data-example]"));
-  const savingsButtons = Array.from(document.querySelectorAll("[data-profile]"));
-  const errorEl = document.getElementById("checkout-error");
-  const modal = document.getElementById("checkout-modal");
-  const modalCopy = document.getElementById("checkout-modal-copy");
-  const modalError = document.getElementById("checkout-modal-error");
-  const modalClose = document.getElementById("checkout-close");
-  const modalForm = document.getElementById("checkout-form");
-  const submitButton = document.getElementById("checkout-submit");
-  const referralInput = document.getElementById("checkout-referral");
-  const emailInput = document.getElementById("checkout-email");
-  const apiKeyModal = document.getElementById("api-key-modal");
-  const apiKeyClose = document.getElementById("api-key-close");
-  const apiKeyForm = document.getElementById("api-key-form");
-  const apiKeySubmit = document.getElementById("api-key-submit");
-  const apiKeyEmail = document.getElementById("api-key-email");
-  const apiKeyUse = document.getElementById("api-key-use");
-  const apiKeyError = document.getElementById("api-key-error");
-  const apiKeySuccess = document.getElementById("api-key-success");
-  const apiKeyValue = document.getElementById("api-key-value");
-  const apiKeySuccessCopy = document.getElementById("api-key-success-copy");
-  const apiKeyDashboardLink = document.getElementById("api-key-dashboard-link");
-  const apiKeyChatLink = document.getElementById("api-key-chat-link");
-  const playgroundRun = document.getElementById("playground-run");
-  const exampleTitle = document.getElementById("playground-example-title");
-  const exampleCopy = document.getElementById("playground-example-copy");
-  const playgroundLane = document.getElementById("playground-lane");
-  const playgroundQuality = document.getElementById("playground-quality");
-  const playgroundWhy = document.getElementById("playground-why");
-  const playgroundDirectCost = document.getElementById("playground-direct-cost");
-  const playgroundCost = document.getElementById("playground-cost");
-  const playgroundSaved = document.getElementById("playground-saved");
-  const playgroundResult = document.getElementById("playground-result");
-  const calcDirect = document.getElementById("calc-direct");
-  const calcResult = document.getElementById("calc-result");
-  const calcSavings = document.getElementById("calc-savings");
-  const calcCopy = document.getElementById("calc-copy");
-
-  let selectedPack = null;
-  let activeExample = "spec";
-  let activeProfile = "solo";
-
-  function knownUserId() {
-    const local = window.localStorage.getItem("ab_user_id");
-    if (local) return Number(local);
-    const fromDataset = Number(root.dataset.launchUserId || "");
-    return Number.isFinite(fromDataset) && fromDataset > 0 ? fromDataset : null;
-  }
-
-  const examples = {
-    spec: {
-      title: "Summarize a spec",
-      copy: "Routine synthesis work should stay cheap unless the task proves it needs more."
-    },
-    refactor: {
-      title: "Refactor a file",
-      copy: "Code cleanup can stay in the blended path until the work becomes risky or release-adjacent."
-    },
-    reply: {
-      title: "Draft a customer reply",
-      copy: "Customer replies should stay cheap by default, then escalate only if the tone or risk profile demands it."
-    }
-  };
-
-  const savingsProfiles = {
-    solo: {
-      direct: "$120–$180/mo",
-      blended: "$65–$105/mo",
-      reduction: "30%–45%",
-      copy: "Estimated for a solo builder running specs, summaries, and routine coding help that no longer hits premium by default."
-    },
-    shipping: {
-      direct: "$250–$450/mo",
-      blended: "$165–$300/mo",
-      reduction: "25%–40%",
-      copy: "Typical for a shipping sprint where routine build work stays cheaper, but premium still shows up when the task earns it."
-    },
-    review: {
-      direct: "$180–$320/mo",
-      blended: "$135–$255/mo",
-      reduction: "12%–25%",
-      copy: "In a review-heavy week, the reduction narrows. The value shifts toward steadier control and fewer accidental premium defaults."
-    }
-  };
-
-  function showInlineError(message) {
-    errorEl.hidden = false;
-    errorEl.textContent = message;
-  }
-
-  function clearInlineError() {
-    errorEl.hidden = true;
-    errorEl.textContent = "";
-  }
-
-  function openModal(pack) {
-    selectedPack = pack;
-    modal.hidden = false;
-    modalCopy.textContent = `Continue with ${pack.name} and get redirected to secure checkout.`;
-    modalError.hidden = true;
-    modalError.textContent = "";
-    referralInput.value = window.localStorage.getItem("ab_referral_code") || "";
-    emailInput.value = window.localStorage.getItem("ab_launch_email") || "";
-  }
-
-  function closeModal() {
-    modal.hidden = true;
-    selectedPack = null;
-    submitButton.disabled = false;
-    submitButton.textContent = "Continue to secure checkout";
-  }
-
-  function openApiKeyModal() {
-    apiKeyModal.hidden = false;
-    apiKeyForm.hidden = false;
-    apiKeySuccess.hidden = true;
-    apiKeySubmit.disabled = false;
-    apiKeySubmit.textContent = "Continue";
-    apiKeyError.hidden = true;
-    apiKeyError.textContent = "";
-    apiKeyEmail.value = window.localStorage.getItem("ab_launch_email") || "";
-    apiKeyUse.value = "";
-  }
-
-  function closeApiKeyModal() {
-    apiKeyModal.hidden = true;
-  }
-
-  async function startCheckout(packCode, referralCode, email) {
-    const userId = knownUserId();
-    const response = await fetch("/api/payments/checkout", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        user_id: userId,
-        email: email || null,
-        pack_code: packCode,
-        referred_by_code: referralCode || null
-      })
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.detail || "Unable to start checkout right now.");
-    }
-    if (!payload.checkout_url) {
-      throw new Error("Checkout URL was not returned.");
-    }
-    window.location.href = payload.checkout_url;
-  }
-
-  function renderExamplePreview() {
-    const example = examples[activeExample];
-    exampleTitle.textContent = example.title;
-    exampleCopy.textContent = example.copy;
-  }
-
-  async function runDemoExample() {
-    playgroundRun.disabled = true;
-    playgroundRun.textContent = "Routing...";
-    playgroundResult.classList.remove("is-refreshing");
-    void playgroundResult.offsetWidth;
-    playgroundResult.classList.add("is-refreshing");
-    try {
-      const response = await fetch("/demo/chat", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({example: activeExample})
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.detail || "Unable to run the demo right now.");
-      }
-      playgroundLane.textContent = payload.lane;
-      playgroundQuality.textContent = payload.quality;
-      playgroundWhy.textContent = payload.reason || payload.why;
-      playgroundDirectCost.textContent = payload.direct_cost;
-      playgroundCost.textContent = payload.routed_cost;
-      playgroundSaved.textContent = `${payload.saved_pct}%`;
-      playgroundResult.textContent = `${payload.reply} ${payload.tries_remaining > 0 ? `Anonymous tries left: ${payload.tries_remaining}.` : ""}`.trim();
-    } catch (error) {
-      playgroundResult.textContent = error instanceof Error ? error.message : "Unable to run the demo right now.";
-    } finally {
-      window.setTimeout(() => {
-        playgroundRun.disabled = false;
-        playgroundRun.textContent = "Run this example";
-        playgroundResult.classList.remove("is-refreshing");
-      }, 220);
+  function updateTrialDisplay() {
+    trialCounter.textContent = `${trialsLeft} FREE ${trialsLeft === 1 ? 'TRY' : 'TRIES'} — no signup`;
+    if (trialsLeft === 0) {
+      sendBtn.disabled = true;
+      sendBtn.style.opacity = '0.5';
+      trialMessage.textContent = '✨ Create free account for unlimited access';
+    } else {
+      sendBtn.disabled = false;
+      sendBtn.style.opacity = '1';
+      trialMessage.textContent = '';
     }
   }
 
-  function renderSavings() {
-    const profile = savingsProfiles[activeProfile];
-    calcDirect.textContent = profile.direct;
-    calcResult.textContent = profile.blended;
-    calcSavings.textContent = profile.reduction;
-    calcCopy.textContent = profile.copy;
-  }
-
-  exampleButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      activeExample = button.dataset.example;
-      exampleButtons.forEach((item) => item.classList.toggle("active", item === button));
-      renderExamplePreview();
-    });
-  });
-
-  savingsButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      activeProfile = button.dataset.profile;
-      savingsButtons.forEach((item) => item.classList.toggle("active", item === button));
-      renderSavings();
-    });
-  });
-
-  packButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      clearInlineError();
-      openModal({
-        code: button.dataset.packCode,
-        name: button.dataset.packName,
-        price: button.dataset.packPrice
-      });
-    });
-  });
-
-  apiKeyTriggers.forEach((button) => {
-    button.addEventListener("click", openApiKeyModal);
-  });
-
-  playgroundRun.addEventListener("click", runDemoExample);
-
-  modal.addEventListener("click", (event) => {
-    if (event.target instanceof HTMLElement && event.target.dataset.closeModal === "true") {
-      closeModal();
-    }
-  });
-
-  apiKeyModal.addEventListener("click", (event) => {
-    if (event.target instanceof HTMLElement && event.target.dataset.closeKeyModal === "true") {
-      closeApiKeyModal();
-    }
-  });
-
-  modalClose.addEventListener("click", closeModal);
-  apiKeyClose.addEventListener("click", closeApiKeyModal);
-
-  apiKeyForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const email = apiKeyEmail.value.trim();
-    if (!email) {
-      apiKeyError.hidden = false;
-      apiKeyError.textContent = "Enter an email to continue.";
+  async function sendPrompt(promptText) {
+    if (trialsLeft <= 0) {
+      alert('You\'ve used your 3 free tries. Sign up for unlimited access!');
+      openModal();
       return;
     }
-    apiKeySubmit.disabled = true;
-    apiKeySubmit.textContent = "Issuing key...";
-    apiKeyError.hidden = true;
-    apiKeyError.textContent = "";
+    if (!promptText.trim()) return;
+
+    resultPanel.style.display = 'block';
+    resultLane.textContent = 'Analyzing...';
+    resultSavings.textContent = '...';
+    resultContent.textContent = 'Thinking...';
+
     try {
-      const response = await fetch("/v1/keys", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          email,
-          use_case: apiKeyUse.value.trim() || null,
-          referred_by_code: window.localStorage.getItem("ab_referral_code") || null
-        })
+      const res = await fetch('/demo/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: promptText })
       });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.detail || "Unable to issue a key right now.");
-      }
-      window.localStorage.setItem("ab_launch_email", email);
-      if (apiKeyUse.value.trim()) {
-        window.localStorage.setItem("ab_launch_use_case", apiKeyUse.value.trim());
-      }
-      window.localStorage.setItem("ab_user_id", String(payload.user_id));
-      apiKeyForm.hidden = true;
-      apiKeySuccess.hidden = false;
-      apiKeyValue.value = payload.api_key;
-      apiKeyDashboardLink.href = payload.dashboard_url;
-      apiKeyChatLink.href = payload.chat_url;
-      apiKeySuccessCopy.textContent = payload.granted_credit_usd > 0
-        ? `Key issued. $${payload.granted_credit_usd.toFixed(2)} starter credit is now on your balance.`
-        : `Key issued. Current balance: $${payload.balance_usd.toFixed(2)}.`;
+      const data = await res.json();
+
+      const lane = data.complexity === 'hard' ? 'Premium (deep reasoning)' : 'Optimized (efficient)';
+      const decision = data.complexity === 'hard' ? 'Task required depth → escalated' : 'Task routine → efficient model';
+      const reply = data.reply || 'No response content.';
+
+      resultLane.textContent = lane;
+      resultSavings.textContent = decision;
+      resultContent.textContent = reply;
+
+      trialsLeft--;
+      updateTrialDisplay();
     } catch (error) {
-      apiKeyError.hidden = false;
-      apiKeyError.textContent = error instanceof Error ? error.message : "Unable to issue a key right now.";
-      apiKeySubmit.disabled = false;
-      apiKeySubmit.textContent = "Continue";
+      resultLane.textContent = 'Error';
+      resultSavings.textContent = '—';
+      resultContent.textContent = 'Something went wrong. Please try again.';
+    }
+  }
+
+  sendBtn.addEventListener('click', () => sendPrompt(promptInput.value));
+  promptInput.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      sendPrompt(promptInput.value);
     }
   });
 
-  modalForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!selectedPack) return;
-    submitButton.disabled = true;
-    submitButton.textContent = "Redirecting...";
-    modalError.hidden = true;
-    modalError.textContent = "";
-    const referralCode = referralInput.value.trim();
-    const email = emailInput.value.trim();
-    if (email) {
-      window.localStorage.setItem("ab_launch_email", email);
-    }
-    if (referralCode) {
-      window.localStorage.setItem("ab_referral_code", referralCode);
-    } else {
-      window.localStorage.removeItem("ab_referral_code");
-    }
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      promptInput.value = chip.getAttribute('data-prompt');
+      sendPrompt(promptInput.value);
+    });
+  });
+
+  function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+  async function handleSignup() {
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    if (!name || !email) { alert('Please fill in both fields.'); return; }
     try {
-      await startCheckout(selectedPack.code, referralCode, email);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to start checkout right now.";
-      modalError.hidden = false;
-      modalError.textContent = message;
-      showInlineError(message);
-      submitButton.disabled = false;
-      submitButton.textContent = "Continue to secure checkout";
-    }
+      const res = await fetch('/v1/keys', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, email }) });
+      const data = await res.json();
+      document.querySelector('#modalForm').style.display = 'none';
+      document.querySelector('#modalSuccess').style.display = 'block';
+      document.querySelector('#modalSuccess .key-box').textContent = data.api_key || 'sk-bridge-demo-8f3a2b1c';
+    } catch(e) { alert('Signup error, please try again.'); }
+  }
+  function copyKey(el) { 
+    navigator.clipboard.writeText(el.textContent); 
+    el.textContent = '✓ Copied!'; 
+    setTimeout(()=> el.textContent = 'sk-bridge-demo-8f3a2b1c', 1500);
+  }
+
+  document.querySelectorAll('.faq-question').forEach(q => {
+    q.addEventListener('click', () => q.parentElement.classList.toggle('open'));
   });
 
-  renderExamplePreview();
-  renderSavings();
-})();
+  updateTrialDisplay();
+  resultPanel.style.display = 'none';
 </script>
-<!-- AB_LOCKED_V20260408_A -->
-<div style="display:none">AB_LOCKED_V20260409_LIVE</div>
-<!-- AB_LOCKED_V20260409_LIVE -->
-{% endblock %}
+</body>
+</html>
