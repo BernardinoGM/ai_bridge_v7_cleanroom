@@ -210,7 +210,7 @@
       <h2 style="text-align: center;">Why developers choose AI Bridge</h2>
       <div class="card-grid">
         <div class="card"><div class="card-icon">🎯</div><h3>Task‑adaptive models</h3><p>Simple extraction, complex reasoning, or long‑context planning — each task gets the model best suited for it.</p></div>
-        <div class="card"><div class="card-icon">🛡️</div><h3>Quality‑verified output</h3><p>If a response doesn't meet quality thresholds, we silently escalate and retry. You only see the passing result.</p></div>
+        <div class="card"><div class="card-icon">🛡️</div><h3>Quality‑aware output</h3><p>On higher-risk routes, AI Bridge can check and escalate. Routine work stays lighter unless the task earns extra review.</p></div>
         <div class="card"><div class="card-icon">🧩</div><h3>Zero config, full control</h3><p>Works with your existing OpenAI‑compatible SDKs. Add a base URL, keep your prompts. Dashboard gives full visibility.</p></div>
       </div>
     </section>
@@ -220,11 +220,11 @@
       <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
       <p class="section-subhead" style="margin-bottom: 16px;">Pre‑pay, route, save. Top up anytime.</p>
       <div class="pricing-grid">
-        <div class="pricing-card"><h3>$10</h3><div class="price">$10</div><p style="color:var(--muted);font-size:14px;">Try it out</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
-        <div class="pricing-card"><h3>$50</h3><div class="price">$50</div><p style="color:var(--muted);font-size:14px;">Solo builder</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
-        <div class="pricing-card"><h3>$200</h3><div class="price">$200</div><p style="color:var(--muted);font-size:14px;">Growing team</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
-        <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
-        <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal()">Start →</button></div>
+        <div class="pricing-card"><h3>$10</h3><div class="price">$10</div><p style="color:var(--muted);font-size:14px;">Try it out</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','starter')">Start →</button></div>
+        <div class="pricing-card"><h3>$50</h3><div class="price">$50</div><p style="color:var(--muted);font-size:14px;">Solo builder</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','growth')">Start →</button></div>
+        <div class="pricing-card"><h3>$200</h3><div class="price">$200</div><p style="color:var(--muted);font-size:14px;">Growing team</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','scale')">Start →</button></div>
+        <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','scale_plus')">Start →</button></div>
+        <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','volume')">Start →</button></div>
       </div>
       <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit — no card required.</p>
     </section>
@@ -244,10 +244,10 @@
     <section>
       <h2 style="text-align: center;">Common questions</h2>
       <div style="max-width:720px;margin:48px auto 0;">
-        <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It analyzes task complexity and context length. Simple tasks use efficient models; deep reasoning or long context escalates to premium models. Quality is verified on every response.</div></div>
-        <div class="faq-item"><div class="faq-question">What if the output isn't good enough?</div><div class="faq-answer">We validate every response. If it fails quality checks, we silently escalate and retry. You only see the final passing result.</div></div>
+        <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It routes by task shape and context depth. Simple tasks use efficient models; deeper reasoning or longer context can escalate to premium models.</div></div>
+        <div class="faq-item"><div class="faq-question">What if the output isn't good enough?</div><div class="faq-answer">On selected routes we run checks and may escalate or retry. Higher-risk work gets more scrutiny than routine turns.</div></div>
         <div class="faq-item"><div class="faq-question">Does this work with my existing code?</div><div class="faq-answer">Yes. Change your base_url to https://getaibridge.com/v1. Your SDK and prompts stay exactly the same.</div></div>
-        <div class="faq-item"><div class="faq-question">Do you store my prompts?</div><div class="faq-answer">No. We only log model used, token count, latency, and routing reason. Prompts are never stored.</div></div>
+        <div class="faq-item"><div class="faq-question">Do you store my prompts?</div><div class="faq-answer">Public landing demos avoid prompt storage. Signed-in product flows keep limited request and task records for continuity, billing, and support.</div></div>
       </div>
     </section>
 
@@ -261,8 +261,8 @@
     <!-- 信任条 -->
     <div class="trust-bar">
       <div class="trust-item"><span>✓</span> Adaptive routing</div>
-      <div class="trust-item"><span>✓</span> Quality verified</div>
-      <div class="trust-item"><span>✓</span> No prompt storage</div>
+      <div class="trust-item"><span>✓</span> Quality checks where needed</div>
+      <div class="trust-item"><span>✓</span> Public demo avoids prompt storage</div>
     </div>
   </div>
 </main>
@@ -277,52 +277,64 @@
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div id="modalForm">
       <h3 style="font-size:28px;font-weight:800;margin-bottom:12px;">Get your API key</h3>
-      <p style="margin-bottom:28px;color:var(--muted);">Start with $3 free credit. No card required.</p>
+      <p id="modalIntro" style="margin-bottom:28px;color:var(--muted);">Start with $3 free credit. No card required.</p>
       <input type="text" id="signupName" placeholder="Your name or company">
       <input type="email" id="signupEmail" placeholder="Email address">
-      <button class="modal-submit" onclick="handleSignup()">Generate API Key →</button>
+      <input type="text" id="signupUseCase" placeholder="What are you routing? (optional)">
+      <button class="modal-submit" id="modalSubmitBtn" onclick="handleModalSubmit()">Generate API Key →</button>
     </div>
     <div id="modalSuccess" style="display:none;text-align:center;">
       <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">YOUR API KEY (click to copy)</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
-      <p style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
+      <p id="modalSuccessCopy" style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
+      <div id="onboardingBox" style="display:none;text-align:left;margin-top:20px;">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Claude terminal onboarding</div>
+        <div class="code-block" id="onboardingCommands" style="margin:0;"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
   let trialsLeft = 3;
+  let selectedPackCode = null;
+  let modalMode = 'signup';
   const trialCounter = document.getElementById('trialCounter');
   const trialMessage = document.getElementById('trialMessage');
   const promptInput = document.getElementById('promptInput');
   const sendBtn = document.getElementById('sendPromptBtn');
   const resultPanel = document.getElementById('resultPanel');
   const resultLane = document.getElementById('resultLane');
+  const resultQuality = document.getElementById('resultQuality');
   const resultSavings = document.getElementById('resultSavings');
   const resultContent = document.getElementById('resultContent');
+  const modalIntro = document.getElementById('modalIntro');
+  const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+  const modalSuccessCopy = document.getElementById('modalSuccessCopy');
+  const onboardingBox = document.getElementById('onboardingBox');
+  const onboardingCommands = document.getElementById('onboardingCommands');
+  const signupUseCase = document.getElementById('signupUseCase');
+  const rewardPrompt = document.querySelector('.referral-box .btn-primary');
+  const packCodeMap = {
+    starter: '$10',
+    growth: '$50',
+    scale: '$200',
+    scale_plus: '$500',
+    volume: '$1,000',
+  };
 
   function updateTrialDisplay() {
     trialCounter.textContent = `${trialsLeft} FREE ${trialsLeft === 1 ? 'TRY' : 'TRIES'} — no signup`;
-    if (trialsLeft === 0) {
-      sendBtn.disabled = true;
-      sendBtn.style.opacity = '0.5';
-      trialMessage.textContent = '✨ Create free account for unlimited access';
-    } else {
-      sendBtn.disabled = false;
-      sendBtn.style.opacity = '1';
-      trialMessage.textContent = '';
-    }
+    sendBtn.disabled = false;
+    sendBtn.style.opacity = '1';
+    trialMessage.textContent = trialsLeft === 0 ? 'Create an account or top up to keep routing real work.' : '';
   }
 
   async function sendPrompt(promptText) {
-    if (trialsLeft <= 0) {
-      alert('You\'ve used your 3 free tries. Sign up for unlimited access!');
-      openModal();
-      return;
-    }
     if (!promptText.trim()) return;
 
     resultPanel.style.display = 'block';
     resultLane.textContent = 'Analyzing...';
+    resultQuality.textContent = 'Checking...';
     resultSavings.textContent = '...';
     resultContent.textContent = 'Thinking...';
 
@@ -330,22 +342,33 @@
       const res = await fetch('/demo/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: promptText })
+        body: JSON.stringify({ message: promptText.slice(0, 8000) })
       });
       const data = await res.json();
+      if (res.status === 429) {
+        trialsLeft = 0;
+        updateTrialDisplay();
+        resultLane.textContent = 'Trial limit reached';
+        resultQuality.textContent = 'Signup required';
+        resultSavings.textContent = 'Open account path';
+        resultContent.textContent = data.detail || 'Anonymous trial limit reached.';
+        window.setTimeout(() => openModal('signup'), 1200);
+        return;
+      }
 
-      const lane = data.complexity === 'hard' ? 'Premium (deep reasoning)' : 'Optimized (efficient)';
-      const decision = data.complexity === 'hard' ? 'Task required depth → escalated' : 'Task routine → efficient model';
-      const reply = data.reply || 'No response content.';
-
-      resultLane.textContent = lane;
-      resultSavings.textContent = decision;
-      resultContent.textContent = reply;
-
-      trialsLeft--;
+      resultLane.textContent = data.lane || 'Smart';
+      resultQuality.textContent = data.quality || 'Checked';
+      resultSavings.textContent = data.reason || data.why || 'Adaptive routing';
+      resultContent.textContent = data.reply || 'No response content.';
+      trialsLeft = Number.isFinite(data.trial_remaining) ? data.trial_remaining : trialsLeft;
       updateTrialDisplay();
+      if (data.trial_exhausted && data.show_signup_after_ms) {
+        trialMessage.textContent = 'This was your last free demo. Opening signup next.';
+        window.setTimeout(() => openModal('signup'), data.show_signup_after_ms);
+      }
     } catch (error) {
       resultLane.textContent = 'Error';
+      resultQuality.textContent = 'Unavailable';
       resultSavings.textContent = '—';
       resultContent.textContent = 'Something went wrong. Please try again.';
     }
@@ -366,24 +389,81 @@
     });
   });
 
-  function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+  function openModal(mode = 'signup', packCode = null) {
+    modalMode = mode;
+    selectedPackCode = packCode;
+    document.getElementById('modalOverlay').classList.add('open');
+    document.querySelector('#modalForm').style.display = 'block';
+    document.querySelector('#modalSuccess').style.display = 'none';
+    onboardingBox.style.display = 'none';
+    if (modalMode === 'checkout') {
+      modalIntro.textContent = `Start secure checkout for ${packCodeMap[packCode] || 'this credit tier'}.`;
+      modalSubmitBtn.textContent = 'Continue to checkout →';
+      signupUseCase.style.display = 'none';
+    } else {
+      modalIntro.textContent = 'Start with $3 free credit. No card required.';
+      modalSubmitBtn.textContent = 'Generate API Key →';
+      signupUseCase.style.display = 'block';
+    }
+  }
   function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-  async function handleSignup() {
+  async function handleModalSubmit() {
     const name = document.getElementById('signupName').value.trim();
     const email = document.getElementById('signupEmail').value.trim();
-    if (!name || !email) { alert('Please fill in both fields.'); return; }
+    if (!name || !email) {
+      modalIntro.textContent = 'Please fill in both fields to continue.';
+      return;
+    }
+    if (modalMode === 'checkout' && selectedPackCode) {
+      try {
+        const referral = new URL(window.location.href).searchParams.get('ref') || window.localStorage.getItem('ab_referral_code');
+        const res = await fetch('/api/payments/checkout', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ email, pack_code: selectedPackCode, referred_by_code: referral || null })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Checkout unavailable');
+        window.localStorage.setItem('ab_launch_email', email);
+        window.localStorage.setItem('ab_user_id', String(data.user_id));
+        window.location.href = data.checkout_url;
+      } catch(e) {
+        modalIntro.textContent = 'Checkout error. Please try again.';
+      }
+      return;
+    }
     try {
-      const res = await fetch('/v1/keys', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, email }) });
+      const referral = new URL(window.location.href).searchParams.get('ref') || window.localStorage.getItem('ab_referral_code');
+      const res = await fetch('/v1/keys', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ name, email, use_case: signupUseCase.value.trim() || null, referred_by_code: referral || null })
+      });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Signup error');
+      window.localStorage.setItem('ab_launch_email', email);
+      window.localStorage.setItem('ab_user_id', String(data.user_id));
       document.querySelector('#modalForm').style.display = 'none';
       document.querySelector('#modalSuccess').style.display = 'block';
-      document.querySelector('#modalSuccess .key-box').textContent = data.api_key || 'sk-bridge-demo-8f3a2b1c';
-    } catch(e) { alert('Signup error, please try again.'); }
+      const keyBox = document.querySelector('#modalSuccess .key-box');
+      keyBox.textContent = data.api_key;
+      keyBox.dataset.originalKey = data.api_key;
+      modalSuccessCopy.textContent = `Your key includes $${Number(data.granted_credit_usd || 0).toFixed(2)} credit. Current balance: $${Number(data.balance_usd || 0).toFixed(2)}.`;
+      if (Array.isArray(data.onboarding_commands)) {
+        onboardingBox.style.display = 'block';
+        onboardingCommands.textContent = data.onboarding_commands.join('\n');
+      }
+    } catch(e) {
+      modalIntro.textContent = 'Signup error. Please try again.';
+    }
   }
   function copyKey(el) { 
+    const original = el.dataset.originalKey || el.textContent;
     navigator.clipboard.writeText(el.textContent); 
     el.textContent = '✓ Copied!'; 
-    setTimeout(()=> el.textContent = 'sk-bridge-demo-8f3a2b1c', 1500);
+    window.setTimeout(() => {
+      el.textContent = original;
+    }, 1500);
   }
 
   document.querySelectorAll('.faq-question').forEach(q => {
@@ -392,6 +472,13 @@
 
   updateTrialDisplay();
   resultPanel.style.display = 'none';
+  const ref = new URL(window.location.href).searchParams.get('ref');
+  if (ref) {
+    window.localStorage.setItem('ab_referral_code', ref.toUpperCase());
+  }
+  if (rewardPrompt) {
+    rewardPrompt.addEventListener('click', () => openModal('signup'));
+  }
 </script>
 </body>
 </html>

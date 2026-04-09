@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}AI Bridge Admin{% endblock %}
+{% block body %}
+<main class="page">
+  <section class="hero slim">
+    <div class="hero-copy">
+      <p class="eyebrow">Admin Dashboard</p>
+      <h1>{{ total_users }} total users</h1>
+      <p class="lede">{{ new_signups_7d }} new signups in the last 7 days · {{ trial_to_signup_conversion }}% trial to signup · {{ signup_to_topup_conversion }}% signup to first top-up.</p>
+    </div>
+    <div class="hero-card">
+      <div class="metric"><span>Total top-ups</span><strong>${{ "%.2f"|format(total_topups_usd) }}</strong></div>
+      <div class="metric"><span>Recent usage</span><strong>${{ "%.2f"|format(total_usage_usd) }}</strong></div>
+      <div class="metric"><span>Savings summary</span><strong>${{ "%.2f"|format(total_savings_usd) }}</strong></div>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>Funnel</h2>
+      <ul class="checklist">
+        <li>Total anonymous trial sessions: {{ trial_count }}</li>
+        <li>Trials exhausted: {{ exhausted_trials }}</li>
+        <li>Trial to signup conversion: {{ trial_to_signup_conversion }}%</li>
+        <li>Signup to first top-up conversion: {{ signup_to_topup_conversion }}%</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Referral</h2>
+      <ul class="checklist">
+        <li>Referral rewards issued: {{ referral_count }}</li>
+        <li>Total reward credit: ${{ "%.2f"|format(referral_credit_usd) }}</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section grid-2">
+    <div class="panel">
+      <h2>Recent top-ups</h2>
+      {% if recent_topups %}
+      <ul class="checklist">
+        {% for payment in recent_topups %}
+        <li>User {{ payment.user_id }} · {{ payment.pack_code|replace("_", " ")|title }} · ${{ "%.2f"|format(payment.amount_usd) }} · {{ payment.status|title }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No completed payments yet.</p>
+      {% endif %}
+    </div>
+    <div class="panel">
+      <h2>Recent failures</h2>
+      {% if recent_failures %}
+      <ul class="checklist">
+        {% for failure in recent_failures %}
+        <li>{{ failure.endpoint }} · {{ failure.error_message }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No recent failures logged.</p>
+      {% endif %}
+    </div>
+  </section>
+</main>
+{% endblock %}

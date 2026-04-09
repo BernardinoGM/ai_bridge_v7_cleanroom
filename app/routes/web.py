@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.config import BASE_DIR
-from app.dashboard import build_dashboard
+from app.config import get_settings
+from app.dashboard import build_admin_dashboard, build_dashboard
 from app.db import get_db
 from app.models import TaskSession, User
 from app.pricing import TOP_UP_PACKS
@@ -52,6 +53,15 @@ def dashboard_demo(request: Request, db: Session = Depends(get_db)) -> HTMLRespo
 def dashboard_page(request: Request, user_id: int, db: Session = Depends(get_db)) -> HTMLResponse:
     context = build_dashboard(db, user_id)
     return templates.TemplateResponse(request, "dashboard.html", context)
+
+
+@router.get("/admin/dashboard", response_class=HTMLResponse)
+def admin_dashboard(request: Request, key: str | None = None, db: Session = Depends(get_db)) -> HTMLResponse:
+    settings = get_settings()
+    if key != settings.admin_api_key:
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    context = build_admin_dashboard(db)
+    return templates.TemplateResponse(request, "admin_dashboard.html", context)
 
 
 @router.get("/chat/{user_id}", response_class=HTMLResponse)

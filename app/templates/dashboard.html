@@ -33,7 +33,7 @@
       <ul class="checklist">
         <li>Referral code: {{ referral_code }}</li>
         <li>Referral link: {{ referral_link }}</li>
-        <li>Promo balance: ${{ "%.2f"|format(promo_balance_usd) }}</li>
+        <li>Reward balance: ${{ "%.2f"|format(reward_balance_usd) }}</li>
       </ul>
       {% if recent_referral_perks %}
       <ul class="checklist">
@@ -84,6 +84,18 @@
       <p class="muted">No balance activity yet.</p>
       {% endif %}
     </div>
+    <div class="panel">
+      <h2>Reward ledger</h2>
+      {% if reward_ledger %}
+      <ul class="checklist">
+        {% for entry in reward_ledger %}
+        <li>{{ entry.description }} · {% if entry.amount_usd >= 0 %}+{% endif %}${{ "%.2f"|format(entry.amount_usd) }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No reward activity yet.</p>
+      {% endif %}
+    </div>
   </section>
 
   <section class="section">
@@ -100,6 +112,14 @@
   </section>
 
   <section class="section grid-2">
+    <div class="panel">
+      <h2>Claude terminal onboarding</h2>
+      <ul class="checklist">
+        {% for line in onboarding_commands %}
+        <li><code>{{ line }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
     <div class="panel">
       <h2>Growth CTAs</h2>
       <ul class="checklist">

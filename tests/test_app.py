@@ -87,96 +87,47 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     response = client.get("/")
     assert response.status_code == 200
     body = response.text.lower()
-    assert "multi-model adaptation beats single-model certainty." in body
+    assert "right model." in body
+    assert "right task." in body
+    assert "fewer mistakes." in body
     assert "try 3 free demos" in body
-    assert "ai bridge is built for people who already know the tradeoffs." in body
-    assert "it routes work to the model that fits the task, preserves direction across turns, and keeps human judgment in the loop when it matters." in body
-    assert "less blind trust. fewer avoidable errors. more targeted outcomes." in body
-    assert "try the playground" in body
-    assert "for builders, operators, and technical teams running real work through multiple models." in body
+    assert "adaptive model routing for developers" in body
+    assert "live demo" in body
     assert "dashboard" in body
     assert "get api key" in body
-    assert "what ai bridge is actually optimizing" in body
-    assert "model fit" in body
-    assert "human-in-the-loop control" in body
-    assert "outcome quality" in body
-    assert "the right model for the actual task, not one model for everything" in body
-    assert "direction stays intentional, not accidental" in body
-    assert "fewer avoidable mistakes, more targeted results." in body
-    assert "multi-model routing is not about novelty. it is about getting to the right result with less drift." in body
-    assert "why it wins" in body
     assert "claude code" in body
-    assert "cheaper by default" in body
-    assert "premium when earned" in body
-    assert "stable across turns" in body
-    assert "take one bite" in body
-    assert "pick a real task. watch the router decide." in body
-    assert "summarize a spec" in body
-    assert "refactor a file" in body
-    assert "draft a customer reply" in body
-    assert "run this example" in body
-    assert "quality" in body
-    assert "routing reason" in body
-    assert "saved vs direct premium" in body
-    assert "see what your current workflow is costing you" in body
-    assert "direct premium spend" in body
-    assert "ai bridge blended spend" in body
-    assert "typical reduction range" in body
-    assert "solo builder" in body
-    assert "shipping sprint" in body
-    assert "review-heavy week" in body
-    assert "$120–$180/mo" in body
-    assert "$250–$450/mo" in body
-    assert "pick your starting pack" in body
-    assert "start small. route real work. scale only when it proves itself." in body
-    assert "starter credit" in body
     assert "$10" in body
-    assert "operating credit" in body
     assert "$50" in body
-    assert "committed credit" in body
     assert "$200" in body
-    assert "scale credit" in body
     assert "$500" in body
-    assert "volume credit" in body
-    assert "$1000" in body
-    assert "start with $10 credit" in body
-    assert "start with $50 credit" in body
-    assert "start with $200 credit" in body
-    assert "start with $500 credit" in body
-    assert "start with $1000 credit" in body
-    assert 'data-pack-code="scale_plus"' in body
-    assert 'data-pack-code="volume"' in body
-    assert 'href="/dashboard/demo"' in body
+    assert "$1,000" in body
+    assert 'href="/dashboard"' in body
     assert 'id="playground"' in body
-    assert 'id="savings"' in body
-    assert 'id="packs"' in body
-    assert 'id="api-key-modal"' in body
-    assert "choose a pack, get redirected to secure checkout." in body
-    assert "use this lightweight launch flow to request access" in body
-    assert "you go through secure checkout and use balance against routed work." in body
-    assert 'fetch("/v1/keys"' in body
-    assert 'fetch("/demo/chat"' in body
-    assert 'fetch("/api/payments/checkout"' in body
-    assert 'window.location.href = "/chat/demo";' not in body
-    assert "🎯" not in body
-    assert "🚀" not in body
+    assert 'id="pricing"' in body
+    assert 'id="modaloverlay"' in body
+    assert "/v1/keys" in body
+    assert "/demo/chat" in body
+    assert "/api/payments/checkout" in body
 
 
 def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() -> None:
     demo_client = TestClient(app)
-    first = demo_client.post("/demo/chat", json={"example": "spec"})
+    first = demo_client.post("/demo/chat", json={"message": "Summarize a heat pump controller spec for me."})
     assert first.status_code == 200
     payload = first.json()
-    assert set(payload.keys()) >= {"reply", "lane", "quality", "direct_cost", "routed_cost", "saved_pct", "reason", "tries_remaining"}
+    assert set(payload.keys()) >= {"reply", "lane", "quality", "direct_cost", "routed_cost", "saved_pct", "reason", "trial_remaining", "trial_exhausted", "show_signup_after_ms"}
     assert payload["lane"] in {"Fast", "Smart", "Assured"}
     assert payload["quality"] in {"In progress", "Checked", "Verified"}
     assert payload["direct_cost"].startswith("$")
     assert payload["routed_cost"].startswith("$")
     assert isinstance(payload["saved_pct"], int)
+    assert payload["trial_exhausted"] is False
     second = demo_client.post("/demo/chat", json={"example": "refactor"})
     assert second.status_code == 200
     third = demo_client.post("/demo/chat", json={"example": "reply"})
     assert third.status_code == 200
+    assert third.json()["trial_exhausted"] is True
+    assert third.json()["show_signup_after_ms"] == 7000
     fourth = demo_client.post("/demo/chat", json={"example": "spec"})
     assert fourth.status_code == 429
     assert "anonymous demo limit reached" in fourth.json()["detail"].lower()
@@ -193,14 +144,16 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["email"] == "newbuilder@example.com"
     assert payload["dashboard_url"].startswith("/dashboard/")
     assert payload["chat_url"].startswith("/chat/")
-    assert payload["granted_credit_usd"] == 0.0
+    assert payload["granted_credit_usd"] == 3.0
+    assert payload["onboarding_commands"][0].startswith('export ANTHROPIC_BASE_URL=')
+    assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_API_KEY="ab_live_')
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
         assert user is not None
         api_keys = db.scalars(select(ApiKey).where(ApiKey.user_id == user.id)).all()
         assert len(api_keys) == 1
         assert api_keys[0].key_prefix == payload["api_key"][:16]
-        assert wallet_balance(db, user.id, "main") == 0.0
+        assert wallet_balance(db, user.id, "main") == 3.0
 
 
 def test_issued_api_key_is_usable_for_authenticated_messages_without_user_id() -> None:
@@ -305,7 +258,7 @@ def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -
     body = response.text.lower()
     assert "dashboarduser@example.com" in body
     assert payload["api_key"][:16].lower() in body
-    assert "$55.00 main balance".lower() in body
+    assert "$58.00 main balance".lower() in body
     assert "growth" in body
     assert "$50.00" in body
     assert "$5.00 bonus" in body
@@ -345,6 +298,16 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         assert payment is not None
         assert payment.user_id == user.id
         assert payment.pack_code == "scale_plus"
+
+
+def test_admin_dashboard_route_shows_aggregate_metrics() -> None:
+    response = client.get("/admin/dashboard?key=admin-test-key")
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "admin dashboard" in body
+    assert "trial to signup conversion" in body
+    assert "signup to first top-up conversion" in body
+    assert "recent failures" in body
 
 
 def test_webhook_processing_is_idempotent() -> None:
@@ -642,7 +605,7 @@ def test_landing_has_no_hardcoded_dashboard_user_cta() -> None:
     assert response.status_code == 200
     body = response.text
     assert "/dashboard/1" not in body
-    assert "/dashboard/demo" in body
+    assert "/dashboard" in body
 
 
 def test_no_mock_provider_in_production_path_configuration() -> None:

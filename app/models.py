@@ -214,6 +214,7 @@ class DemoTrial(TimestampMixin, Base):
     session_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     tries_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     last_example: Mapped[str | None] = mapped_column(String(32))
+    last_prompt_excerpt: Mapped[str | None] = mapped_column(String(255))
 
 
 class ApiKey(TimestampMixin, Base):
@@ -226,3 +227,13 @@ class ApiKey(TimestampMixin, Base):
     label: Mapped[str | None] = mapped_column(String(120))
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class RequestFailure(TimestampMixin, Base):
+    __tablename__ = "request_failures"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    endpoint: Mapped[str] = mapped_column(String(120), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
+    error_message: Mapped[str] = mapped_column(String(255))
+    context_json: Mapped[dict | None] = mapped_column(JSON)

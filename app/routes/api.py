@@ -14,7 +14,7 @@ from app.dashboard import build_dashboard
 from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
 from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
-from app.models import AgentProfile, DemoTrial, TaskSession, TaskTurn, UsageEvent, User
+from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, UsageEvent, User
 from app.payments import create_checkout_session, ensure_seed_user, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
@@ -240,6 +240,24 @@ def _require_admin_key(x_admin_key: str | None, settings: Settings) -> None:
         raise HTTPException(status_code=403, detail="Admin access required.")
 
 
+def _record_failure(
+    db: Session,
+    endpoint: str,
+    error_message: str,
+    user_id: int | None = None,
+    context_json: dict | None = None,
+) -> None:
+    db.add(
+        RequestFailure(
+            endpoint=endpoint,
+            user_id=user_id,
+            error_message=error_message[:255],
+            context_json=context_json,
+        )
+    )
+    db.commit()
+
+
 def _cookie_user_id(request: Request) -> int | None:
     raw = request.cookies.get(LAUNCH_USER_COOKIE_NAME)
     if not raw:
@@ -294,23 +312,34 @@ def demo_chat(
     trial = _get_or_create_demo_trial(db, session_id)
     if trial.tries_used >= DEMO_TRIAL_LIMIT:
         raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
-    example = DEMO_EXAMPLES[payload.example]
-    preview = _route_preview(prompt=example["prompt"], mode="smart", settings=settings)
-    trial.tries_used += 1
-    trial.last_example = payload.example
-    db.commit()
-    response.set_cookie(
-        key=DEMO_COOKIE_NAME,
-        value=session_id,
-        max_age=60 * 60 * 24 * 30,
-        httponly=True,
-        samesite="lax",
-    )
-    reason = _demo_reason(payload.example, decide_route(example["prompt"], "smart"))
-    preview["reason"] = reason
-    preview["why"] = reason
-    preview["tries_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
-    return preview
+    example_key = payload.example or "spec"
+    prompt = (payload.message or "").strip()
+    if not prompt:
+        prompt = DEMO_EXAMPLES[example_key]["prompt"]
+    try:
+        preview = _route_preview(prompt=prompt[:8000], mode="smart", settings=settings)
+        trial.tries_used += 1
+        trial.last_example = example_key
+        trial.last_prompt_excerpt = prompt[:255]
+        db.commit()
+        response.set_cookie(
+            key=DEMO_COOKIE_NAME,
+            value=session_id,
+            max_age=60 * 60 * 24 * 30,
+            httponly=True,
+            samesite="lax",
+        )
+        reason = _demo_reason(example_key, decide_route(prompt, "smart"))
+        preview["reason"] = reason
+        preview["why"] = reason
+        preview["trial_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
+        preview["tries_remaining"] = preview["trial_remaining"]
+        preview["trial_exhausted"] = trial.tries_used >= DEMO_TRIAL_LIMIT
+        preview["show_signup_after_ms"] = 7000 if preview["trial_exhausted"] else 0
+        return preview
+    except HTTPException as exc:
+        _record_failure(db, "/demo/chat", exc.detail if isinstance(exc.detail, str) else "demo failure", context_json={"example": example_key})
+        raise
 
 
 @compat_router.post("/keys")
@@ -320,30 +349,40 @@ def create_api_key_launch(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    user, raw_key, granted_credit, balance_usd = issue_api_key(
-        db=db,
-        settings=settings,
-        email=payload.email,
-        use_case=payload.use_case,
-        referred_by_code=payload.referred_by_code,
-    )
-    db.commit()
-    response.set_cookie(
-        key=LAUNCH_USER_COOKIE_NAME,
-        value=str(user.id),
-        max_age=60 * 60 * 24 * 30,
-        httponly=True,
-        samesite="lax",
-    )
-    return {
-        "api_key": raw_key,
-        "user_id": user.id,
-        "email": user.email,
-        "granted_credit_usd": round(granted_credit, 2),
-        "balance_usd": round(balance_usd, 2),
-        "dashboard_url": f"/dashboard/{user.id}",
-        "chat_url": f"/chat/{user.id}",
-    }
+    try:
+        user, raw_key, granted_credit, balance_usd = issue_api_key(
+            db=db,
+            settings=settings,
+            email=payload.email,
+            name=payload.name,
+            use_case=payload.use_case,
+            referred_by_code=payload.referred_by_code,
+        )
+        db.commit()
+        response.set_cookie(
+            key=LAUNCH_USER_COOKIE_NAME,
+            value=str(user.id),
+            max_age=60 * 60 * 24 * 30,
+            httponly=True,
+            samesite="lax",
+        )
+        return {
+            "api_key": raw_key,
+            "user_id": user.id,
+            "email": user.email,
+            "granted_credit_usd": round(granted_credit, 2),
+            "balance_usd": round(balance_usd, 2),
+            "dashboard_url": f"/dashboard/{user.id}",
+            "chat_url": f"/chat/{user.id}",
+            "onboarding_commands": [
+                'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
+                f'export ANTHROPIC_API_KEY="{raw_key}"',
+                "claude",
+            ],
+        }
+    except HTTPException as exc:
+        _record_failure(db, "/v1/keys", exc.detail if isinstance(exc.detail, str) else "signup failed", context_json={"email": payload.email})
+        raise
 
 
 @router.get("/topups/packs")
@@ -371,37 +410,41 @@ def create_checkout(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    resolved_user_id = payload.user_id
-    if payload.email:
-        user = ensure_seed_user(
-            db,
-            email=payload.email.strip().lower(),
-            name=payload.email.split("@", 1)[0].replace(".", " ").replace("_", " ").title() or "AI Bridge User",
+    try:
+        resolved_user_id = payload.user_id
+        if payload.email:
+            user = ensure_seed_user(
+                db,
+                email=payload.email.strip().lower(),
+                name=payload.email.split("@", 1)[0].replace(".", " ").replace("_", " ").title() or "AI Bridge User",
+            )
+            attach_referrer_by_code(db, user, payload.referred_by_code)
+            resolved_user_id = user.id
+        elif resolved_user_id is None:
+            cookie_user_id = _cookie_user_id(request)
+            if cookie_user_id is not None and db.get(User, cookie_user_id) is not None:
+                resolved_user_id = cookie_user_id
+        if resolved_user_id is None:
+            raise HTTPException(status_code=400, detail="Email is required to start checkout before full sign-in.")
+        response.set_cookie(
+            key=LAUNCH_USER_COOKIE_NAME,
+            value=str(resolved_user_id),
+            max_age=60 * 60 * 24 * 30,
+            httponly=True,
+            samesite="lax",
         )
-        attach_referrer_by_code(db, user, payload.referred_by_code)
-        resolved_user_id = user.id
-    elif resolved_user_id is None:
-        cookie_user_id = _cookie_user_id(request)
-        if cookie_user_id is not None and db.get(User, cookie_user_id) is not None:
-            resolved_user_id = cookie_user_id
-    if resolved_user_id is None:
-        raise HTTPException(status_code=400, detail="Email is required to start checkout before full sign-in.")
-    response.set_cookie(
-        key=LAUNCH_USER_COOKIE_NAME,
-        value=str(resolved_user_id),
-        max_age=60 * 60 * 24 * 30,
-        httponly=True,
-        samesite="lax",
-    )
-    result = create_checkout_session(
-        db=db,
-        settings=settings,
-        user_id=resolved_user_id,
-        pack_code=payload.pack_code,
-        referred_by_code=payload.referred_by_code,
-    )
-    db.commit()
-    return {"checkout_url": result.checkout_url, "session_id": result.session_id, "user_id": resolved_user_id}
+        result = create_checkout_session(
+            db=db,
+            settings=settings,
+            user_id=resolved_user_id,
+            pack_code=payload.pack_code,
+            referred_by_code=payload.referred_by_code,
+        )
+        db.commit()
+        return {"checkout_url": result.checkout_url, "session_id": result.session_id, "user_id": resolved_user_id}
+    except HTTPException as exc:
+        _record_failure(db, "/api/payments/checkout", exc.detail if isinstance(exc.detail, str) else "checkout failed", context_json={"pack_code": payload.pack_code})
+        raise
 
 
 @router.post("/payments/webhook")
@@ -415,19 +458,25 @@ async def stripe_webhook(
     try:
         event = stripe.Webhook.construct_event(payload=payload, sig_header=stripe_signature, secret=settings.stripe_webhook_secret)
     except ValueError as exc:
+        _record_failure(db, "/api/payments/webhook", "Invalid payload")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload") from exc
     except stripe.error.SignatureVerificationError as exc:
+        _record_failure(db, "/api/payments/webhook", "Invalid signature")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature") from exc
     if event["type"] == "checkout.session.completed":
         session_data = event["data"]["object"]
-        processed = process_checkout_completed(
-            db=db,
-            event_id=event["id"],
-            stripe_session_id=session_data["id"],
-            stripe_payment_intent_id=session_data.get("payment_intent"),
-        )
-        db.commit()
-        return JSONResponse({"processed": processed})
+        try:
+            processed = process_checkout_completed(
+                db=db,
+                event_id=event["id"],
+                stripe_session_id=session_data["id"],
+                stripe_payment_intent_id=session_data.get("payment_intent"),
+            )
+            db.commit()
+            return JSONResponse({"processed": processed})
+        except Exception as exc:
+            _record_failure(db, "/api/payments/webhook", str(exc), context_json={"session_id": session_data.get("id")})
+            raise
     return JSONResponse({"processed": False, "ignored": event["type"]})
 
 

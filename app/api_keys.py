@@ -13,7 +13,7 @@ from app.models import ApiKey, User, WalletLedger
 from app.payments import ensure_seed_user
 
 
-STARTER_CREDIT_USD = 0.0
+STARTER_CREDIT_USD = 3.0
 
 
 def _normalize_email(email: str) -> str:
@@ -56,11 +56,15 @@ def issue_api_key(
     db: Session,
     settings: Settings,
     email: str,
+    name: str | None = None,
     use_case: str | None = None,
     referred_by_code: str | None = None,
 ) -> tuple[User, str, float, float]:
     normalized_email = _normalize_email(email)
-    user = ensure_seed_user(db, email=normalized_email, name=_display_name_from_email(normalized_email))
+    display_name = name.strip()[:120] if name and name.strip() else _display_name_from_email(normalized_email)
+    user = ensure_seed_user(db, email=normalized_email, name=display_name)
+    if not user.name and display_name:
+        user.name = display_name
     attach_referrer_by_code(db, user, referred_by_code)
     existing_grant = db.scalar(
         select(WalletLedger).where(
