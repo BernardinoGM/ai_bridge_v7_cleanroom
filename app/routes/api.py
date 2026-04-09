@@ -80,6 +80,14 @@ def _normalize_requested_mode(mode: str, model: str | None) -> str:
     return mode
 
 
+def _raise_neutral_compat_error(exc: HTTPException) -> None:
+    detail = exc.detail if isinstance(exc.detail, str) else ""
+    lowered = detail.lower()
+    if any(marker in lowered for marker in ("selected model", "does not exist", "claude-", "anthropic")):
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.") from exc
+    raise exc
+
+
 def _human_status(status: str) -> str:
     normalized = status.replace("_", " ").strip().lower()
     if normalized == "in progress":
@@ -882,14 +890,17 @@ def v1_chat_completions(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    return api_chat_completions(
-        payload=payload,
-        request=request,
-        authorization=authorization,
-        x_api_key=x_api_key,
-        db=db,
-        settings=settings,
-    )
+    try:
+        return api_chat_completions(
+            payload=payload,
+            request=request,
+            authorization=authorization,
+            x_api_key=x_api_key,
+            db=db,
+            settings=settings,
+        )
+    except HTTPException as exc:
+        _raise_neutral_compat_error(exc)
 
 
 @compat_router.post("/messages")
@@ -901,11 +912,14 @@ def v1_messages(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    return api_messages(
-        payload=payload,
-        request=request,
-        authorization=authorization,
-        x_api_key=x_api_key,
-        db=db,
-        settings=settings,
-    )
+    try:
+        return api_messages(
+            payload=payload,
+            request=request,
+            authorization=authorization,
+            x_api_key=x_api_key,
+            db=db,
+            settings=settings,
+        )
+    except HTTPException as exc:
+        _raise_neutral_compat_error(exc)

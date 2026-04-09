@@ -437,6 +437,14 @@
     openModal('signup');
   }
 
+  function focusPromptComposer() {
+    promptInput.focus({ preventScroll: true });
+    const valueLength = promptInput.value.length;
+    try {
+      promptInput.setSelectionRange(valueLength, valueLength);
+    } catch {}
+  }
+
   function showCheckoutUnavailable() {
     openModal('signup');
     modalIntro.textContent = 'Top-up temporarily unavailable during launch verification.';
@@ -481,6 +489,9 @@
         });
         signupTimer = window.setTimeout(openNextStepAfterTrial, 1200);
         return;
+      }
+      if (!res.ok) {
+        throw new Error('The preview is temporarily unavailable. Please try again in a moment.');
       }
 
       resultLane.textContent = data.lane || 'Smart';
@@ -632,11 +643,11 @@
     const playground = document.getElementById('playground');
     const rect = playground.getBoundingClientRect();
     if (rect.top < 120 && rect.bottom > 160) {
-      promptInput.focus();
+      focusPromptComposer();
       return;
     }
     playground.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    window.setTimeout(() => promptInput.focus(), 450);
+    window.setTimeout(() => focusPromptComposer(), 450);
   });
 
   updateTrialDisplay();

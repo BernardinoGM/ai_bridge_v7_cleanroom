@@ -767,6 +767,25 @@ def test_terminal_hello_flow_uses_alias_without_exposing_model_errors() -> None:
     assert "service temporarily unavailable" not in body
 
 
+def test_terminal_hello_messages_flow_uses_alias_without_vendor_leakage() -> None:
+    create = client.post("/v1/keys", json={"email": "hellomessages@example.com", "use_case": "terminal hello messages"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    response = client.post(
+        "/v1/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "model": "claude-sonnet-4-5",
+            "messages": [{"role": "user", "content": "hello"}],
+        },
+    )
+    assert response.status_code == 200
+    body = response.text.lower()
+    assert "selected model does not exist" not in body
+    assert "claude-sonnet-4-5" not in body
+    assert "anthropic" not in body
+
+
 def test_dashboard_matches_landing_user_blocks() -> None:
     session_client = TestClient(app)
     create = session_client.post("/v1/keys", json={"email": "dashstyle@example.com", "use_case": "ops"})
