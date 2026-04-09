@@ -56,7 +56,10 @@ def test_bootstrap_can_fail_softly_for_noncritical_startup_issues(monkeypatch) -
 
 
 def test_dashboard_is_runway_centric() -> None:
-    response = client.get("/dashboard/demo")
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "runwayuser@example.com", "use_case": "dashboard"})
+    assert create.status_code == 200
+    response = session_client.get("/dashboard")
     assert response.status_code == 200
     body = response.text.lower()
     assert "available now" in body
@@ -314,20 +317,16 @@ def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -
     assert "$55.00" in body
 
 
-def test_dashboard_root_redirects_to_launch_user_after_key_issue() -> None:
+def test_dashboard_root_resolves_for_signed_user_after_key_issue() -> None:
     session_client = TestClient(app)
     create = session_client.post(
         "/v1/keys",
         json={"email": "redirectuser@example.com", "use_case": "ops prompts"},
     )
     assert create.status_code == 200
-    user_id = create.json()["user_id"]
-    response = session_client.get("/dashboard", follow_redirects=False)
-    assert response.status_code == 307
-    assert response.headers["location"] == "/dashboard/me"
-    me_page = session_client.get("/dashboard/me")
-    assert me_page.status_code == 200
-    assert str(user_id) not in me_page.url.path
+    response = session_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "/dashboard/me" not in str(response.url)
 
 
 def test_dashboard_session_is_email_bound_not_user_id_bound() -> None:
@@ -338,11 +337,16 @@ def test_dashboard_session_is_email_bound_not_user_id_bound() -> None:
     with SessionLocal() as db:
         user = db.get(User, user_id)
         assert user is not None
-        assert session_client.get("/dashboard/me").status_code == 200
+        assert session_client.get("/dashboard").status_code == 200
         other = ensure_seed_user(db, "other-dashboard@example.com", "Other Dashboard", referral_code="ODASH")
         db.commit()
         forbidden = session_client.get(f"/dashboard/{other.id}")
         assert forbidden.status_code == 404
+
+
+def test_demo_only_web_routes_are_not_live_runtime_paths() -> None:
+    assert client.get("/dashboard/demo").status_code == 404
+    assert client.get("/chat/demo").status_code == 404
 
 
 def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypatch) -> None:

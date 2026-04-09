@@ -34,9 +34,7 @@ from app.session_auth import (
 from app.tasks import record_task_turn, resolve_task
 
 
-router = APIRouter(prefix="/api")
-compat_router = APIRouter(prefix="/v1")
-demo_router = APIRouter()
+router = APIRouter()
 
 DEMO_COOKIE_NAME = "ab_demo_session"
 DEMO_TRIAL_LIMIT = 3
@@ -364,7 +362,7 @@ def _resolve_user_id(
     raise HTTPException(status_code=401, detail="Authentication required. Provide a valid API key or launch session.")
 
 
-@router.get("/health")
+@router.get("/api/health")
 def health(settings: Settings = Depends(get_settings)) -> dict:
     return {
         "status": "ok",
@@ -374,7 +372,7 @@ def health(settings: Settings = Depends(get_settings)) -> dict:
     }
 
 
-@demo_router.post("/demo/chat")
+@router.post("/demo/chat")
 def demo_chat(
     payload: DemoChatRequest,
     request: Request,
@@ -445,7 +443,7 @@ def demo_chat(
         raise
 
 
-@compat_router.post("/keys")
+@router.post("/v1/keys")
 def create_api_key_launch(
     payload: ApiKeyCreateRequest,
     response: Response,
@@ -499,7 +497,7 @@ def create_api_key_launch(
         raise
 
 
-@router.get("/topups/packs")
+@router.get("/api/topups/packs")
 def list_topup_packs() -> dict:
     return {
         "packs": [
@@ -516,11 +514,10 @@ def list_topup_packs() -> dict:
     }
 
 
-@router.post("/payments/checkout")
+@router.post("/api/payments/checkout")
 def create_checkout(
     payload: CheckoutCreateRequest,
     request: Request,
-    response: Response,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> dict:
@@ -555,7 +552,7 @@ def create_checkout(
         raise HTTPException(status_code=503, detail="Checkout is temporarily unavailable. Please try again.")
 
 
-@router.post("/payments/webhook")
+@router.post("/api/payments/webhook")
 async def stripe_webhook(
     request: Request,
     stripe_signature: str = Header(alias="Stripe-Signature"),
@@ -592,26 +589,7 @@ async def stripe_webhook(
     return JSONResponse({"processed": False, "ignored": event["type"]})
 
 
-@router.get("/dashboard/{user_id}")
-def dashboard_api(user_id: int, request: Request, db: Session = Depends(get_db)) -> dict:
-    cookie_user = _cookie_user(request, db)
-    if cookie_user is None or cookie_user.id != user_id:
-        raise HTTPException(status_code=404, detail="Dashboard not found.")
-    data = build_dashboard(db, user_id)
-    return {
-        "balance_usd": data["balance_usd"],
-        "days_left": data["days_left"],
-        "heavy_workdays_left": data["heavy_workdays_left"],
-        "premium_savings_estimate_usd": data["premium_savings_estimate_usd"],
-        "mode_estimates": [
-            {"mode": item.mode, "days_left": item.days_left, "heavy_workdays_left": item.heavy_workdays_left}
-            for item in data["mode_estimates"]
-        ],
-        "upsells": data["upsells"],
-    }
-
-
-@router.get("/tasks/{user_id}")
+@router.get("/api/tasks/{user_id}")
 def list_tasks(user_id: int, request: Request, archived: bool = False, db: Session = Depends(get_db)) -> dict:
     cookie_user = _cookie_user(request, db)
     if cookie_user is None or cookie_user.id != user_id:
@@ -632,7 +610,7 @@ def list_tasks(user_id: int, request: Request, archived: bool = False, db: Sessi
     }
 
 
-@router.get("/tasks/{user_id}/{task_id}")
+@router.get("/api/tasks/{user_id}/{task_id}")
 def get_task_thread(user_id: int, task_id: str, request: Request, db: Session = Depends(get_db)) -> dict:
     cookie_user = _cookie_user(request, db)
     if cookie_user is None or cookie_user.id != user_id:
@@ -646,7 +624,7 @@ def get_task_thread(user_id: int, task_id: str, request: Request, db: Session = 
     return _serialize_task_thread(task, turns)
 
 
-@router.get("/admin/usage/{request_id}")
+@router.get("/api/admin/usage/{request_id}")
 def admin_usage_event(
     request_id: str,
     x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
@@ -671,7 +649,7 @@ def admin_usage_event(
     }
 
 
-@router.get("/admin/agents/{user_id}")
+@router.get("/api/admin/agents/{user_id}")
 def admin_agent_profile(
     user_id: int,
     x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
@@ -806,7 +784,7 @@ def _complete_chat(
     }
 
 
-@router.post("/chat/completions")
+@router.post("/api/chat/completions")
 def api_chat_completions(
     payload: ChatCompletionRequest,
     request: Request,
@@ -830,7 +808,7 @@ def api_chat_completions(
         prompt,
         db,
         settings,
-        "/v1/chat/completions",
+        str(request.url.path),
         pinned_internal_lane=internal_lane,
         quality_check_override=quality_check,
     )
@@ -856,7 +834,7 @@ def api_chat_completions(
     }
 
 
-@router.post("/messages")
+@router.post("/api/messages")
 def api_messages(
     payload: MessagesRequest,
     request: Request,
@@ -885,7 +863,7 @@ def api_messages(
         prompt,
         db,
         settings,
-        "/v1/messages",
+        str(request.url.path),
         task_id=task.task_id,
         pinned_internal_lane=task.internal_lane,
         pinned_provider=task.pinned_provider,
@@ -931,7 +909,7 @@ def api_messages(
     }
 
 
-@compat_router.post("/chat/completions")
+@router.post("/v1/chat/completions")
 def v1_chat_completions(
     payload: ChatCompletionRequest,
     request: Request,
@@ -968,7 +946,7 @@ def v1_chat_completions(
         raise HTTPException(status_code=503, detail="This workflow is temporarily unavailable. Please retry in a moment.")
 
 
-@compat_router.post("/messages")
+@router.post("/v1/messages")
 def v1_messages(
     payload: MessagesRequest,
     request: Request,

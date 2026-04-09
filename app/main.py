@@ -11,7 +11,7 @@ from app.config import BASE_DIR, get_settings
 from app.db import init_database, session_scope
 from app.models import AddOnSubscription
 from app.payments import ensure_seed_user
-from app.routes.api import compat_router, demo_router, router as api_router
+from app.routes.api import router as api_router
 from app.routes.web import router as web_router
 
 
@@ -56,6 +56,4 @@ settings = get_settings()
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "app" / "static")), name="static")
 app.include_router(api_router)
-app.include_router(compat_router)
-app.include_router(demo_router)
 app.include_router(web_router)
