@@ -506,6 +506,9 @@ def create_checkout(
     except HTTPException as exc:
         _record_failure(db, "/api/payments/checkout", exc.detail if isinstance(exc.detail, str) else "checkout failed", context_json={"pack_code": payload.pack_code})
         raise
+    except Exception:
+        _record_failure(db, "/api/payments/checkout", "checkout unavailable", context_json={"pack_code": payload.pack_code})
+        raise HTTPException(status_code=503, detail="Checkout is temporarily unavailable. Please try again.")
 
 
 @router.post("/payments/webhook")
@@ -515,6 +518,9 @@ async def stripe_webhook(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> JSONResponse:
+    if not settings.payment_ready:
+        _record_failure(db, "/api/payments/webhook", "stripe not configured")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook processing unavailable")
     payload = await request.body()
     try:
         event = stripe.Webhook.construct_event(payload=payload, sig_header=stripe_signature, secret=settings.stripe_webhook_secret)

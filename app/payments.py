@@ -19,6 +19,7 @@ class CheckoutResult:
 
 
 def configure_stripe(settings: Settings) -> None:
+    settings.require_payment_ready()
     stripe.api_key = settings.stripe_secret_key
 
 

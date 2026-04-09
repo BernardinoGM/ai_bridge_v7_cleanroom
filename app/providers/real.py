@@ -97,8 +97,9 @@ class AnthropicProviderClient(ProviderClient):
 
 
 def build_provider_clients(settings: Settings) -> dict[str, ProviderClient]:
-    clients: dict[str, ProviderClient] = {
-        "remote_fast": OpenAICompatibleProviderClient(
+    clients: dict[str, ProviderClient] = {}
+    if settings.provider_ready("remote_fast"):
+        clients["remote_fast"] = OpenAICompatibleProviderClient(
             name="remote_fast",
             spec=ProviderSpec(
                 provider_key="remote_fast",
@@ -106,8 +107,9 @@ def build_provider_clients(settings: Settings) -> dict[str, ProviderClient]:
                 model=settings.provider_fast_model,
                 api_key=settings.provider_fast_api_key,
             ),
-        ),
-        "remote_balanced": OpenAICompatibleProviderClient(
+        )
+    if settings.provider_ready("remote_balanced"):
+        clients["remote_balanced"] = OpenAICompatibleProviderClient(
             name="remote_balanced",
             spec=ProviderSpec(
                 provider_key="remote_balanced",
@@ -115,8 +117,9 @@ def build_provider_clients(settings: Settings) -> dict[str, ProviderClient]:
                 model=settings.provider_remote_model,
                 api_key=settings.provider_remote_api_key,
             ),
-        ),
-        "premium_anthropic": AnthropicProviderClient(
+        )
+    if settings.provider_ready("premium_anthropic"):
+        clients["premium_anthropic"] = AnthropicProviderClient(
             name="premium_anthropic",
             spec=ProviderSpec(
                 provider_key="premium_anthropic",
@@ -124,9 +127,8 @@ def build_provider_clients(settings: Settings) -> dict[str, ProviderClient]:
                 model=settings.provider_premium_model,
                 api_key=settings.provider_premium_api_key,
             ),
-        ),
-    }
-    if settings.provider_local_enabled and settings.provider_local_base_url and settings.provider_local_model:
+        )
+    if settings.provider_ready("local_future"):
         clients["local_future"] = OpenAICompatibleProviderClient(
             name="local_future",
             spec=ProviderSpec(

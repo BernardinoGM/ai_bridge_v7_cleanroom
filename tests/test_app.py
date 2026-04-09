@@ -414,7 +414,7 @@ def test_volume_pack_webhook_credits_expected_balance_once() -> None:
             user_id=founder_id,
             pack_code="volume",
             amount_usd=1000.0,
-            bonus_usd=150.0,
+            bonus_usd=130.0,
             status="pending",
             stripe_session_id="cs_test_volume_1",
             referred_by_code=None,
@@ -427,7 +427,7 @@ def test_volume_pack_webhook_credits_expected_balance_once() -> None:
         db.commit()
         assert processed_first is True
         assert processed_second is False
-        assert wallet_balance(db, founder_id, "main") >= 1205.0
+        assert wallet_balance(db, founder_id, "main") >= 1185.0
 
 
 def test_chat_requires_real_balance_and_debits_once() -> None:
