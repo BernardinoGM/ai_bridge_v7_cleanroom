@@ -70,15 +70,15 @@
         <h1>${{ "%.2f"|format(balance_usd) }} available now.</h1>
         <p class="lede">Your current workspace is set up for terminal and editor workflows. Keep the same endpoint, use your issued key, and top up only when your routed work proves its value.</p>
         <div class="breakdown">
-          <div class="pill"><span>Main balance</span><strong>${{ "%.2f"|format(balance_usd) }}</strong></div>
-          <div class="pill"><span>Starter credit</span><strong>${{ "%.2f"|format(starter_credit_usd) }}</strong></div>
-          <div class="pill"><span>Bonus + rewards</span><strong>${{ "%.2f"|format(bonus_credit_usd + reward_balance_usd) }}</strong></div>
+          <div class="pill"><span>Available now</span><strong>${{ "%.2f"|format(balance_usd) }}</strong></div>
+          <div class="pill"><span>Added this month</span><strong>${{ "%.2f"|format(added_this_month_usd) }}</strong></div>
+          <div class="pill"><span>Used this month</span><strong>${{ "%.2f"|format(used_this_month_usd) }}</strong></div>
         </div>
       </div>
       <div class="hero-card">
-        <div class="metric"><span>Recent usage</span><strong>{{ recent_usage_count }} requests</strong></div>
-        <div class="metric"><span>Recent top-ups</span><strong>{{ recent_topups|length }} recorded</strong></div>
-        <div class="metric"><span>Referral link</span><strong>{{ referral_code }}</strong></div>
+        <div class="metric"><span>Bonus posted</span><strong>${{ "%.2f"|format(bonus_credit_usd) }}</strong></div>
+        <div class="metric"><span>Rewards posted</span><strong>${{ "%.2f"|format(rewards_posted_usd) }}</strong></div>
+        <div class="metric"><span>Referral code</span><strong>{{ referral_code }}</strong></div>
       </div>
     </section>
 
@@ -102,6 +102,15 @@
 
     <section class="grid two" style="margin-top:20px;">
       <div class="panel">
+        <h2>Balance breakdown</h2>
+        <ul class="checklist">
+          <li class="ledger-row"><span>Starter credit</span><span>${{ "%.2f"|format(starter_credit_usd) }}</span></li>
+          <li class="ledger-row"><span>Bonus posted</span><span>${{ "%.2f"|format(bonus_credit_usd) }}</span></li>
+          <li class="ledger-row"><span>Rewards posted</span><span>${{ "%.2f"|format(rewards_posted_usd) }}</span></li>
+          <li class="ledger-row"><span>Available now</span><span>${{ "%.2f"|format(balance_usd) }}</span></li>
+        </ul>
+      </div>
+      <div class="panel">
         <h2>Recent top-ups</h2>
         {% if recent_topups %}
         <ul class="checklist">
@@ -113,6 +122,9 @@
         <p class="muted">No top-ups yet.</p>
         {% endif %}
       </div>
+    </section>
+
+    <section class="grid two" style="margin-top:20px;">
       <div class="panel">
         <h2>Recent usage</h2>
         {% if recent_usage %}
@@ -131,7 +143,7 @@
       <div class="panel">
         <h2>Referral</h2>
         <div class="key-box">{{ referral_link }}</div>
-        <p class="muted">Share this link. Rewards post as internal credit after a qualifying first purchase.</p>
+        <p class="muted">Share this sign-up link. Rewards post as internal credit after a qualifying first purchase.</p>
         {% if recent_referral_perks %}
         <ul class="checklist">
           {% for perk in recent_referral_perks %}
@@ -164,7 +176,7 @@
           <div class="addon">
             <strong>{{ addon.name }}</strong>
             <p class="muted">{{ addon.tagline }}</p>
-            <span class="badge">Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
+            <span class="badge">{% if addon.status == "beta" %}Limited access · {% elif addon.status == "skeleton" %}Seat-based · {% endif %}Unlock for ${{ "%.2f"|format(addon.price_usd) }} / 30 days</span>
           </div>
           {% endfor %}
         </div>

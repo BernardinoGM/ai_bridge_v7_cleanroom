@@ -52,12 +52,15 @@ def build_dashboard(db: Session, user_id: int) -> dict:
         days, heavy_days = estimate_runway(balance, daily_spend * multiplier)
         estimates.append(RunwayEstimate(mode=mode, days_left=days, heavy_workdays_left=heavy_days))
     premium_savings = round(sum(max(event.benchmark_cost_usd - event.serving_cogs_usd, 0) for event in events), 2)
+    added_this_month = round(sum(entry.amount_usd for entry in ledger if entry.amount_usd > 0), 2)
+    used_this_month = round(sum(abs(entry.amount_usd) for entry in ledger if entry.amount_usd < 0), 2)
+    rewards_posted = round(sum(entry.amount_usd for entry in reward_ledger if entry.amount_usd > 0), 2)
     return {
         "user_id": user_id,
         "user_name": user.name if user else "Demo user",
         "user_email": user.email if user else "founder@aibridge.local",
         "referral_code": user.referral_code if user else "FOUNDER10",
-        "referral_link": f"/r/{user.referral_code}" if user else "/r/FOUNDER10",
+        "referral_link": f"https://getaibridge.com/signup?ref={user.referral_code}" if user else "https://getaibridge.com/signup?ref=FOUNDER10",
         "balance_usd": round(balance, 2),
         "promo_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),
         "reward_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),
@@ -83,6 +86,9 @@ def build_dashboard(db: Session, user_id: int) -> dict:
             sum(entry.amount_usd for entry in ledger if entry.entry_type == "topup_bonus"),
             2,
         ),
+        "added_this_month_usd": added_this_month,
+        "used_this_month_usd": used_this_month,
+        "rewards_posted_usd": rewards_posted,
         "onboarding_commands": [
             'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
             'export ANTHROPIC_API_KEY="YOUR_KEY_FROM_ABOVE"',

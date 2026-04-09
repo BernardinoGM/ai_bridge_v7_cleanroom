@@ -8,31 +8,68 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root { --bg:#0B0E14; --surface:#11161D; --border:#2E3843; --text:#F0F4FA; --muted:#8A95A5; --accent:#00E5FF; }
+    * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; }
-    .container { max-width:980px; margin:0 auto; padding:32px 24px 72px; }
-    h1,h2 { font-family:'Syne',sans-serif; }
-    .panel { background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:24px; margin-top:20px; }
-    .lede, p, li { color:var(--muted); line-height:1.6; }
-    a { color:var(--accent); text-decoration:none; }
+    .container { max-width:1040px; margin:0 auto; padding:32px 24px 72px; }
+    nav { display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+    .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:20px; }
+    .links a { color:var(--accent); text-decoration:none; margin-left:16px; }
+    h1,h2 { font-family:'Syne',sans-serif; letter-spacing:-0.02em; }
+    h1 { font-size:clamp(42px,5vw,64px); margin:28px 0 16px; }
+    .lede,p,li { color:var(--muted); line-height:1.7; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin-top:28px; }
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:24px; }
     ul { margin:0; padding-left:18px; }
+    footer { margin-top:28px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); }
+    footer a { color:var(--accent); text-decoration:none; }
+    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
   <div class="container">
+    <nav>
+      <div class="logo">AI Bridge</div>
+      <div class="links"><a href="/">Home</a><a href="/terms">Terms</a><a href="/acceptable-use">Acceptable Use</a></div>
+    </nav>
     <h1>Privacy Policy</h1>
-    <p class="lede">AI Bridge keeps public demos lightweight and signed-in product flows accountable. We store only what is needed for continuity, billing, abuse prevention, and support.</p>
-    <div class="panel">
-      <h2>Public demo</h2>
-      <p>Public landing demos avoid prompt storage. We keep only lightweight anonymous trial accounting and internal cost records needed to inspect launch subsidy usage.</p>
+    <p class="lede">AI Bridge processes account data, routed usage records, payment records, referral attribution, security events, and de-identified operational analytics so the service can run safely, bill correctly, improve routing outcomes, and protect the platform. This policy explains what we collect, why we collect it, and how we use it.</p>
+    <div class="grid">
+      <div class="panel">
+        <h2>Information we collect</h2>
+        <ul>
+          <li>Account details such as name, email, issued keys, referral code, and session identifiers.</li>
+          <li>Billing and ledger records such as top-ups, bonus credits, rewards, webhook events, and payment state.</li>
+          <li>Usage telemetry such as endpoint used, mode, timing, route outcome, estimated spend, and failure events.</li>
+          <li>Task continuity records needed to preserve multi-turn work, replay support incidents, and keep routing stable.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>How we use it</h2>
+        <ul>
+          <li>Provide routing, continuity, usage accounting, key issuance, and balance management.</li>
+          <li>Detect abuse, fraud, failed webhooks, suspicious account behavior, and service degradation.</li>
+          <li>Generate routing outcomes, spend trends, repeated-workload insights, and de-identified analytics.</li>
+          <li>Improve service quality, reliability, benchmark performance, and operational decision making.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Prompt and content handling</h2>
+        <p>Public landing demos avoid prompt storage beyond limited anonymous trial accounting and internal subsidy inspection. Signed-in product flows may retain prompt and response excerpts, task state, request payloads, and derived routing outcomes when needed for continuity, support, billing correctness, safety review, and service improvement. We do not publicly promise unrestricted model training on raw user content.</p>
+      </div>
+      <div class="panel">
+        <h2>Operational rights and disclosures</h2>
+        <p>AI Bridge may use de-identified and aggregated telemetry, routing outcomes, derived usage patterns, failure signals, abuse indicators, and operational metadata for analytics, product improvement, benchmarking, abuse prevention, compliance, and service protection. We may share necessary records with processors, payment providers, infrastructure vendors, and legal authorities where required.</p>
+      </div>
+      <div class="panel">
+        <h2>Retention and security</h2>
+        <p>We retain records for as long as reasonably necessary to provide the service, resolve disputes, comply with legal obligations, investigate abuse, and maintain accurate billing and ledger history. Access is limited by role, session controls, and operational need. No system is perfectly secure, but we use layered controls appropriate for a commercial launch service.</p>
+      </div>
+      <div class="panel">
+        <h2>Your choices</h2>
+        <p>You may contact us to request account assistance, key rotation, or account closure. Some operational records, payment records, ledger entries, and security logs may be retained where legally required or operationally necessary. Questions can be sent to <a href="mailto:hello@getaibridge.com" style="color:var(--accent);text-decoration:none;">hello@getaibridge.com</a>.</p>
+      </div>
     </div>
-    <div class="panel">
-      <h2>Signed-in product use</h2>
-      <p>Signed-in product flows store limited request, billing, referral, and task continuity records so the service can route work, issue credits, and support account recovery.</p>
-    </div>
-    <div class="panel">
-      <h2>Contact</h2>
-      <p>Questions about privacy can be sent to <a href="mailto:hello@getaibridge.com">hello@getaibridge.com</a>.</p>
-    </div>
+    <footer><a href="/">Home</a> · <a href="/terms">Terms</a> · <a href="/acceptable-use">Acceptable Use</a></footer>
   </div>
 </body>
 </html>

@@ -121,35 +121,35 @@
 
 <main>
   <div class="container">
-    <!-- Hero — 模型适配 + 人机协同 = 少犯错 -->
+    <!-- Hero -->
     <section style="padding-top: 120px;">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;">
         <div>
           <h1>Right model.<br>Right task.<br>Fewer mistakes.</h1>
-          <p class="hero-sub">AI Bridge adapts model selection to the actual task — not the other way around. You get a multi‑model system that keeps outputs on target, helps reduce avoidable mistakes, and handles long‑context reasoning without manual switching.</p>
+          <p class="hero-sub">AI Bridge uses trained model combinations based on task shape, complexity, user preference, and routing history. It is not a random router and not a generic agent layer. Control stays with the user while execution gets more specific over time.</p>
           <div style="display: flex; gap: 16px; flex-wrap: wrap;">
             <a href="#playground" class="btn-primary">Try 3 free demos →</a>
             <button class="btn-outline" onclick="openModal()">Get API Key</button>
           </div>
-          <p style="color: var(--muted); font-size: 14px; margin-top: 24px; border-left: 3px solid var(--accent-cyan); padding-left: 16px;">Built for developers who need directional results, not just cheaper tokens.</p>
+          <p style="color: var(--muted); font-size: 14px; margin-top: 24px; border-left: 3px solid var(--accent-cyan); padding-left: 16px;">Built for developers who want trained model combinations, preference-aware execution, and control that stays with the user.</p>
         </div>
         <div class="hero-panel">
           <div class="comparison-row">
             <div class="comparison-col">
               <div class="comparison-title" style="color: var(--muted);">Single‑model workflow</div>
-              <div class="comparison-item"><span style="color: var(--muted);">•</span> one size fits all tasks</div>
-              <div class="comparison-item"><span style="color: var(--muted);">•</span> hallucination risk on long context</div>
-              <div class="comparison-item"><span style="color: var(--muted);">•</span> manual fallback when output degrades</div>
+              <div class="comparison-item"><span style="color: var(--muted);">•</span> one model forced onto every task</div>
+              <div class="comparison-item"><span style="color: var(--muted);">•</span> user preference handled manually</div>
+              <div class="comparison-item"><span style="color: var(--muted);">•</span> direction drifts when the work changes shape</div>
             </div>
             <div class="comparison-col">
               <div class="comparison-title" style="color: var(--accent-cyan);">AI Bridge</div>
-              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> task‑adaptive model selection</div>
-              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> quality checks where needed</div>
-              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> stronger long‑context handling</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> trained model combinations by task shape</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> preference-aware execution with user control</div>
+              <div class="comparison-item"><span style="color: var(--accent-cyan);">✓</span> routing history helps preserve direction across turns</div>
             </div>
           </div>
           <div style="margin-top:24px;padding:16px;background:var(--accent-cyan-dim);border-radius:14px;border:1px solid var(--accent-cyan-border);">
-            <div style="display:flex;align-items:center;gap:8px;color:var(--accent-cyan);font-weight:600;">Multi‑model coordination — each task gets the right fit</div>
+            <div style="display:flex;align-items:center;gap:8px;color:var(--accent-cyan);font-weight:600;">Trained model combinations, preference-aware execution, and user-held control.</div>
           </div>
         </div>
       </div>
@@ -192,15 +192,15 @@
     </section>
 
     <section id="terminal-workflows">
-      <h2 style="text-align: center;">Terminal workflows: fewer avoidable misses, lower bills</h2>
-      <p class="section-subhead">AI Bridge can upgrade long‑context tasks to a stronger model when needed. Threads stay more coherent when the work earns escalation.</p>
+      <h2 style="text-align: center;">Terminal workflows: fewer avoidable misses, better-directed results</h2>
+      <p class="section-subhead">Keep your existing terminal or editor flow. AI Bridge adapts model fit underneath, preserves prompt shape, and gets more specific as routing history and preference signals become clearer.</p>
       <div style="max-width: 800px; margin: 0 auto;">
         <div class="code-block">
           <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add to ~/.zshrc — that's it</div>
           <div>export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"</div>
           <div>export ANTHROPIC_API_KEY="your-bridge-key"</div>
         </div>
-        <p style="color: var(--muted); margin: 24px 0;"><strong>Session‑aware routing.</strong> When context grows complex, AI Bridge escalates to models that handle depth without breaking.</p>
+        <p style="color: var(--muted); margin: 24px 0;"><strong>Preference-aware execution.</strong> When context grows harder, AI Bridge adapts underneath while keeping your workflow shape and direction intact.</p>
         <div style="display: flex; gap: 24px; justify-content: center; margin-top: 32px;">
           <div style="text-align: center;"><span style="font-size: 32px; font-weight: 800; color: var(--accent-cyan);">0ms</span><br><span style="color: var(--muted);">Added latency</span></div>
           <div style="text-align: center;"><span style="font-size: 32px; font-weight: 800; color: var(--accent-cyan);">1 line</span><br><span style="color: var(--muted);">Integration</span></div>
@@ -208,20 +208,20 @@
       </div>
     </section>
 
-    <!-- Why 三卡片 — 调为新定位 -->
+    <!-- Why -->
     <section id="how">
       <h2 style="text-align: center;">Why developers choose AI Bridge</h2>
       <div class="card-grid">
-        <div class="card"><div class="card-icon">Task</div><h3>Task‑adaptive models</h3><p>Simple extraction, complex reasoning, or long‑context planning — each task gets the model best suited for it.</p></div>
-        <div class="card"><div class="card-icon">Quality</div><h3>Quality‑aware output</h3><p>On higher-risk routes, AI Bridge can check and escalate. Routine work stays lighter unless the task earns extra review.</p></div>
-        <div class="card"><div class="card-icon">Control</div><h3>Zero config, full control</h3><p>Works with your existing OpenAI‑compatible SDKs. Add a base URL, keep your prompts. Dashboard gives full visibility.</p></div>
+        <div class="card"><div class="card-icon">Task</div><h3>Trained model combinations</h3><p>Not random routing. AI Bridge learns which model mix fits the task shape, complexity, and expected outcome.</p></div>
+        <div class="card"><div class="card-icon">Quality</div><h3>Preference-aware execution</h3><p>As usage patterns become clearer, routing gets more specific — not just cheaper, but more aligned with how the work should be done.</p></div>
+        <div class="card"><div class="card-icon">Control</div><h3>Your workflow, better directed</h3><p>Keep your existing SDK flow. AI Bridge handles model adaptation underneath and preserves direction when the work gets harder.</p></div>
       </div>
     </section>
 
     <!-- Pricing (保持) -->
     <section id="pricing">
       <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
-      <p class="section-subhead" style="margin-bottom: 16px;">Pre‑pay, route, save. Top up anytime.</p>
+      <p class="section-subhead" style="margin-bottom: 16px;">Pre-pay, route real work, and top up only when it proves itself.</p>
       <div class="pricing-grid">
         <div class="pricing-card"><h3>Try it out</h3><div class="price">$10</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
         <div class="pricing-card"><h3>Solo builder</h3><div class="price">$50</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
@@ -229,18 +229,19 @@
         <div class="pricing-card"><h3>High volume</h3><div class="price">$500</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
         <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
       </div>
-      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit after key signup — no card required.</p>
-      <p style="text-align:center;margin-top:10px;color:var(--muted);font-size:13px;">Larger packs may include controlled bonus credit. Referral rewards and usage rewards post as internal balance only. <a href="/terms" style="color:var(--accent-cyan);">Terms</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy</a> · <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a></p>
+      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">Starter credit appears after key signup. Bigger top-ups include bonus credit. Rewards and referral credits post to your internal balance automatically.</p>
+      <p style="text-align:center;margin-top:10px;color:var(--muted);font-size:13px;">$10 → no bonus · $50 → includes $5 bonus credit · $200 → includes $20 bonus credit · $500 → includes $60 bonus credit · $1,000 → includes $130 bonus credit. <a href="/terms" style="color:var(--accent-cyan);">Terms</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy</a> · <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a></p>
     </section>
 
-    <!-- 酒水层 (保持) -->
+    <!-- Add-ons -->
     <section style="padding-top: 48px;">
       <h2 style="text-align: center;">More control, more visibility</h2>
-      <p class="section-subhead">Add‑ons for teams and power users. Coming soon.</p>
+      <p class="section-subhead">Add-ons that raise confidence, smooth harder work, and expand control without exposing internal cost math.</p>
       <div class="addon-grid">
-        <div class="addon-card"><h4>Bill Guard</h4><p>Monthly cost cap guarantee.</p><span class="badge-coming">$19/mo · Q2</span></div>
-        <div class="addon-card"><h4>Team Vault</h4><p>Shared credit pools, quotas, logs.</p><span class="badge-coming">from $79/mo · Q2</span></div>
-        <div class="addon-card"><h4>Analytics & Rules</h4><p>Custom routing policies.</p><span class="badge-coming">Q3</span></div>
+        <div class="addon-card"><h4>Bill Guard</h4><p>Spend Guard, Benchmark Guard, and a Weekly Digest so usage stays confident without exposing provider cost detail.</p><span class="badge-coming">Live · $19 / 30 days</span></div>
+        <div class="addon-card"><h4>Priority Queue</h4><p>Faster handling on harder work, preferred queueing during high load, and smoother completion on higher-risk tasks.</p><span class="badge-coming">Live · $20 / 30 days</span></div>
+        <div class="addon-card"><h4>Team Vault</h4><p>Seat-based team wallet controls, role budgets, and clean visibility for founders, CTOs, and team operators.</p><span class="badge-coming">Skeleton live · seat pricing configured in product</span></div>
+        <div class="addon-card"><h4>X-Ray</h4><p>Usage Intelligence for workflow insights, routing outcomes, spend trends, and repeated workload opportunities.</p><span class="badge-coming">Beta · limited access</span></div>
       </div>
     </section>
 
@@ -248,8 +249,8 @@
     <section>
       <h2 style="text-align: center;">Common questions</h2>
       <div style="max-width:720px;margin:48px auto 0;">
-        <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It routes by task shape and context depth. Simple tasks use efficient models; deeper reasoning or longer context can escalate to premium models.</div></div>
-        <div class="faq-item"><div class="faq-question">What if the output isn't good enough?</div><div class="faq-answer">On selected routes we run checks and may escalate or retry. Higher-risk work gets more scrutiny than routine turns.</div></div>
+        <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It uses trained model combinations informed by task shape, complexity, user preference, and routing history. The goal is better fit and better direction, not random routing.</div></div>
+        <div class="faq-item"><div class="faq-question">What if the output isn't good enough?</div><div class="faq-answer">On selected routes we run checks and may escalate or retry. Higher-risk work gets more scrutiny than routine turns, while user control stays available.</div></div>
         <div class="faq-item"><div class="faq-question">Does this work with my existing code?</div><div class="faq-answer">Yes. Change your base_url to https://getaibridge.com/v1. Your SDK and prompts stay exactly the same.</div></div>
         <div class="faq-item"><div class="faq-question">Do you store my prompts?</div><div class="faq-answer">Public landing demos avoid prompt storage. Signed-in product flows keep limited request and task records for continuity, billing, and support.</div></div>
       </div>
