@@ -415,29 +415,21 @@ def create_checkout(
     settings: Settings = Depends(get_settings),
 ) -> dict:
     try:
-        resolved_user_id = payload.user_id
-        if payload.email:
-            user = ensure_seed_user(
-                db,
-                email=payload.email.strip().lower(),
-                name=payload.email.split("@", 1)[0].replace(".", " ").replace("_", " ").title() or "AI Bridge User",
+        cookie_user_id = _cookie_user_id(request)
+        if cookie_user_id is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Top-up temporarily unavailable during launch verification. Sign in with a live key session first.",
             )
-            attach_referrer_by_code(db, user, payload.referred_by_code)
-            resolved_user_id = user.id
-        elif resolved_user_id is None:
-            cookie_user_id = _cookie_user_id(request)
-            if cookie_user_id is not None and db.get(User, cookie_user_id) is not None:
-                resolved_user_id = cookie_user_id
-        if resolved_user_id is None:
-            raise HTTPException(status_code=400, detail="Email is required to start checkout before full sign-in.")
-        response.set_cookie(
-            key=USER_SESSION_COOKIE_NAME,
-            value=issue_session_token(str(resolved_user_id), "user", settings, SESSION_MAX_AGE_SECONDS),
-            max_age=60 * 60 * 24 * 30,
-            httponly=True,
-            samesite="lax",
-            secure=settings.app_env == "production",
-        )
+        current_user = db.get(User, cookie_user_id)
+        if current_user is None:
+            raise HTTPException(status_code=403, detail="Launch session is invalid. Sign in again before topping up.")
+        if payload.user_id is not None and payload.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Checkout can only be created for the current signed-in user.")
+        if payload.email and payload.email.strip().lower() != current_user.email.lower():
+            raise HTTPException(status_code=403, detail="Checkout email does not match the current signed-in user.")
+        attach_referrer_by_code(db, current_user, payload.referred_by_code)
+        resolved_user_id = current_user.id
         result = create_checkout_session(
             db=db,
             settings=settings,

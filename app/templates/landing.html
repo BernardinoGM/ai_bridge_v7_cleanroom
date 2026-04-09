@@ -105,12 +105,16 @@
   <div class="nav-links">
     <a href="#how">How</a>
     <a href="#playground">Playground</a>
-    <a href="#claude-code">Claude Code</a>
+    <a href="#terminal-workflows">Terminal</a>
     <a href="#pricing">Pricing</a>
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
     <a href="mailto:hello@getaibridge.com" style="color:var(--muted);font-size:14px;text-decoration:none;">hello@getaibridge.com</a>
+    {% if launch_user_id %}
     <a href="/dashboard" class="btn-outline" style="padding:8px 18px;">Dashboard</a>
+    {% else %}
+    <span class="btn-outline" style="padding:8px 18px;opacity:0.45;cursor:not-allowed;">Dashboard</span>
+    {% endif %}
     <button class="btn-primary" onclick="openModal()">Get API Key →</button>
   </div>
 </nav>
@@ -154,14 +158,14 @@
     <!-- Playground — 保留原功能，示例调为工程向 -->
     <section id="playground">
       <h2 style="text-align: center;">Try it. Right now.</h2>
-      <p class="section-subhead" style="margin-bottom: 16px;">See adaptive routing in action. Real task, real model decision.</p>
+      <p class="section-subhead" style="margin-bottom: 16px;">Preview adaptive routing on a few representative tasks.</p>
       <div class="live-playground">
         <div class="playground-header">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <span style="font-weight: 700; font-size: 20px; font-family: var(--display);">Live Demo</span>
+            <span style="font-weight: 700; font-size: 20px; font-family: var(--display);">Demo preview</span>
             <span class="trial-badge" id="trialCounter">3 FREE TRIES — no signup</span>
           </div>
-          <span style="color: var(--green); display: flex; align-items: center; gap: 6px;"><span style="display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%;"></span> LIVE</span>
+          <span style="color: var(--green); display: flex; align-items: center; gap: 6px;"><span style="display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%;"></span> Preview</span>
         </div>
         <div class="example-chips">
           <span class="chip" data-prompt="Explain this function: const memoize = (fn) => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] ?? (cache[key] = fn(...args)); }; };">📎 Explain function</span>
@@ -187,9 +191,8 @@
       </div>
     </section>
 
-    <!-- Claude Code 专版 (保持) -->
-    <section id="claude-code">
-      <h2 style="text-align: center;">Claude Code users: fewer avoidable misses, lower bills</h2>
+    <section id="terminal-workflows">
+      <h2 style="text-align: center;">Terminal workflows: fewer avoidable misses, lower bills</h2>
       <p class="section-subhead">AI Bridge can upgrade long‑context tasks to a stronger model when needed. Threads stay more coherent when the work earns escalation.</p>
       <div style="max-width: 800px; margin: 0 auto;">
         <div class="code-block">
@@ -220,11 +223,11 @@
       <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
       <p class="section-subhead" style="margin-bottom: 16px;">Pre‑pay, route, save. Top up anytime.</p>
       <div class="pricing-grid">
-        <div class="pricing-card"><h3>$10</h3><div class="price">$10</div><p style="color:var(--muted);font-size:14px;">Try it out</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','starter')">Start →</button></div>
-        <div class="pricing-card"><h3>$50</h3><div class="price">$50</div><p style="color:var(--muted);font-size:14px;">Solo builder</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','growth')">Start →</button></div>
-        <div class="pricing-card"><h3>$200</h3><div class="price">$200</div><p style="color:var(--muted);font-size:14px;">Growing team</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','scale')">Start →</button></div>
-        <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','scale_plus')">Start →</button></div>
-        <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="openModal('checkout','volume')">Start →</button></div>
+        <div class="pricing-card"><h3>$10</h3><div class="price">$10</div><p style="color:var(--muted);font-size:14px;">Try it out</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>$50</h3><div class="price">$50</div><p style="color:var(--muted);font-size:14px;">Solo builder</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>$200</h3><div class="price">$200</div><p style="color:var(--muted);font-size:14px;">Growing team</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>$500</h3><div class="price">$500</div><p style="color:var(--muted);font-size:14px;">High volume</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>$1,000</h3><div class="price">$1k</div><p style="color:var(--muted);font-size:14px;">Scale</p><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if launch_user_id %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
       </div>
       <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">New accounts get $3 free credit after key signup — no card required.</p>
     </section>
@@ -287,7 +290,7 @@
       <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">YOUR API KEY (click to copy)</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
       <p id="modalSuccessCopy" style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
       <div id="onboardingBox" style="display:none;text-align:left;margin-top:20px;">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Claude terminal onboarding</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Terminal onboarding</div>
         <div class="code-block" id="onboardingCommands" style="margin:0;"></div>
       </div>
     </div>
@@ -339,10 +342,19 @@
 
   function openNextStepAfterTrial() {
     if (window.localStorage.getItem('ab_user_id')) {
-      openModal('checkout', 'starter');
+      showCheckoutUnavailable();
       return;
     }
     openModal('signup');
+  }
+
+  function showCheckoutUnavailable() {
+    openModal('signup');
+    modalIntro.textContent = 'Top-up temporarily unavailable during launch verification.';
+    modalSubmitBtn.textContent = 'Generate API Key →';
+    modalMode = 'signup';
+    selectedPackCode = null;
+    signupUseCase.style.display = 'block';
   }
 
   async function sendPrompt(promptText) {
@@ -356,7 +368,7 @@
     resultContent.textContent = 'Thinking...';
     sendBtn.disabled = true;
     sendBtn.style.opacity = '0.7';
-    trialMessage.textContent = 'Running live route preview...';
+    trialMessage.textContent = 'Running route preview...';
 
     try {
       const res = await fetch('/demo/chat', {
@@ -451,7 +463,7 @@
         window.localStorage.setItem('ab_user_id', String(data.user_id));
         window.location.href = data.checkout_url;
       } catch(e) {
-        modalIntro.textContent = 'Checkout error. Please try again.';
+        modalIntro.textContent = e.message || 'Checkout unavailable during launch verification.';
       }
       return;
     }

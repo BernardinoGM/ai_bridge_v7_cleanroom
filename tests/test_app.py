@@ -95,16 +95,17 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "fewer mistakes." in body
     assert "try 3 free demos" in body
     assert "adaptive model routing for developers" in body
-    assert "live demo" in body
+    assert "demo preview" in body
     assert "dashboard" in body
     assert "get api key" in body
-    assert "claude code" in body
+    assert "claude code" not in body
+    assert "terminal workflows" in body
     assert "$10" in body
     assert "$50" in body
     assert "$200" in body
     assert "$500" in body
     assert "$1,000" in body
-    assert 'href="/dashboard"' in body
+    assert 'href="/dashboard"' not in body
     assert 'id="playground"' in body
     assert 'id="pricing"' in body
     assert 'id="modaloverlay"' in body
@@ -289,7 +290,10 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         url = "https://checkout.stripe.test/session"
 
     monkeypatch.setattr("app.payments.stripe.checkout.Session.create", lambda **_: _FakeSession())
-    response = client.post(
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "checkoutuser@example.com", "use_case": "topup"})
+    assert create.status_code == 200
+    response = session_client.post(
         "/api/payments/checkout",
         json={"email": "checkoutuser@example.com", "pack_code": "scale_plus", "referred_by_code": "UTWO10"},
     )
@@ -305,6 +309,21 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         assert payment.user_id == user.id
         assert payment.pack_code == "scale_plus"
         assert payment.amount_usd == 500.0
+
+
+def test_checkout_is_blocked_without_authenticated_launch_session(monkeypatch) -> None:
+    class _FakeSession:
+        id = "cs_should_not_exist"
+        url = "https://checkout.stripe.test/session"
+
+    monkeypatch.setattr("app.payments.stripe.checkout.Session.create", lambda **_: _FakeSession())
+    isolated = TestClient(app)
+    response = isolated.post(
+        "/api/payments/checkout",
+        json={"email": "unsafe@example.com", "pack_code": "starter"},
+    )
+    assert response.status_code == 403
+    assert "temporarily unavailable during launch verification" in response.json()["detail"].lower()
 
 
 def test_admin_dashboard_route_shows_aggregate_metrics() -> None:
@@ -611,11 +630,12 @@ def test_internal_route_telemetry_is_admin_only() -> None:
 
 
 def test_landing_has_no_hardcoded_dashboard_user_cta() -> None:
-    response = client.get("/")
+    isolated = TestClient(app)
+    response = isolated.get("/")
     assert response.status_code == 200
     body = response.text
     assert "/dashboard/1" not in body
-    assert "/dashboard" in body
+    assert 'href="/dashboard"' not in body
 
 
 def test_dashboard_user_id_route_is_not_open_for_enumeration() -> None:
