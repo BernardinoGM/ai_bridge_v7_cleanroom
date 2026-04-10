@@ -73,9 +73,9 @@
         <h1>${{ "%.2f"|format(balance_usd) }} available now.</h1>
         <p class="lede">Your current workspace is set up for terminal and editor workflows. Keep the same endpoint, use your issued key, and top up only when your routed work proves its value.</p>
         <div class="breakdown">
-          <div class="pill"><span>Available now</span><strong>${{ "%.2f"|format(balance_usd) }}</strong></div>
-          <div class="pill"><span>Added this month</span><strong>${{ "%.2f"|format(added_this_month_usd) }}</strong></div>
-          <div class="pill"><span>Used this month</span><strong>${{ "%.2f"|format(used_this_month_usd) }}</strong></div>
+          <div class="pill"><span>Available</span><strong>${{ "%.2f"|format(balance_usd) }}</strong></div>
+          <div class="pill"><span>Added</span><strong>${{ "%.2f"|format(added_this_month_usd) }}</strong></div>
+          <div class="pill"><span>Used</span><strong>${{ "%.2f"|format(used_this_month_usd) }}</strong></div>
         </div>
       </div>
       <div class="hero-card">
@@ -124,7 +124,10 @@
         {% if recent_topups %}
         <ul class="checklist">
           {% for payment in recent_topups %}
-          <li class="ledger-row"><span>{{ payment.pack_code|replace("_", " ")|title }}</span><span>${{ "%.2f"|format(payment.amount_usd + payment.bonus_usd) }}</span></li>
+          <li class="ledger-row">
+            <span>{{ payment.pack_code|replace("_", " ")|title }}{% if payment.bonus_usd > 0 %} + ${{ "%.2f"|format(payment.bonus_usd) }} bonus{% endif %}</span>
+            <span>${{ "%.2f"|format(payment.amount_usd + payment.bonus_usd) }}</span>
+          </li>
           {% endfor %}
         </ul>
         {% else %}

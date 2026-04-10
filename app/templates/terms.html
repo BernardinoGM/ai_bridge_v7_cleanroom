@@ -66,6 +66,7 @@
         <section id="payments">
           <h2>Payments and ledger correctness</h2>
           <p>Top-ups are tied to the authenticated user who initiates checkout. Stripe sessions, payment records, webhook events, and balance application are matched through recorded metadata and idempotent ledger handling. AI Bridge may hold, reject, reverse, or delay credits where payment verification fails, fraud is suspected, a chargeback occurs, or the initiating identity cannot be trusted.</p>
+          <p>AI Bridge may use internal operational accounting for service economics while applying customer-facing settlement through benchmark-equivalent usage units and internal credit balances. Customer balances, bonus credit, rewards, and top-ups are settled through the product ledger rather than direct exposure of provider cost mix or internal serving economics.</p>
         </section>
         <section id="service">
           <h2>Service behavior and product limits</h2>

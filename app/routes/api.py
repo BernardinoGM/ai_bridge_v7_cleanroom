@@ -255,12 +255,12 @@ def _display_quality(route: RouteDecision) -> str:
 
 def _demo_reason(example: str, route: RouteDecision) -> str:
     if route.premium_escalated:
-        return "Preview completed with a deeper pass for higher-risk work."
+        return "Preview completed with extra review for a harder request."
     if example == "refactor":
-        return "Preview completed in the fast coding path for iterative work."
+        return "Preview completed in the coding-first preview flow."
     if example == "reply":
-        return "Preview completed in the default high-quality path."
-    return "Preview completed in the default high-quality path."
+        return "Preview completed in the fast preview flow."
+    return "Preview completed in the fast preview flow."
 
 
 def _get_or_create_demo_trial(db: Session, session_id: str) -> DemoTrial:

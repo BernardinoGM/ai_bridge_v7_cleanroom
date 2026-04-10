@@ -54,7 +54,6 @@ def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> di
     for mode, multiplier in [("fast", 0.75), ("smart", 1.0), ("assured", 1.9)]:
         days, heavy_days = estimate_runway(balance, daily_spend * multiplier)
         estimates.append(RunwayEstimate(mode=mode, days_left=days, heavy_workdays_left=heavy_days))
-    premium_savings = round(sum(max(event.benchmark_cost_usd - event.serving_cogs_usd, 0) for event in events), 2)
     added_this_month = round(sum(entry.amount_usd for entry in ledger if entry.amount_usd > 0), 2)
     used_this_month = round(sum(abs(entry.amount_usd) for entry in ledger if entry.amount_usd < 0), 2)
     rewards_posted = round(sum(entry.amount_usd for entry in reward_ledger if entry.amount_usd > 0), 2)
@@ -70,7 +69,6 @@ def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> di
         "days_left": estimates[1].days_left,
         "heavy_workdays_left": estimates[1].heavy_workdays_left,
         "mode_estimates": estimates,
-        "premium_savings_estimate_usd": premium_savings,
         "recent_usage_count": len(events),
         "recent_usage_spend_usd": round(total_recent_spend, 2),
         "recent_usage": events[:8],

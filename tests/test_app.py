@@ -108,7 +108,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "dashboard" in body
     assert "get api key" in body
     assert "claude code" not in body
-    assert "terminal workflows" in body
+    assert "coding-first terminal and editor workflows" in body
     assert "trained model combinations" in body
     assert "preference-aware execution" in body
     assert "your workflow, better directed" in body
@@ -916,8 +916,8 @@ def test_dashboard_matches_landing_user_blocks() -> None:
     assert response.status_code == 200
     body = response.text.lower()
     assert "available now" in body
-    assert "added this month" in body
-    assert "used this month" in body
+    assert "added" in body
+    assert "used" in body
     assert "bonus posted" in body
     assert "rewards posted" in body
     assert "step 1: copy api key" in body
