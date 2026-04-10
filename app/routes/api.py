@@ -1,4 +1,5 @@
 import logging
+import re
 import uuid
 
 import stripe
@@ -43,6 +44,13 @@ logger = logging.getLogger(__name__)
 DEMO_COOKIE_NAME = "ab_demo_session"
 DEMO_TRIAL_LIMIT = 3
 DEMO_TEMPORARY_MESSAGE = "AI Bridge preview is temporarily unavailable. Please try again in a moment."
+DEMO_SYSTEM_PROMPT = (
+    "You are AB, the public AI Bridge preview. "
+    "Always reply in concise, natural English for a US developer audience. "
+    "Keep the response short, direct, and helpful. "
+    "Do not mention providers, routing, or internal model choices."
+)
+_CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 
 DEMO_EXAMPLES = {
@@ -314,6 +322,25 @@ def _persist_demo_preview(
     return preview
 
 
+def _public_demo_response(preview: dict) -> dict:
+    return {
+        "reply": preview["reply"],
+        "trial_remaining": preview["trial_remaining"],
+        "tries_remaining": preview["tries_remaining"],
+        "trial_exhausted": preview["trial_exhausted"],
+        "show_signup_after_ms": preview["show_signup_after_ms"],
+    }
+
+
+def _normalize_public_demo_reply(prompt: str, reply: str) -> str:
+    normalized_prompt = prompt.strip().lower()
+    if not _CJK_PATTERN.search(reply):
+        return reply
+    if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"} or len(normalized_prompt) <= 80:
+        return "Hi, I’m AB. Paste a bug, repo task, or code question to get started."
+    return "I’m AB. Share the bug, repo task, or code question and I’ll help you work through it."
+
+
 def _execute_with_fallback(
     route: RouteDecision,
     registry: dict[str, ProviderClient],
@@ -506,7 +533,7 @@ def demo_chat(
         trial = _get_or_create_demo_trial_resilient(db, session_id)
         if trial.tries_used >= DEMO_TRIAL_LIMIT:
             raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
-        preview = _route_preview(prompt=prompt[:8000], settings=settings)
+        preview = _route_preview(prompt=prompt[:8000], settings=settings, system=DEMO_SYSTEM_PROMPT)
         try:
             preview = _persist_demo_preview(
                 db=db,
@@ -540,7 +567,8 @@ def demo_chat(
             httponly=True,
             samesite="lax",
         )
-        return preview
+        preview["reply"] = _normalize_public_demo_reply(prompt, preview["reply"])
+        return _public_demo_response(preview)
     except HTTPException as exc:
         _record_failure(db, "/demo/chat", exc.detail if isinstance(exc.detail, str) else "demo failure", context_json={"example": example_key})
         raise

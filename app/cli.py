@@ -69,7 +69,7 @@ def _interactive_repl(api_key: str, base_url: str | None = None) -> int:
     print("AI Bridge terminal ready. Type a prompt and press Enter. Ctrl-D exits.")
     while True:
         try:
-            prompt = input("ab> ").strip()
+            prompt = input("aibridge> ").strip()
         except EOFError:
             print()
             return 0
@@ -79,7 +79,7 @@ def _interactive_repl(api_key: str, base_url: str | None = None) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="ab", description="AI Bridge terminal")
+    parser = argparse.ArgumentParser(prog="aibridge", description="AI Bridge terminal")
     parser.add_argument("prompt", nargs="*", help="Optional prompt to send immediately")
     args = parser.parse_args(argv)
 

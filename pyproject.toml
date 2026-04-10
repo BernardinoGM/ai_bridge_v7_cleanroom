@@ -17,8 +17,8 @@ dependencies = [
 ]
 
 [project.scripts]
-ab = "app.cli:main"
 aibridge = "app.cli:main"
+ab = "app.cli:main"
 
 [project.optional-dependencies]
 dev = [

@@ -191,8 +191,8 @@
           <div class="chat-thread" id="chatThread">
             <div class="message-row assistant">
               <div class="bubble">
-                <div class="message-role">AI Bridge preview</div>
-                <div class="message-text">Ask a real prompt and the preview will return a fast response, a simple quality bar, and a clean comparison against the premium path. Your current demo thread stays visible for this session.</div>
+                <div class="message-role">AB</div>
+                <div class="message-text">Hi, I’m AB. Paste a bug, repo task, or code question to get started.</div>
               </div>
             </div>
           </div>
@@ -208,11 +208,6 @@
           </div>
         </div>
         <div class="result-panel" id="resultPanel" style="display: none;">
-          <div class="result-meta">
-            <span>Preview: <strong id="resultLane">—</strong></span>
-            <span>Quality: <strong id="resultQuality">Passed</strong></span>
-            <span>Comparison: <strong id="resultSavings" style="color: var(--accent-cyan);">—</strong></span>
-          </div>
           <div class="result-content" id="resultContent">Your response will appear here.</div>
         </div>
       </div>
@@ -225,7 +220,7 @@
         <div class="code-block">
           <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add your AI Bridge key, then launch AB</div>
           <div>export AB_API_KEY="ab_live_..."</div>
-          <div>ab</div>
+          <div>aibridge</div>
         </div>
         <p style="color: var(--muted); margin: 24px 0;"><strong>Preference-aware execution.</strong> When context grows harder, AI Bridge adapts underneath while keeping your workflow shape and direction intact.</p>
         <div style="display: flex; gap: 24px; justify-content: center; margin-top: 32px;">
@@ -351,9 +346,6 @@
   const sendBtn = document.getElementById('sendPromptBtn');
   const chatThread = document.getElementById('chatThread');
   const resultPanel = document.getElementById('resultPanel');
-  const resultLane = document.getElementById('resultLane');
-  const resultQuality = document.getElementById('resultQuality');
-  const resultSavings = document.getElementById('resultSavings');
   const resultContent = document.getElementById('resultContent');
   const modalIntro = document.getElementById('modalIntro');
   const modalSubmitBtn = document.getElementById('modalSubmitBtn');
@@ -390,8 +382,8 @@
     if (!messages.length) {
       chatThread.innerHTML = `<div class="message-row assistant">
         <div class="bubble">
-          <div class="message-role">AI Bridge preview</div>
-          <div class="message-text">Ask a real prompt and the preview will return a fast response, a simple quality bar, and a clean comparison against the premium path. Your current demo thread stays visible for this session.</div>
+          <div class="message-role">AB</div>
+          <div class="message-text">Hi, I’m AB. Paste a bug, repo task, or code question to get started.</div>
         </div>
       </div>`;
       return;
@@ -400,7 +392,7 @@
       const row = document.createElement('div');
       row.className = `message-row ${message.role}`;
       row.innerHTML = `<div class="bubble">
-        <div class="message-role">${message.role === 'user' ? 'You' : 'AI Bridge preview'}</div>
+        <div class="message-role">${message.role === 'user' ? 'You' : 'AB'}</div>
         <div class="message-text">${message.text}</div>
         ${message.meta ? `<div class="message-meta">${message.meta.map(item => `<span>${item}</span>`).join('')}</div>` : ''}
       </div>`;
@@ -455,22 +447,12 @@
     signupUseCase.style.display = 'block';
   }
 
-  function previewStageLabel(lane) {
-    const normalized = (lane || '').toLowerCase();
-    if (normalized === 'assured') return 'Deeper review';
-    if (normalized === 'fast') return 'Quick pass';
-    return 'Balanced pass';
-  }
-
   async function sendPrompt(promptText) {
     if (!promptText.trim()) return;
     clearSignupTimer();
     pushThreadMessage({ role: 'user', text: promptText.trim() });
 
     resultPanel.style.display = 'block';
-    resultLane.textContent = 'Analyzing...';
-    resultQuality.textContent = 'Checking...';
-    resultSavings.textContent = '...';
     resultContent.textContent = 'Thinking...';
     sendBtn.disabled = true;
     sendBtn.style.opacity = '0.7';
@@ -486,14 +468,11 @@
       if (res.status === 429) {
         trialsLeft = 0;
         updateTrialDisplay();
-        resultLane.textContent = 'Trial limit reached';
-        resultQuality.textContent = 'Signup required';
-        resultSavings.textContent = 'Open account path';
         resultContent.textContent = data.detail || 'Anonymous trial limit reached.';
         pushThreadMessage({
           role: 'assistant',
           text: data.detail || 'Anonymous trial limit reached.',
-          meta: ['Trial exhausted', 'Signup required']
+          meta: ['Trial exhausted']
         });
         signupTimer = window.setTimeout(openNextStepAfterTrial, 1200);
         return;
@@ -502,32 +481,21 @@
         throw new Error('The preview is temporarily unavailable. Please try again in a moment.');
       }
 
-      resultLane.textContent = previewStageLabel(data.lane);
-      resultQuality.textContent = data.quality || 'Checked';
-      resultSavings.textContent = `${data.reason || data.why || 'High-quality preview'} · Direct ${data.direct_cost || '$0.00'} · Routed ${data.routed_cost || '$0.00'} · Saved ${typeof data.saved_pct === 'number' ? data.saved_pct + '%' : '0%'}`;
       resultContent.textContent = data.reply || 'No response content.';
       pushThreadMessage({
         role: 'assistant',
         text: data.reply || 'No response content.',
-        meta: [
-          `Preview: ${previewStageLabel(data.lane)}`,
-          `Quality: ${data.quality || 'Checked'}`,
-          `Direct: ${data.direct_cost || '$0.00'}`,
-          `Routed: ${data.routed_cost || '$0.00'}`,
-          `Saved: ${typeof data.saved_pct === 'number' ? data.saved_pct + '%' : '0%'}`,
-          data.reason || data.why || 'Adaptive routing'
-        ]
+        meta: null
       });
       trialsLeft = Number.isFinite(data.trial_remaining) ? data.trial_remaining : trialsLeft;
       updateTrialDisplay();
       if (data.trial_exhausted && data.show_signup_after_ms) {
         trialMessage.textContent = 'This was your last free demo. Keep reading — signup opens after the preview window.';
         signupTimer = window.setTimeout(openNextStepAfterTrial, data.show_signup_after_ms);
+      } else if (Number.isFinite(data.trial_remaining)) {
+        trialMessage.textContent = `${data.trial_remaining} free ${data.trial_remaining === 1 ? 'try' : 'tries'} remaining.`;
       }
     } catch (error) {
-      resultLane.textContent = 'Error';
-      resultQuality.textContent = 'Unavailable';
-      resultSavings.textContent = '—';
       resultContent.textContent = 'The preview is temporarily unavailable. Please try again in a moment.';
       pushThreadMessage({
         role: 'assistant',

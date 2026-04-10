@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     app_port: int = 8000
     base_url: str = "http://127.0.0.1:8000"
     database_url: str = Field(default=f"sqlite:///{BASE_DIR / 'data.db'}")
-    terminal_cli_command: str = "ab"
-    terminal_cli_alias: str = "aibridge"
+    terminal_cli_command: str = "aibridge"
+    terminal_cli_alias: str = "ab"
     terminal_api_path: str = "/terminal/messages"
 
     secret_key: str = "replace-me"
