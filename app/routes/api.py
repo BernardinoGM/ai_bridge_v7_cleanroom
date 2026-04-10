@@ -15,7 +15,17 @@ from app.config import Settings, get_settings
 from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
 from app.db import get_db, init_database
-from app.agents import choose_initial_lane, get_or_create_agent_profile, hydrate_profile_for_request, update_profile_after_turn
+from app.agents import (
+    ExecutionStrategy,
+    RequestAssessment,
+    assess_request,
+    build_execution_strategy,
+    get_or_create_agent_profile,
+    hydrate_profile_for_request,
+    runtime_plan_for_strategy,
+    strategy_summary,
+    update_profile_after_turn,
+)
 from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
 from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, TrialSubsidy, UsageEvent, User
 from app.payments import create_checkout_session, process_checkout_completed
@@ -23,7 +33,6 @@ from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
 from app.providers.real import ProviderExecutionError, build_provider_clients
 from app.providers.mock import build_mock_clients
-from app.routing import RouteDecision, decide_demo_route, decide_route
 from app.schemas import ApiKeyCreateRequest, ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
 from app.session_auth import (
     ADMIN_SESSION_COOKIE_NAME,
@@ -232,22 +241,60 @@ def _format_usd(amount: float) -> str:
     return f"${amount:.2f}"
 
 
-def _display_quality(route: RouteDecision) -> str:
-    if route.premium_escalated:
-        return "Verified"
-    if route.quality_check:
-        return "Checked"
-    return "In progress"
+def _build_strategy_for_prompt(
+    *,
+    prompt: str,
+    profile: AgentProfile | None,
+    surface: str,
+    session_context: dict | None = None,
+    workspace_context: dict | None = None,
+) -> tuple[RequestAssessment, ExecutionStrategy]:
+    assessment = assess_request(
+        messages=[{"role": "user", "content": prompt}],
+        user_profile=profile,
+        surface=surface,
+        session_context=session_context,
+        workspace_context=workspace_context,
+    )
+    strategy = build_execution_strategy(
+        assessment,
+        profile,
+        session_context=session_context,
+        workspace_context=workspace_context,
+    )
+    return assessment, strategy
 
 
-def _demo_reason(example: str, route: RouteDecision) -> str:
-    if route.premium_escalated:
-        return "Preview completed with extra review for a harder request."
-    if example == "refactor":
-        return "Preview completed in the coding-first preview flow."
-    if example == "reply":
-        return "Preview completed in the fast preview flow."
-    return "Preview completed in the fast preview flow."
+def _sanitize_ab_reply(prompt: str, reply: str, strategy: ExecutionStrategy) -> str:
+    normalized_prompt = prompt.strip().lower()
+    lowered = reply.lower()
+    blocked_markers = (
+        "selected model",
+        "does not exist",
+        "may not have access",
+        "handled in the",
+        "fast lane",
+        "smart lane",
+        "assured lane",
+        "premium reasoning",
+        "quality checks are applied",
+        "provider",
+        "deepseek",
+        "anthropic",
+        "claude",
+    )
+    blocked = any(marker in lowered for marker in blocked_markers)
+    if not _CJK_PATTERN.search(reply) and not blocked:
+        return reply
+    if strategy.user_visible_mode == "preview":
+        if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"} or len(normalized_prompt) <= 80:
+            return "Hi, I’m AB. Paste a bug, repo task, or code question to get started."
+        return "I’m AB. Share the bug, repo task, or code question and I’ll help you work through it."
+    if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"} or len(normalized_prompt) <= 80:
+        return "Hello! How can I help you today?"
+    if blocked or _CJK_PATTERN.search(reply):
+        return "I can help with that. Share the repo task, error, or next step."
+    return reply
 
 
 def _get_or_create_demo_trial(db: Session, session_id: str) -> DemoTrial:
@@ -289,7 +336,7 @@ def _persist_demo_preview(
         prompt_tokens=estimated_prompt_tokens,
         completion_tokens=estimated_completion_tokens,
         public_charge_usd=routed_cost_usd,
-        quality_check=preview["quality"] == "Checked",
+        quality_check=preview["quality"] in {"Checked", "Verified"},
         fallback_used=preview["fallback_used"],
         retry_count=0,
     )
@@ -312,7 +359,7 @@ def _persist_demo_preview(
         )
     )
     db.commit()
-    reason = _demo_reason(example_key, decide_demo_route(prompt))
+    reason = "Preview completed in the fast AB preview flow."
     preview["reason"] = reason
     preview["why"] = reason
     preview["trial_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
@@ -332,38 +379,23 @@ def _public_demo_response(preview: dict) -> dict:
     }
 
 
-def _normalize_public_demo_reply(prompt: str, reply: str) -> str:
-    normalized_prompt = prompt.strip().lower()
-    if not _CJK_PATTERN.search(reply):
-        return reply
-    if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"} or len(normalized_prompt) <= 80:
-        return "Hi, I’m AB. Paste a bug, repo task, or code question to get started."
-    return "I’m AB. Share the bug, repo task, or code question and I’ll help you work through it."
-
-
 def _execute_with_fallback(
-    route: RouteDecision,
+    execution_profile: str,
+    fallback_execution_profile: str | None,
     registry: dict[str, ProviderClient],
     prompt: str,
     system: str | None,
 ) -> tuple[ProviderResponse, str, bool]:
-    primary_key = route.execution_profile
-    fallback_profile_map = {
-        "fast_lane": "remote_fast",
-        "balanced_lane": "remote_balanced",
-        "premium_reasoner": "premium_anthropic",
-    }
-    fallback_key = fallback_profile_map.get(route.fallback_provider) if route.fallback_provider else None
-    if primary_key not in registry:
+    if execution_profile not in registry:
         raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
     try:
-        return registry[primary_key].generate(prompt=prompt, system=system), primary_key, False
+        return registry[execution_profile].generate(prompt=prompt, system=system), execution_profile, False
     except ProviderExecutionError:
-        if not fallback_key or fallback_key not in registry:
+        if not fallback_execution_profile or fallback_execution_profile not in registry:
             raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
         try:
-            fallback_response = registry[fallback_key].generate(prompt=prompt, system=system)
-            return fallback_response, fallback_key, True
+            fallback_response = registry[fallback_execution_profile].generate(prompt=prompt, system=system)
+            return fallback_response, fallback_execution_profile, True
         except ProviderExecutionError as exc:
             raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.") from exc
 
@@ -372,48 +404,48 @@ def _execute_demo_preview(
     *,
     prompt: str,
     settings: Settings,
+    strategy: ExecutionStrategy,
     system: str | None = None,
-) -> tuple[RouteDecision, ProviderResponse, str, bool]:
-    route = decide_demo_route(prompt)
+) -> tuple[ExecutionStrategy, ProviderResponse, str, bool]:
+    runtime_plan = runtime_plan_for_strategy(strategy, "try")
     registry = _provider_registry(settings)
-    primary_key = route.execution_profile
     try:
-        if primary_key not in registry:
+        if runtime_plan.primary_execution_profile not in registry:
             raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
-        provider_response = registry[primary_key].generate(prompt=prompt, system=system)
-        return route, provider_response, primary_key, False
+        provider_response = registry[runtime_plan.primary_execution_profile].generate(prompt=prompt, system=system)
+        return strategy, provider_response, runtime_plan.primary_execution_profile, False
     except (HTTPException, ProviderExecutionError):
         provider_response = ProviderResponse(
-            text=(
-                "AI Bridge preview is temporarily unavailable at full quality. "
-                "Please try again in a moment."
-            ),
+            text="Hi, I’m AB. Paste a bug, repo task, or code question to get started.",
             latency_ms=0,
             prompt_tokens_est=max(24, len(prompt) // 4),
             completion_tokens_est=96,
             retry_count=0,
             fallback_used=True,
         )
-        return route, provider_response, "preview_fallback", True
+        return strategy, provider_response, "preview_fallback", True
 
 
 def _route_preview(
     *,
     prompt: str,
     settings: Settings,
+    strategy: ExecutionStrategy,
     system: str | None = None,
 ) -> dict:
-    route, provider_response, execution_profile_used, fallback_used = _execute_demo_preview(
+    strategy, provider_response, execution_profile_used, fallback_used = _execute_demo_preview(
         prompt=prompt,
         settings=settings,
+        strategy=strategy,
         system=system,
     )
-    visible_lane = "assured" if route.premium_escalated else "smart"
+    runtime_plan = runtime_plan_for_strategy(strategy, "try")
+    visible_lane = runtime_plan.visible_mode
     routed_cost = estimate_public_charge(
         mode=visible_lane,
         prompt_tokens=provider_response.prompt_tokens_est,
         completion_tokens=provider_response.completion_tokens_est,
-        quality_check=route.quality_check,
+        quality_check=runtime_plan.quality_check,
     )
     direct_premium_cost = estimate_public_charge(
         mode="assured",
@@ -423,16 +455,16 @@ def _route_preview(
     )
     saved_pct = max(0, round((1 - (routed_cost / max(direct_premium_cost, 0.01))) * 100))
     return {
-        "reply": provider_response.text,
-        "lane": ("Assured" if route.premium_escalated else "Smart"),
-        "quality": _display_quality(route),
+        "reply": _sanitize_ab_reply(prompt, provider_response.text, strategy),
+        "lane": runtime_plan.visible_mode.title(),
+        "quality": runtime_plan.status_label,
         "direct_cost": _format_usd(direct_premium_cost),
         "routed_cost": _format_usd(routed_cost),
         "saved_pct": saved_pct,
-        "why": _demo_reason("spec", route),
+        "why": "Preview completed in the fast AB preview flow.",
         "execution_profile": execution_profile_used,
         "fallback_used": fallback_used,
-        "premium_escalated": route.premium_escalated,
+        "premium_escalated": runtime_plan.premium_escalated,
     }
 
 
@@ -533,7 +565,13 @@ def demo_chat(
         trial = _get_or_create_demo_trial_resilient(db, session_id)
         if trial.tries_used >= DEMO_TRIAL_LIMIT:
             raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
-        preview = _route_preview(prompt=prompt[:8000], settings=settings, system=DEMO_SYSTEM_PROMPT)
+        _, strategy = _build_strategy_for_prompt(
+            prompt=prompt[:8000],
+            profile=None,
+            surface="try",
+            session_context={"session_id": session_id, "tries_used": trial.tries_used},
+        )
+        preview = _route_preview(prompt=prompt[:8000], settings=settings, strategy=strategy, system=DEMO_SYSTEM_PROMPT)
         try:
             preview = _persist_demo_preview(
                 db=db,
@@ -567,7 +605,6 @@ def demo_chat(
             httponly=True,
             samesite="lax",
         )
-        preview["reply"] = _normalize_public_demo_reply(prompt, preview["reply"])
         return _public_demo_response(preview)
     except HTTPException as exc:
         _record_failure(db, "/demo/chat", exc.detail if isinstance(exc.detail, str) else "demo failure", context_json={"example": example_key})
@@ -817,51 +854,29 @@ def admin_agent_profile(
 
 def _complete_terminal_chat(
     user_id: int,
-    mode: str,
+    strategy: ExecutionStrategy,
     system: str | None,
     prompt: str,
     db: Session,
     settings: Settings,
     endpoint: str,
     task_id: str | None = None,
-    pinned_internal_lane: str | None = None,
-    pinned_provider: str | None = None,
-    pinned_execution_profile: str | None = None,
-    quality_check_override: bool | None = None,
 ) -> dict:
-    route = decide_route(prompt, mode, internal_lane=pinned_internal_lane, quality_check_override=quality_check_override)
-    provider_override_map = {
-        "fast_lane": "remote_fast",
-        "balanced_lane": "remote_balanced",
-        "premium_reasoner": "premium_anthropic",
-    }
-    if pinned_provider and pinned_provider in provider_override_map:
-        route = RouteDecision(
-            provider=pinned_provider,
-            provider_model=route.provider_model,
-            premium_escalated=pinned_provider == "premium_reasoner",
-            quality_check=route.quality_check,
-            fallback_provider=route.fallback_provider,
-            local_model_hit=False,
-            execution_profile=provider_override_map[pinned_provider],
-        )
-    elif pinned_execution_profile:
-        route = RouteDecision(
-            provider=pinned_provider or route.provider,
-            provider_model=route.provider_model,
-            premium_escalated=route.premium_escalated,
-            quality_check=route.quality_check,
-            fallback_provider=route.fallback_provider,
-            local_model_hit=False,
-            execution_profile=pinned_execution_profile,
-        )
+    runtime_plan = runtime_plan_for_strategy(strategy, "terminal")
     registry = _provider_registry(settings)
-    provider_response, execution_profile_used, fallback_used = _execute_with_fallback(route, registry, prompt, system)
+    provider_response, execution_profile_used, fallback_used = _execute_with_fallback(
+        runtime_plan.primary_execution_profile,
+        runtime_plan.fallback_execution_profile,
+        registry,
+        prompt,
+        system,
+    )
+    reply_text = _sanitize_ab_reply(prompt, provider_response.text, strategy)
     public_charge = estimate_public_charge(
-        mode=mode,
+        mode=runtime_plan.visible_mode,
         prompt_tokens=provider_response.prompt_tokens_est,
         completion_tokens=provider_response.completion_tokens_est,
-        quality_check=route.quality_check,
+        quality_check=runtime_plan.quality_check,
     )
     if wallet_balance(db, user_id, "main") < public_charge:
         raise HTTPException(status_code=402, detail="Insufficient main balance. Top up to continue.")
@@ -870,44 +885,51 @@ def _complete_terminal_chat(
         prompt_tokens=provider_response.prompt_tokens_est,
         completion_tokens=provider_response.completion_tokens_est,
         public_charge_usd=public_charge,
-        quality_check=route.quality_check,
+        quality_check=runtime_plan.quality_check,
         fallback_used=fallback_used,
         retry_count=provider_response.retry_count,
     )
     benchmark = benchmark_cost_usd(provider_response.prompt_tokens_est, provider_response.completion_tokens_est, settings)
     request_id = uuid.uuid4().hex
-    debit_usage(db, user_id=user_id, amount_usd=public_charge, request_id=request_id, mode=mode)
+    debit_usage(
+        db,
+        user_id=user_id,
+        amount_usd=public_charge,
+        request_id=request_id,
+        mode=runtime_plan.visible_mode,
+    )
     event = UsageEvent(
         user_id=user_id,
         task_id=task_id,
         request_id=request_id,
         endpoint=endpoint,
-        mode=mode,
+        mode=runtime_plan.visible_mode,
         public_charge_usd=public_charge,
         serving_cogs_usd=cost_estimate.serving_cogs_usd,
         benchmark_cost_usd=benchmark,
         gross_margin_guardrail_usd=cost_estimate.guardrail_usd,
         route_chosen=execution_profile_used,
-        premium_escalated=route.premium_escalated,
+        premium_escalated=runtime_plan.premium_escalated,
         local_model_hit=False,
         fallback_used=fallback_used,
         retry_count=provider_response.retry_count,
-        quality_check_triggered=route.quality_check,
+        quality_check_triggered=runtime_plan.quality_check,
         latency_ms=provider_response.latency_ms,
         prompt_tokens_est=provider_response.prompt_tokens_est,
         completion_tokens_est=provider_response.completion_tokens_est,
-        request_payload={"prompt": prompt[:500], "mode": mode},
-        response_excerpt=provider_response.text[:200],
+        request_payload={"prompt": prompt[:500], "mode": runtime_plan.visible_mode, "strategy": strategy_summary(strategy)},
+        response_excerpt=reply_text[:200],
     )
     db.add(event)
     db.commit()
     return {
         "id": f"ab_{request_id}",
-        "content": provider_response.text,
-        "mode": mode,
+        "content": reply_text,
+        "mode": runtime_plan.visible_mode,
         "request_id": request_id,
         "provider_family": execution_profile_used,
         "fallback_used": fallback_used,
+        "strategy": strategy_summary(strategy),
         "usage": {
             "prompt_tokens": provider_response.prompt_tokens_est,
             "completion_tokens": provider_response.completion_tokens_est,
@@ -916,7 +938,7 @@ def _complete_terminal_chat(
             "public_charge_usd": public_charge,
             "balance_remaining_usd": wallet_balance(db, user_id, "main"),
         },
-        "telemetry": {"premium_escalated": route.premium_escalated, "quality_check_triggered": route.quality_check, "local_model_hit": False},
+        "telemetry": {"premium_escalated": runtime_plan.premium_escalated, "quality_check_triggered": runtime_plan.quality_check, "local_model_hit": False},
     }
 
 
@@ -935,31 +957,37 @@ def api_chat_completions(
     system = next((message.content for message in payload.messages if message.role == "system"), None)
     prompt = "\n".join(message.content for message in payload.messages if message.role == "user")
     profile = get_or_create_agent_profile(db, user_id)
-    hydrate_profile_for_request(profile, prompt, "terminal_compat" if request.url.path.startswith("/v1/") else "terminal_api")
-    requested_mode = _normalize_requested_mode(payload.mode, payload.model)
-    visible_lane, internal_lane, quality_check = choose_initial_lane(profile, requested_mode, prompt)
+    source_surface = "terminal_compat" if request.url.path.startswith("/v1/") else "terminal_api"
+    hydrate_profile_for_request(profile, prompt, source_surface)
+    _, strategy = _build_strategy_for_prompt(
+        prompt=prompt,
+        profile=profile,
+        surface="terminal",
+        session_context={"surface": source_surface},
+    )
     result = _complete_terminal_chat(
         user_id,
-        visible_lane,
+        strategy,
         system,
         prompt,
         db,
         settings,
         str(request.url.path),
-        pinned_internal_lane=internal_lane,
-        quality_check_override=quality_check,
     )
     update_profile_after_turn(
         profile=profile,
-        task_id=result["request_id"],
-        visible_lane=visible_lane,
-        quality_checked=result["telemetry"]["quality_check_triggered"],
-        provider_family=result["provider_family"],
-        execution_profile=result["provider_family"],
-        premium_escalated=result["telemetry"]["premium_escalated"],
-        fallback_used=result["fallback_used"],
-        task_stable=not result["fallback_used"] and not result["telemetry"]["premium_escalated"],
-        ds_succeeded_cleanly=result["provider_family"] != "premium_anthropic" and not result["fallback_used"],
+        turn_input={"task_id": result["request_id"], "prompt": prompt, "surface": source_surface},
+        turn_output={"reply": result["content"]},
+        strategy=strategy,
+        observed_signals={
+            "provider_family": result["provider_family"],
+            "execution_profile": result["provider_family"],
+            "premium_escalated": result["telemetry"]["premium_escalated"],
+            "fallback_used": result["fallback_used"],
+            "task_stable": not result["fallback_used"] and not result["telemetry"]["premium_escalated"],
+            "ds_succeeded_cleanly": result["provider_family"] != "premium_anthropic" and not result["fallback_used"],
+            "status_label": "Checked" if result["telemetry"]["quality_check_triggered"] else "In progress",
+        },
     )
     db.commit()
     return {
@@ -967,7 +995,7 @@ def api_chat_completions(
         "object": "chat.completion",
         "choices": [{"index": 0, "message": {"role": "assistant", "content": result["content"]}, "finish_reason": "stop"}],
         "usage": result["usage"],
-        "ab": {"mode": visible_lane.title(), "status": "Checked" if result["telemetry"]["quality_check_triggered"] else "In progress", "billing": result["billing"]},
+        "ab": {"mode": result["mode"].title(), "status": "Checked" if result["telemetry"]["quality_check_triggered"] else "In progress", "billing": result["billing"]},
     }
 
 
@@ -986,7 +1014,14 @@ def api_messages(
     user_id = _resolve_user_id(db, settings, request, payload.user_id, authorization, x_api_key)
     prompt = "\n".join(str(item.get("content", "")) for item in payload.messages if item.get("role") == "user")
     profile = get_or_create_agent_profile(db, user_id)
-    hydrate_profile_for_request(profile, prompt, payload.source_surface or ("terminal_compat" if request.url.path.startswith("/v1/") else "terminal_api"))
+    source_surface = payload.source_surface or ("terminal_compat" if request.url.path.startswith("/v1/") else "terminal_api")
+    hydrate_profile_for_request(profile, prompt, source_surface)
+    _, strategy = _build_strategy_for_prompt(
+        prompt=prompt,
+        profile=profile,
+        surface="terminal",
+        session_context={"task_id": payload.task_id, "task_action": payload.task_action, "surface": source_surface},
+    )
     task = resolve_task(
         db,
         user_id,
@@ -994,21 +1029,28 @@ def api_messages(
         prompt,
         payload.task_id,
         payload.task_action,
-        source_surface=payload.source_surface,
+        source_surface=source_surface,
     )
+    runtime_plan = runtime_plan_for_strategy(strategy, "terminal")
+    if not (task.pinned_lane == "assured" and payload.task_action != "deescalate"):
+        task.pinned_lane = runtime_plan.visible_mode
+        task.internal_lane = strategy.primary_lane
+        task.pinned_provider = "ab_orchestrator"
+        task.pinned_execution_profile = runtime_plan.primary_execution_profile
+        task.quality_check_enabled = runtime_plan.quality_check
+        task.last_status_label = runtime_plan.status_label
+    notes = dict(task.notes_json or {})
+    notes["strategy"] = strategy_summary(strategy)
+    task.notes_json = notes
     result = _complete_terminal_chat(
         user_id,
-        task.pinned_lane,
+        strategy,
         payload.system,
         prompt,
         db,
         settings,
         str(request.url.path),
         task_id=task.task_id,
-        pinned_internal_lane=task.internal_lane,
-        pinned_provider=task.pinned_provider,
-        pinned_execution_profile=task.pinned_execution_profile,
-        quality_check_override=task.quality_check_enabled,
     )
     correction_terms = ["verify", "recheck", "double-check", "double check", "correct", "fix again", "audit", "bugfix", "bug fix", "refactor", "regression", "patch"]
     task_stable = (
@@ -1029,7 +1071,7 @@ def api_messages(
         result["telemetry"]["premium_escalated"],
         result["fallback_used"],
         task_stable,
-        payload.source_surface,
+        source_surface,
     )
     db.commit()
     return {

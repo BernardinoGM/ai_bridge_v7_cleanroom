@@ -14,6 +14,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from app.agents import assess_request, build_execution_strategy, get_or_create_agent_profile, hydrate_profile_for_request, strategy_summary, update_profile_after_turn
 from app import cli as terminal_cli
 from app.billing import add_wallet_entry, wallet_balance
 from app.db import SessionLocal
@@ -21,6 +22,7 @@ from app.main import app, bootstrap
 from app.models import AgentProfile, ApiKey, PaymentRecord, TaskSession, User
 from app.models import TaskTurn
 from app.payments import ensure_seed_user, process_checkout_completed
+from app.providers.base import ProviderResponse
 
 
 def setup_module() -> None:
@@ -159,7 +161,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "do you train on raw user prompts?" in body
     assert "copy full setup" in body
     assert 'export ab_api_key="ab_live_..."' in body
-    assert ">ab</div>" in body
+    assert ">aibridge</div>" in body
     assert "your-bridge-key" not in body
     assert "your_key_from_above" not in body
     assert "anthropic_base_url" not in body
@@ -194,12 +196,8 @@ def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() 
     first = demo_client.post("/demo/chat", json={"message": "Summarize a heat pump controller spec for me."})
     assert first.status_code == 200
     payload = first.json()
-    assert set(payload.keys()) >= {"reply", "lane", "quality", "direct_cost", "routed_cost", "saved_pct", "reason", "trial_remaining", "trial_exhausted", "show_signup_after_ms"}
-    assert payload["lane"] in {"Fast", "Smart", "Assured"}
-    assert payload["quality"] in {"In progress", "Checked", "Verified"}
-    assert payload["direct_cost"].startswith("$")
-    assert payload["routed_cost"].startswith("$")
-    assert isinstance(payload["saved_pct"], int)
+    assert set(payload.keys()) == {"reply", "trial_remaining", "tries_remaining", "trial_exhausted", "show_signup_after_ms"}
+    assert payload["reply"]
     assert payload["trial_exhausted"] is False
     second = demo_client.post("/demo/chat", json={"example": "refactor"})
     assert second.status_code == 200
@@ -213,13 +211,27 @@ def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() 
 
 
 def test_demo_chat_still_returns_preview_if_provider_path_is_unavailable(monkeypatch) -> None:
-    monkeypatch.setattr("app.routes.api._execute_with_fallback", lambda *args, **kwargs: (_ for _ in ()).throw(HTTPException(status_code=503, detail="selected model does not exist")))
+    monkeypatch.setattr(
+        "app.routes.api._execute_demo_preview",
+        lambda *args, **kwargs: (
+            kwargs["strategy"],
+            ProviderResponse(
+                text="selected model does not exist",
+                latency_ms=0,
+                prompt_tokens_est=24,
+                completion_tokens_est=48,
+                retry_count=0,
+                fallback_used=True,
+            ),
+            "preview_fallback",
+            True,
+        ),
+    )
     demo_client = TestClient(app)
     response = demo_client.post("/demo/chat", json={"message": "hello"})
     assert response.status_code == 200
     payload = response.json()
     assert payload["reply"]
-    assert payload["lane"] in {"Fast", "Smart", "Assured"}
     assert "selected model" not in response.text.lower()
 
 
@@ -246,8 +258,8 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
     assert payload["onboarding_commands"][0].startswith('export AB_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][1] == "ab"
-    assert payload["terminal_command"] == "ab"
+    assert payload["onboarding_commands"][1] == "aibridge"
+    assert payload["terminal_command"] == "aibridge"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
         assert user is not None
@@ -265,7 +277,7 @@ def test_public_key_issue_surface_uses_ab_owned_route() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["api_key"].startswith("ab_live_")
-    assert payload["terminal_command"] == "ab"
+    assert payload["terminal_command"] == "aibridge"
 
 
 def test_issued_api_key_is_usable_for_authenticated_messages_without_user_id() -> None:
@@ -1094,7 +1106,7 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     body = page.text.lower()
     assert api_key in page.text
     assert 'export ab_api_key=' in body
-    assert '\nab\n' in body or '>ab<' in body
+    assert '\naibridge\n' in body or '>aibridge<' in body
     assert 'anthropic_base_url' not in body
     assert 'anthropic_api_key' not in body
     assert 'unset anthropic_model' not in body
@@ -1157,6 +1169,94 @@ def test_ab_cli_returns_only_neutral_fallback_on_runtime_failure(monkeypatch) ->
     )
     assert response == "This workflow is temporarily unavailable. Please retry in a moment."
     assert "claude-sonnet-4-6" not in response
+
+
+def test_agent_assessment_distinguishes_try_vs_terminal_and_risk_levels() -> None:
+    with SessionLocal() as db:
+        profile = get_or_create_agent_profile(db, _user_id("founder@aibridge.local"))
+        hydrate_profile_for_request(profile, "Fix the failing pytest in repo/api/auth.py", "ab_cli")
+        coding = assess_request(
+            [{"role": "user", "content": "Fix the failing pytest in repo/api/auth.py and patch the session bug."}],
+            profile,
+            "terminal",
+            session_context={"task_id": "task_1"},
+            workspace_context={"workspace_fingerprint": "repo:auth", "repo_name": "cleanroom"},
+        )
+        preview = assess_request(
+            [{"role": "user", "content": "What does AI Bridge do?"}],
+            profile,
+            "try",
+        )
+    assert coding.task_type == "coding"
+    assert coding.risk_level == "high"
+    assert coding.needs_repo_context is True
+    assert preview.surface == "try"
+    assert preview.language_preference == "en"
+    assert preview.task_type == "general"
+
+
+def test_agent_strategy_changes_across_simple_medium_high_risk_and_general_requests() -> None:
+    with SessionLocal() as db:
+        profile = get_or_create_agent_profile(db, _user_id("founder@aibridge.local"))
+        simple = build_execution_strategy(
+            assess_request([{"role": "user", "content": "Fix this Python bug in service.py"}], profile, "terminal"),
+            profile,
+        )
+        medium = build_execution_strategy(
+            assess_request([{"role": "user", "content": "Refactor the repo auth service across multiple modules and add tests."}], profile, "terminal"),
+            profile,
+        )
+        high_risk = build_execution_strategy(
+            assess_request([{"role": "user", "content": "Cut over payment + session auth runtime and keep rollback-safe migrations."}], profile, "terminal"),
+            profile,
+        )
+        general = build_execution_strategy(
+            assess_request([{"role": "user", "content": "Draft a short customer reply for a delayed shipment."}], profile, "try"),
+            profile,
+        )
+    assert simple.primary_lane == "coding_primary"
+    assert simple.planning_mode == "direct"
+    assert medium.planning_mode in {"plan_first", "plan_then_execute"}
+    assert medium.needs_repo_context is True
+    assert high_risk.staged_execution is True
+    assert high_risk.silent_qc is True
+    assert general.user_visible_mode == "preview"
+    assert general.primary_lane in {"fast_preview", "balanced"}
+
+
+def test_agent_profile_update_persists_meaningful_hints_without_provider_leakage() -> None:
+    with SessionLocal() as db:
+        profile = get_or_create_agent_profile(db, _user_id("founder@aibridge.local"))
+        hydrate_profile_for_request(profile, "Debug this failing pytest stack trace in repo/service.py", "ab_cli", session_id="sess_profile")
+        assessment = assess_request(
+            [{"role": "user", "content": "Debug this failing pytest stack trace in repo/service.py"}],
+            profile,
+            "terminal",
+            session_context={"task_id": "task_profile"},
+            workspace_context={"workspace_fingerprint": "repo:service"},
+        )
+        strategy = build_execution_strategy(assessment, profile, session_context={"task_id": "task_profile"})
+        update = update_profile_after_turn(
+            profile,
+            turn_input={"task_id": "task_profile", "prompt": "Debug this failing pytest stack trace in repo/service.py", "surface": "ab_cli"},
+            turn_output={"reply": "I can help with that. Share the repo task, error, or next step."},
+            strategy=strategy,
+            observed_signals={
+                "provider_family": "remote_balanced",
+                "execution_profile": "remote_balanced",
+                "premium_escalated": False,
+                "fallback_used": False,
+                "task_stable": True,
+                "ds_succeeded_cleanly": True,
+                "status_label": "In progress",
+            },
+        )
+        db.commit()
+        hints = profile.learned_hints_json or {}
+    assert update.profile_fields["workload_pattern"] == "coding"
+    assert hints["last_strategy"]["primary_lane"] == strategy.primary_lane
+    assert hints["surface_preferences"]["ab_cli"]["language_preference"] == "en"
+    assert "claude" not in json.dumps(hints).lower()
 
 
 def test_home_logo_links_back_to_root_on_live_surfaces() -> None:
