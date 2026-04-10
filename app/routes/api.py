@@ -300,20 +300,21 @@ def _execute_with_fallback(
             raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.") from exc
 
 
-def _route_preview(
+def _execute_demo_preview(
     *,
     prompt: str,
-    mode: str,
     settings: Settings,
     system: str | None = None,
-    profile: AgentProfile | None = None,
-) -> dict:
+) -> tuple[RouteDecision, ProviderResponse, str, bool]:
     route = decide_demo_route(prompt)
-    visible_lane = "assured" if route.premium_escalated else "smart"
     registry = _provider_registry(settings)
+    primary_key = route.execution_profile
     try:
-        provider_response, execution_profile_used, fallback_used = _execute_with_fallback(route, registry, prompt, system)
-    except HTTPException:
+        if primary_key not in registry:
+            raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
+        provider_response = registry[primary_key].generate(prompt=prompt, system=system)
+        return route, provider_response, primary_key, False
+    except (HTTPException, ProviderExecutionError):
         provider_response = ProviderResponse(
             text=(
                 "AI Bridge preview is temporarily running in compatibility mode. "
@@ -325,8 +326,21 @@ def _route_preview(
             retry_count=0,
             fallback_used=True,
         )
-        execution_profile_used = "preview_fallback"
-        fallback_used = True
+        return route, provider_response, "preview_fallback", True
+
+
+def _route_preview(
+    *,
+    prompt: str,
+    settings: Settings,
+    system: str | None = None,
+) -> dict:
+    route, provider_response, execution_profile_used, fallback_used = _execute_demo_preview(
+        prompt=prompt,
+        settings=settings,
+        system=system,
+    )
+    visible_lane = "assured" if route.premium_escalated else "smart"
     routed_cost = estimate_public_charge(
         mode=visible_lane,
         prompt_tokens=provider_response.prompt_tokens_est,
@@ -451,7 +465,7 @@ def demo_chat(
     if not prompt:
         prompt = DEMO_EXAMPLES[example_key]["prompt"]
     try:
-        preview = _route_preview(prompt=prompt[:8000], mode="smart", settings=settings)
+        preview = _route_preview(prompt=prompt[:8000], settings=settings)
         routed_cost_usd = float(preview["routed_cost"].replace("$", ""))
         direct_cost_usd = float(preview["direct_cost"].replace("$", ""))
         estimated_prompt_tokens = 160
@@ -741,7 +755,7 @@ def admin_agent_profile(
     }
 
 
-def _complete_chat(
+def _complete_terminal_chat(
     user_id: int,
     mode: str,
     system: str | None,
@@ -863,7 +877,7 @@ def api_chat_completions(
     profile = get_or_create_agent_profile(db, user_id)
     requested_mode = _normalize_requested_mode(payload.mode, payload.model)
     visible_lane, internal_lane, quality_check = choose_initial_lane(profile, requested_mode, prompt)
-    result = _complete_chat(
+    result = _complete_terminal_chat(
         user_id,
         visible_lane,
         system,
@@ -918,7 +932,7 @@ def api_messages(
         payload.task_action,
         source_surface=payload.source_surface,
     )
-    result = _complete_chat(
+    result = _complete_terminal_chat(
         user_id,
         task.pinned_lane,
         payload.system,

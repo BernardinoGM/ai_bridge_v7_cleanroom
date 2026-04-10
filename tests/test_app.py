@@ -185,6 +185,16 @@ def test_demo_chat_still_returns_preview_if_provider_path_is_unavailable(monkeyp
     assert "selected model" not in response.text.lower()
 
 
+def test_demo_chat_no_longer_depends_on_terminal_executor(monkeypatch) -> None:
+    monkeypatch.setattr("app.routes.api._execute_with_fallback", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("terminal executor should not handle demo")))
+    demo_client = TestClient(app)
+    response = demo_client.post("/demo/chat", json={"message": "quick overview of the changes"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["reply"]
+    assert "terminal executor should not handle demo" not in response.text
+
+
 def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     response = client.post(
         "/v1/keys",
