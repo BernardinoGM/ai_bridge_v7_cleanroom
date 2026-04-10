@@ -91,6 +91,30 @@ def choose_initial_lane(profile: AgentProfile, requested_mode: str | None, promp
     high_risk = any(term in text for term in high_risk_terms)
     medium_risk = any(term in text for term in ["architecture", "customer", "finance", "incident", "auth", "billing", "payment"])
     verify_language = any(term in text for term in verify_terms)
+    coding_terms = [
+        "code",
+        "repo",
+        "patch",
+        "refactor",
+        "test",
+        "debug",
+        "stack trace",
+        "function",
+        "class ",
+        "python",
+        "typescript",
+        "javascript",
+        "sql",
+        "pytest",
+        "terminal",
+        "cli",
+        "compile",
+        "build",
+        "commit",
+        "diff",
+        "bug",
+    ]
+    coding_work = any(term in text for term in coding_terms) or "```" in prompt
     mode = requested_mode or profile.preferred_mode or "smart"
     stable_user = (
         profile.stable_task_bias == "enabled"
@@ -98,6 +122,12 @@ def choose_initial_lane(profile: AgentProfile, requested_mode: str | None, promp
         and profile.fallback_count_7d <= 2
         and profile.qa_trigger_rate_7d <= 0.35
     )
+    if coding_work:
+        if mode == "fast":
+            return "fast", "fast", False
+        if mode == "assured" or high_risk or verify_language:
+            return "assured", "balanced", True
+        return "smart", "balanced", False
     if mode == "assured" or high_risk:
         return "assured", "premium", True
     if mode == "fast":

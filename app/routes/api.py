@@ -20,7 +20,7 @@ from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
 from app.providers.real import ProviderExecutionError, build_provider_clients
 from app.providers.mock import build_mock_clients
-from app.routing import RouteDecision, decide_route
+from app.routing import RouteDecision, decide_demo_route, decide_route
 from app.schemas import ApiKeyCreateRequest, ChatCompletionRequest, CheckoutCreateRequest, DemoChatRequest, MessagesRequest
 from app.session_auth import (
     ADMIN_SESSION_COOKIE_NAME,
@@ -255,12 +255,12 @@ def _display_quality(route: RouteDecision) -> str:
 
 def _demo_reason(example: str, route: RouteDecision) -> str:
     if route.premium_escalated:
-        return "Escalated because this example carries higher review or release risk."
+        return "Preview completed with a deeper pass for higher-risk work."
     if example == "refactor":
-        return "Stayed cheaper because the work is iterative and the thread can stay stable without premium on every turn."
+        return "Preview completed in the fast coding path for iterative work."
     if example == "reply":
-        return "Stayed cheaper because the request is straightforward and low risk."
-    return "Stayed cheaper because the request is routine and the thread can remain stable across follow-ups."
+        return "Preview completed in the default high-quality path."
+    return "Preview completed in the default high-quality path."
 
 
 def _get_or_create_demo_trial(db: Session, session_id: str) -> DemoTrial:
@@ -280,13 +280,18 @@ def _execute_with_fallback(
     system: str | None,
 ) -> tuple[ProviderResponse, str, bool]:
     primary_key = route.execution_profile
-    fallback_key = "remote_balanced" if primary_key == "premium_anthropic" else "premium_anthropic"
+    fallback_profile_map = {
+        "fast_lane": "remote_fast",
+        "balanced_lane": "remote_balanced",
+        "premium_reasoner": "premium_anthropic",
+    }
+    fallback_key = fallback_profile_map.get(route.fallback_provider) if route.fallback_provider else None
     if primary_key not in registry:
         raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
     try:
         return registry[primary_key].generate(prompt=prompt, system=system), primary_key, False
     except ProviderExecutionError:
-        if fallback_key not in registry:
+        if not fallback_key or fallback_key not in registry:
             raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
         try:
             fallback_response = registry[fallback_key].generate(prompt=prompt, system=system)
@@ -303,9 +308,8 @@ def _route_preview(
     system: str | None = None,
     profile: AgentProfile | None = None,
 ) -> dict:
-    effective_profile = profile or _default_demo_profile()
-    visible_lane, internal_lane, quality_check = choose_initial_lane(effective_profile, mode, prompt)
-    route = decide_route(prompt, visible_lane, internal_lane=internal_lane, quality_check_override=quality_check)
+    route = decide_demo_route(prompt)
+    visible_lane = "assured" if route.premium_escalated else "smart"
     registry = _provider_registry(settings)
     try:
         provider_response, execution_profile_used, fallback_used = _execute_with_fallback(route, registry, prompt, system)
@@ -338,7 +342,7 @@ def _route_preview(
     saved_pct = max(0, round((1 - (routed_cost / max(direct_premium_cost, 0.01))) * 100))
     return {
         "reply": provider_response.text,
-        "lane": visible_lane.title(),
+        "lane": ("Assured" if route.premium_escalated else "Smart"),
         "quality": _display_quality(route),
         "direct_cost": _format_usd(direct_premium_cost),
         "routed_cost": _format_usd(routed_cost),
@@ -488,7 +492,7 @@ def demo_chat(
             httponly=True,
             samesite="lax",
         )
-        reason = _demo_reason(example_key, decide_route(prompt, "smart"))
+        reason = _demo_reason(example_key, decide_demo_route(prompt))
         preview["reason"] = reason
         preview["why"] = reason
         preview["trial_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)

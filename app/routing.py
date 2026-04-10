@@ -18,6 +18,36 @@ class RouteDecision:
     execution_profile: str
 
 
+CODING_TERMS = (
+    "code",
+    "repo",
+    "patch",
+    "refactor",
+    "test",
+    "debug",
+    "stack trace",
+    "function",
+    "class ",
+    "python",
+    "typescript",
+    "javascript",
+    "sql",
+    "pytest",
+    "terminal",
+    "cli",
+    "compile",
+    "build",
+    "commit",
+    "diff",
+    "bug",
+)
+
+
+def is_coding_task(prompt: str) -> bool:
+    text = prompt.lower()
+    return any(term in text for term in CODING_TERMS) or "```" in prompt
+
+
 def classify_risk(prompt: str, mode: Mode) -> RiskLevel:
     text = prompt.lower()
     if mode == "assured":
@@ -29,8 +59,32 @@ def classify_risk(prompt: str, mode: Mode) -> RiskLevel:
     return "low"
 
 
+def decide_demo_route(prompt: str) -> RouteDecision:
+    risk = classify_risk(prompt, "smart")
+    if risk == "high":
+        return RouteDecision(
+            provider="premium_reasoner",
+            provider_model="assured-preview",
+            premium_escalated=True,
+            quality_check=True,
+            fallback_provider=None,
+            local_model_hit=False,
+            execution_profile="premium_anthropic",
+        )
+    return RouteDecision(
+        provider="balanced_lane",
+        provider_model="conversion-preview",
+        premium_escalated=False,
+        quality_check=risk == "medium",
+        fallback_provider=None,
+        local_model_hit=False,
+        execution_profile="remote_balanced",
+    )
+
+
 def decide_route(prompt: str, mode: Mode, internal_lane: str | None = None, quality_check_override: bool | None = None) -> RouteDecision:
     risk = classify_risk(prompt, mode)
+    coding_task = is_coding_task(prompt)
     if internal_lane == "premium":
         return RouteDecision(
             provider="premium_reasoner",
@@ -44,10 +98,10 @@ def decide_route(prompt: str, mode: Mode, internal_lane: str | None = None, qual
     if internal_lane == "balanced":
         return RouteDecision(
             provider="balanced_lane",
-            provider_model="smart-lane",
-            premium_escalated=False,
+            provider_model="coding-lane" if coding_task else "smart-lane",
+            premium_escalated=bool(quality_check_override) if coding_task and mode == "assured" else False,
             quality_check=(risk != "low") if quality_check_override is None else quality_check_override,
-            fallback_provider="premium_reasoner",
+            fallback_provider=None if coding_task else "premium_reasoner",
             local_model_hit=False,
             execution_profile="remote_balanced",
         )
@@ -72,6 +126,16 @@ def decide_route(prompt: str, mode: Mode, internal_lane: str | None = None, qual
             execution_profile="remote_fast",
         )
     if mode == "smart":
+        if coding_task:
+            return RouteDecision(
+                provider="balanced_lane",
+                provider_model="coding-lane",
+                premium_escalated=False,
+                quality_check=risk != "low",
+                fallback_provider=None,
+                local_model_hit=False,
+                execution_profile="remote_balanced",
+            )
         if risk == "high":
             return RouteDecision(
                 provider="premium_reasoner",
