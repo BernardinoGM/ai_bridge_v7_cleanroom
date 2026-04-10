@@ -124,7 +124,7 @@
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
     <a href="mailto:hello@getaibridge.com" style="color:var(--muted);font-size:14px;text-decoration:none;">hello@getaibridge.com</a>
-    {% if launch_user_id %}
+    {% if launch_session_active %}
     <a href="/dashboard" class="btn-outline" style="padding:8px 18px;">Dashboard</a>
     {% else %}
     <span class="btn-outline" style="padding:8px 18px;opacity:0.45;cursor:not-allowed;">Dashboard</span>
@@ -339,7 +339,7 @@
 </div>
 
 <script>
-  let hasLaunchSession = {{ 'true' if launch_user_id else 'false' }};
+  let hasLaunchSession = {{ 'true' if launch_session_active else 'false' }};
   let checkoutEnabled = {{ 'true' if checkout_enabled else 'false' }};
   let trialsLeft = 3;
   let selectedPackCode = null;

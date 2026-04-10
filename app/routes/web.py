@@ -85,7 +85,7 @@ def landing(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
         "landing.html",
         {
             "packs": list(TOP_UP_PACKS.values()),
-            "launch_user_id": str(current_user.id) if current_user else "",
+            "launch_session_active": bool(current_user),
             "checkout_enabled": _checkout_enabled_for_request(request, db),
         },
     )
