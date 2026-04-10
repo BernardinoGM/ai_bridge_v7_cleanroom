@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.add_ons import ADD_ONS
 from app.billing import wallet_balance
+from app.config import get_settings
 from app.models import ApiKey, DemoTrial, PaymentRecord, ReferralPerk, RequestFailure, TaskSession, TrialSubsidy, UsageEvent, User, WalletLedger
+from app.terminal import build_terminal_setup_commands
 
 
 @dataclass
@@ -25,6 +27,7 @@ def estimate_runway(balance_usd: float, daily_spend_usd: float, heavy_day_multip
 
 
 def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> dict:
+    settings = get_settings()
     user = db.get(User, user_id)
     balance = wallet_balance(db, user_id, "main")
     ledger = db.scalars(
@@ -92,12 +95,7 @@ def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> di
         "added_this_month_usd": added_this_month,
         "used_this_month_usd": used_this_month,
         "rewards_posted_usd": rewards_posted,
-        "onboarding_commands": [
-            "unset ANTHROPIC_MODEL",
-            'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
-            f'export ANTHROPIC_API_KEY="{raw_key}"' if raw_key else '# Generate a fresh key to get a copy-ready setup block with your live key.',
-            "claude",
-        ],
+        "onboarding_commands": build_terminal_setup_commands(raw_key, settings),
     }
 
 

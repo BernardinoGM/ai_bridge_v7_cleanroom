@@ -71,7 +71,7 @@
     <section class="hero">
       <div>
         <h1>${{ "%.2f"|format(balance_usd) }} available now.</h1>
-        <p class="lede">Your current workspace is set up for terminal and editor workflows. Keep the same endpoint, use your issued key, and top up only when your routed work proves its value.</p>
+        <p class="lede">Your current workspace is set up for AI Bridge terminal and editor workflows. Use your issued AB key, launch AB directly, and top up only when the routed work proves its value.</p>
         <div class="breakdown">
           <div class="pill"><span>Available</span><strong>${{ "%.2f"|format(balance_usd) }}</strong></div>
           <div class="pill"><span>Added</span><strong>${{ "%.2f"|format(added_this_month_usd) }}</strong></div>
@@ -87,10 +87,10 @@
 
     <section class="grid two">
       <div class="panel">
-        <h2>Step 1: Copy API key</h2>
+        <h2>Step 1: Copy AB API key</h2>
         {% if display_api_key %}
         <div class="copy-row">
-          <p class="muted" style="margin:0;">Use your live key in API requests and terminal-based workflows.</p>
+          <p class="muted" style="margin:0;">Use your live AB key in terminal and API workflows.</p>
           <button class="copy-button" type="button" data-copy="{{ display_api_key }}">Copy key</button>
         </div>
         <div class="key-box">{{ display_api_key }}</div>
@@ -99,9 +99,9 @@
         {% endif %}
       </div>
       <div class="panel">
-        <h2>Step 2: Copy setup commands</h2>
+        <h2>Step 2: Copy AB terminal setup</h2>
         <div class="copy-row">
-          <p class="muted" style="margin:0;">Step 3: Run in terminal.</p>
+          <p class="muted" style="margin:0;">Step 3: Run AB in terminal.</p>
           <button class="copy-button" type="button" data-copy="{% for line in onboarding_commands %}{{ line }}{% if not loop.last %}&#10;{% endif %}{% endfor %}">Copy full setup</button>
         </div>
         <div class="code-block">{% for line in onboarding_commands %}{{ line }}

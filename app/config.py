@@ -12,12 +12,15 @@ PLACEHOLDER_SECRETS = {"replace-me", "sk_test_replace", "whsec_replace", "pk_tes
 
 
 class Settings(BaseSettings):
-    app_name: str = "AI Bridge v7 Cleanroom"
+    app_name: str = "AI Bridge"
     app_env: str = "development"
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     base_url: str = "http://127.0.0.1:8000"
     database_url: str = Field(default=f"sqlite:///{BASE_DIR / 'data.db'}")
+    terminal_cli_command: str = "ab"
+    terminal_cli_alias: str = "aibridge"
+    terminal_api_path: str = "/terminal/messages"
 
     secret_key: str = "replace-me"
     admin_api_key: str = "admin-dev-key"

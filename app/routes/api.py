@@ -12,7 +12,7 @@ from app.config import Settings, get_settings
 from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
 from app.db import get_db
-from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
+from app.agents import choose_initial_lane, get_or_create_agent_profile, hydrate_profile_for_request, update_profile_after_turn
 from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
 from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, TrialSubsidy, UsageEvent, User
 from app.payments import create_checkout_session, process_checkout_completed
@@ -31,6 +31,7 @@ from app.session_auth import (
     issue_session_token,
     read_session_token,
 )
+from app.terminal import build_terminal_setup_commands
 from app.tasks import record_task_turn, resolve_task
 
 
@@ -493,6 +494,7 @@ def demo_chat(
         raise
 
 
+@router.post("/keys")
 @router.post("/v1/keys")
 def create_api_key_launch(
     payload: ApiKeyCreateRequest,
@@ -535,12 +537,8 @@ def create_api_key_launch(
             "balance_usd": round(balance_usd, 2),
             "dashboard_url": "/dashboard",
             "chat_url": "/chat",
-            "onboarding_commands": [
-                "unset ANTHROPIC_MODEL",
-                'export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"',
-                f'export ANTHROPIC_API_KEY="{raw_key}"',
-                "claude",
-            ],
+            "onboarding_commands": build_terminal_setup_commands(raw_key, settings),
+            "terminal_command": settings.terminal_cli_command,
         }
     except HTTPException as exc:
         _record_failure(db, "/v1/keys", exc.detail if isinstance(exc.detail, str) else "signup failed", context_json={"email": payload.email})
@@ -849,6 +847,7 @@ def api_chat_completions(
     system = next((message.content for message in payload.messages if message.role == "system"), None)
     prompt = "\n".join(message.content for message in payload.messages if message.role == "user")
     profile = get_or_create_agent_profile(db, user_id)
+    hydrate_profile_for_request(profile, prompt, "terminal_compat" if request.url.path.startswith("/v1/") else "terminal_api")
     requested_mode = _normalize_requested_mode(payload.mode, payload.model)
     visible_lane, internal_lane, quality_check = choose_initial_lane(profile, requested_mode, prompt)
     result = _complete_terminal_chat(
@@ -884,6 +883,7 @@ def api_chat_completions(
     }
 
 
+@router.post("/terminal/messages")
 @router.post("/api/messages")
 def api_messages(
     payload: MessagesRequest,
@@ -897,6 +897,8 @@ def api_messages(
         raise HTTPException(status_code=400, detail="Streaming is disabled in launch mode for accurate billing.")
     user_id = _resolve_user_id(db, settings, request, payload.user_id, authorization, x_api_key)
     prompt = "\n".join(str(item.get("content", "")) for item in payload.messages if item.get("role") == "user")
+    profile = get_or_create_agent_profile(db, user_id)
+    hydrate_profile_for_request(profile, prompt, payload.source_surface or ("terminal_compat" if request.url.path.startswith("/v1/") else "terminal_api"))
     task = resolve_task(
         db,
         user_id,

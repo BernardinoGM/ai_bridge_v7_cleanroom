@@ -14,7 +14,8 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.billing import wallet_balance
+from app import cli as terminal_cli
+from app.billing import add_wallet_entry, wallet_balance
 from app.db import SessionLocal
 from app.main import app, bootstrap
 from app.models import AgentProfile, ApiKey, PaymentRecord, TaskSession, User
@@ -43,6 +44,27 @@ def _user_id(email: str) -> int:
         return user.id
 
 
+def _ensure_main_balance(user_id: int, minimum_usd: float = 5.0) -> None:
+    with SessionLocal() as db:
+        current = wallet_balance(db, user_id, "main")
+        if current >= minimum_usd:
+            return
+        topup_index = len(
+            db.scalars(
+                select(PaymentRecord).where(PaymentRecord.user_id == user_id)
+            ).all()
+        )
+        add_wallet_entry(
+            db=db,
+            user_id=user_id,
+            amount_usd=round(minimum_usd - current, 2),
+            entry_type="test_seed_balance",
+            description="Test seed balance",
+            external_ref=f"test-seed:{user_id}:{minimum_usd}:{topup_index}:{current}",
+        )
+        db.commit()
+
+
 def test_health() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -63,7 +85,7 @@ def test_dashboard_is_runway_centric() -> None:
     assert response.status_code == 200
     body = response.text.lower()
     assert "available now" in body
-    assert "step 1: copy api key" in body
+    assert "step 1: copy ab api key" in body
     assert "recent top-ups" in body
     assert "recent usage" in body
     assert "feature store" in body
@@ -136,15 +158,20 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "what do starter credit, bonus credit, and rewards actually mean?" in body
     assert "do you train on raw user prompts?" in body
     assert "copy full setup" in body
+    assert 'export ab_api_key="ab_live_..."' in body
+    assert ">ab</div>" in body
     assert "your-bridge-key" not in body
     assert "your_key_from_above" not in body
+    assert "anthropic_base_url" not in body
+    assert "anthropic_api_key" not in body
+    assert "unset anthropic_model" not in body
     assert "/privacy" in body
     assert "/terms" in body
     assert "/acceptable-use" in body
     assert 'id="playground"' in body
     assert 'id="pricing"' in body
     assert 'id="modaloverlay"' in body
-    assert "/v1/keys" in body
+    assert "/keys" in body
     assert "/demo/chat" in body
     assert "/api/payments/checkout" in body
     assert "body:json.stringify({ pack_code: selectedpackcode, referred_by_code: referral || null })" in body
@@ -218,10 +245,9 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["dashboard_url"] == "/dashboard"
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
-    assert payload["onboarding_commands"][0] == "unset ANTHROPIC_MODEL"
-    assert payload["onboarding_commands"][1].startswith('export ANTHROPIC_BASE_URL=')
-    assert payload["onboarding_commands"][2].startswith('export ANTHROPIC_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][3] == "claude"
+    assert payload["onboarding_commands"][0].startswith('export AB_API_KEY="ab_live_')
+    assert payload["onboarding_commands"][1] == "ab"
+    assert payload["terminal_command"] == "ab"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
         assert user is not None
@@ -229,6 +255,17 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
         assert len(api_keys) == 1
         assert api_keys[0].key_prefix == payload["api_key"][:16]
         assert wallet_balance(db, user.id, "main") == 3.0
+
+
+def test_public_key_issue_surface_uses_ab_owned_route() -> None:
+    response = client.post(
+        "/keys",
+        json={"email": "abroute@example.com", "use_case": "terminal bootstrap"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["api_key"].startswith("ab_live_")
+    assert payload["terminal_command"] == "ab"
 
 
 def test_issued_api_key_is_usable_for_authenticated_messages_without_user_id() -> None:
@@ -266,6 +303,75 @@ def test_issued_api_key_is_usable_for_authenticated_messages_without_user_id() -
     payload = response.json()
     assert payload["task_id"]
     assert payload["ab"]["mode"] in {"Smart", "Assured"}
+
+
+def test_agent_profile_bootstraps_for_new_terminal_user() -> None:
+    create = client.post(
+        "/v1/keys",
+        json={"email": "profileboot@example.com", "use_case": "repo patching"},
+    )
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    response = client.post(
+        "/api/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "mode": "smart",
+            "source_surface": "ab_cli",
+            "messages": [{"role": "user", "content": "Refactor this Python function and add pytest coverage."}],
+        },
+    )
+    assert response.status_code == 200
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == "profileboot@example.com"))
+        assert user is not None
+        profile = db.scalar(select(AgentProfile).where(AgentProfile.user_id == user.id))
+        assert profile is not None
+        hints = profile.learned_hints_json or {}
+        assert hints["profile_bootstrapped_at"]
+        assert hints["profile_state"] == "new"
+        assert hints["stack_hint"] == "python"
+        assert hints["last_surface"] == "ab_cli"
+        assert hints["execution_bias"] == "execute_first"
+
+
+def test_agent_profile_loads_as_returning_user_on_follow_up_terminal_work() -> None:
+    create = client.post(
+        "/v1/keys",
+        json={"email": "profilereturn@example.com", "use_case": "repo patching"},
+    )
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    first = client.post(
+        "/api/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "mode": "smart",
+            "source_surface": "ab_cli",
+            "messages": [{"role": "user", "content": "Plan the patch approach for this TypeScript service."}],
+        },
+    )
+    assert first.status_code == 200
+    second = client.post(
+        "/api/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "mode": "smart",
+            "source_surface": "ab_cli",
+            "messages": [{"role": "user", "content": "Now patch the repo and add the failing test reproduction."}],
+        },
+    )
+    assert second.status_code == 200
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == "profilereturn@example.com"))
+        assert user is not None
+        profile = db.scalar(select(AgentProfile).where(AgentProfile.user_id == user.id))
+        assert profile is not None
+        hints = profile.learned_hints_json or {}
+        assert hints["profile_state"] == "returning"
+        assert hints["returning_session_count"] >= 1
+        assert hints["last_surface"] == "ab_cli"
+        assert hints["repo_type"] == "coding"
 
 
 def test_referral_link_and_first_purchase_credit_are_closed_loop_and_one_time() -> None:
@@ -505,6 +611,7 @@ def test_volume_pack_webhook_credits_expected_balance_once() -> None:
 
 def test_chat_requires_real_balance_and_debits_once() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     with SessionLocal() as db:
         db_user = db.get(User, founder_id)
         assert db_user is not None
@@ -544,6 +651,7 @@ def test_streaming_disabled_for_billing_accuracy() -> None:
 
 def test_messages_task_continuity_stays_pinned_and_hides_internal_routes() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     first = client.post(
         "/v1/messages",
         json={
@@ -623,6 +731,7 @@ def test_task_thread_api_maps_visible_messages_to_task_turns() -> None:
 
 def test_user_gets_one_logical_agent_profile_and_multiple_tasks_bind_to_it() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     first = client.post(
         "/v1/messages",
         json={
@@ -650,6 +759,7 @@ def test_user_gets_one_logical_agent_profile_and_multiple_tasks_bind_to_it() -> 
 
 def test_ds_first_behavior_updates_agent_profile_without_leaking_provider_names() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     response = client.post(
         "/v1/messages",
         json={
@@ -676,6 +786,7 @@ def test_ds_first_behavior_updates_agent_profile_without_leaking_provider_names(
 
 def test_stable_user_avoids_repeated_qa_on_followup_ds_tasks() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     first = client.post(
         "/v1/messages",
         json={
@@ -708,6 +819,7 @@ def test_stable_user_avoids_repeated_qa_on_followup_ds_tasks() -> None:
 
 def test_repeated_ds_instability_makes_escalation_more_likely() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     with SessionLocal() as db:
         profile = db.scalar(select(AgentProfile).where(AgentProfile.user_id == founder_id))
         assert profile is not None
@@ -729,6 +841,7 @@ def test_repeated_ds_instability_makes_escalation_more_likely() -> None:
 
 def test_internal_route_telemetry_is_admin_only() -> None:
     founder_id = _user_id("founder@aibridge.local")
+    _ensure_main_balance(founder_id)
     response = client.post(
         "/api/chat/completions",
         json={
@@ -955,9 +1068,9 @@ def test_dashboard_matches_landing_user_blocks() -> None:
     assert "used" in body
     assert "bonus posted" in body
     assert "rewards posted" in body
-    assert "step 1: copy api key" in body
-    assert "step 2: copy setup commands" in body
-    assert "step 3: run in terminal" in body
+    assert "step 1: copy ab api key" in body
+    assert "step 2: copy ab terminal setup" in body
+    assert "step 3: run ab in terminal" in body
     assert "recent top-ups" in body
     assert "recent sessions" in body
     assert "referral" in body
@@ -980,14 +1093,70 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     assert page.status_code == 200
     body = page.text.lower()
     assert api_key in page.text
-    assert 'unset anthropic_model' in body
-    assert 'export anthropic_base_url=' in body
-    assert 'https://getaibridge.com/v1' in body
-    assert 'export anthropic_api_key=' in body
+    assert 'export ab_api_key=' in body
+    assert '\nab\n' in body or '>ab<' in body
+    assert 'anthropic_base_url' not in body
+    assert 'anthropic_api_key' not in body
+    assert 'unset anthropic_model' not in body
     assert api_key in page.text
     assert "your_key_from_above" not in body
     assert "available now" in body
     assert "early access" in body
+
+
+def test_ab_cli_entry_uses_ab_api_key_and_ab_surface(monkeypatch, capsys) -> None:
+    class _FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "id": "ab_task",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "hello from AI Bridge"}],
+            }
+
+    class _FakeClient:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def post(self, url, headers=None, json=None):
+            self.calls.append((url, headers, json))
+            return _FakeResponse()
+
+        def close(self) -> None:
+            return None
+
+    fake_client = _FakeClient()
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
+    result = terminal_cli.main(["hello"])
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "hello from ai bridge" in output.lower()
+    assert fake_client.calls
+    url, headers, json_body = fake_client.calls[0]
+    assert url.endswith("/terminal/messages")
+    assert headers["Authorization"] == "Bearer ab_live_test_key"
+    assert json_body["source_surface"] == "ab_cli"
+
+
+def test_ab_cli_returns_only_neutral_fallback_on_runtime_failure(monkeypatch) -> None:
+    class _BoomClient:
+        def post(self, url, headers=None, json=None):
+            raise RuntimeError("selected model claude-sonnet-4-6 exploded")
+
+        def close(self) -> None:
+            return None
+
+    response = terminal_cli.send_terminal_prompt(
+        "hello",
+        "ab_live_test_key",
+        client=_BoomClient(),
+    )
+    assert response == "This workflow is temporarily unavailable. Please retry in a moment."
+    assert "claude-sonnet-4-6" not in response
 
 
 def test_home_logo_links_back_to_root_on_live_surfaces() -> None:

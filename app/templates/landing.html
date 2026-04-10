@@ -221,12 +221,11 @@
     <section id="terminal-workflows">
       <h2 style="text-align: center;">Coding-first terminal and editor workflows</h2>
       <p class="section-subhead">Keep your existing terminal or editor flow. AI Bridge adapts trained model combinations underneath for coding work, preserves prompt shape, and keeps the visible workflow steady while harder tasks earn deeper checks.</p>
-      <div style="max-width: 800px; margin: 0 auto;">
+          <div style="max-width: 800px; margin: 0 auto;">
         <div class="code-block">
-          <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add to ~/.zshrc — that's it</div>
-          <div>unset ANTHROPIC_MODEL</div>
-          <div>export ANTHROPIC_BASE_URL="https://getaibridge.com/v1"</div>
-          <div>export ANTHROPIC_API_KEY="ab_live_..."</div>
+          <div style="color: var(--accent-cyan); margin-bottom: 12px;"># Add your AI Bridge key, then launch AB</div>
+          <div>export AB_API_KEY="ab_live_..."</div>
+          <div>ab</div>
         </div>
         <p style="color: var(--muted); margin: 24px 0;"><strong>Preference-aware execution.</strong> When context grows harder, AI Bridge adapts underneath while keeping your workflow shape and direction intact.</p>
         <div style="display: flex; gap: 24px; justify-content: center; margin-top: 32px;">
@@ -282,7 +281,7 @@
         <div class="faq-item"><div class="faq-question">How does AI Bridge pick the right model?</div><div class="faq-answer">It uses trained model combinations informed by task shape, complexity, user preference, and routing history. The goal is better fit and better direction, not random routing.</div></div>
         <div class="faq-item"><div class="faq-question">Is this a router or an autonomous agent?</div><div class="faq-answer">Neither in the generic sense. AI Bridge keeps control with the user and adapts model combinations underneath based on task shape, complexity, preference signals, and routing history.</div></div>
         <div class="faq-item"><div class="faq-question">What happens on harder work?</div><div class="faq-answer">On selected routes we run checks and may escalate or retry. Higher-risk work gets more scrutiny than routine turns, while the visible workflow stays consistent.</div></div>
-        <div class="faq-item"><div class="faq-question">Does this work with my existing terminal or editor flow?</div><div class="faq-answer">Yes. Change your base URL to https://getaibridge.com/v1, use your issued key, and keep your prompts and workflow shape the same.</div></div>
+        <div class="faq-item"><div class="faq-question">Does this work with my existing terminal or editor flow?</div><div class="faq-answer">Yes. Use your issued AB key, launch AB from terminal, and keep your prompts and workflow shape consistent across the work.</div></div>
         <div class="faq-item"><div class="faq-question">What do starter credit, bonus credit, and rewards actually mean?</div><div class="faq-answer">Starter credit appears after key signup. Larger top-ups can include bonus credit. Referral and reward credits post to internal balance automatically and stay inside the product.</div></div>
         <div class="faq-item"><div class="faq-question">How does Team Vault work?</div><div class="faq-answer">Team Vault is the seat-based workspace layer for shared wallet controls, role budgets, and team visibility. It is meant for founders, CTOs, and operators who want tighter control without changing the underlying workflow.</div></div>
         <div class="faq-item"><div class="faq-question">What data do you keep?</div><div class="faq-answer">Public landing demos avoid prompt storage. Signed-in product flows keep limited request, continuity, billing, and support records so the service can route work, keep sessions stable, and maintain correct ledger history.</div></div>
@@ -324,15 +323,15 @@
       <p style="margin-top:14px;color:var(--muted);font-size:12px;">By continuing, you agree to the launch <a href="/terms" style="color:var(--accent-cyan);">Terms</a>, <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a>, and <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a>.</p>
     </div>
     <div id="modalSuccess" style="display:none;text-align:center;">
-      <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 1: Copy API key</div><div class="key-box" onclick="copyKey(this)">sk-bridge-...</div></div>
+      <div style="margin-bottom:24px;"><div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Step 1: Copy AB API key</div><div class="key-box" onclick="copyKey(this)">ab_live_...</div></div>
       <p id="modalSuccessCopy" style="font-size:13px;color:var(--muted);">Your key includes $3 credit. Top up anytime.</p>
       <div id="onboardingBox" style="display:none;text-align:left;margin-top:20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
-          <div style="font-size:13px;color:var(--muted);">Step 2: Copy setup commands</div>
+          <div style="font-size:13px;color:var(--muted);">Step 2: Copy AB terminal setup</div>
           <button class="btn-outline" type="button" id="copySetupBtn" style="padding:8px 14px;font-size:13px;">Copy full setup</button>
         </div>
         <div class="code-block" id="onboardingCommands" style="margin:0;"></div>
-        <div style="font-size:13px;color:var(--muted);margin-top:12px;">Step 3: Run in terminal.</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:12px;">Step 3: Run AB in terminal.</div>
       </div>
     </div>
   </div>
@@ -599,7 +598,7 @@
     }
     try {
       const referral = new URL(window.location.href).searchParams.get('ref') || window.localStorage.getItem('ab_referral_code');
-      const res = await fetch('/v1/keys', {
+      const res = await fetch('/keys', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({ name, email, use_case: signupUseCase.value.trim() || null, referred_by_code: referral || null })
@@ -624,7 +623,7 @@
   }
   function copyKey(el) { 
     const original = el.dataset.originalKey || el.textContent;
-    navigator.clipboard.writeText(el.textContent); 
+    navigator.clipboard.writeText(original); 
     el.textContent = '✓ Copied!'; 
     window.setTimeout(() => {
       el.textContent = original;

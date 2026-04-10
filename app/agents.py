@@ -24,6 +24,61 @@ def _append_event(hints: dict, key: str) -> None:
     hints[key] = _trim_window(values)
 
 
+def _derive_stack_hint(prompt: str) -> str:
+    lowered = prompt.lower()
+    if any(term in lowered for term in ["python", "pytest", "pip", "fastapi", "django"]):
+        return "python"
+    if any(term in lowered for term in ["typescript", "javascript", "node", "react", "next.js"]):
+        return "typescript"
+    if any(term in lowered for term in ["sql", "postgres", "mysql", "sqlite"]):
+        return "sql"
+    if any(term in lowered for term in ["go ", "golang"]):
+        return "go"
+    if any(term in lowered for term in ["rust", "cargo"]):
+        return "rust"
+    return "general"
+
+
+def hydrate_profile_for_request(profile: AgentProfile, prompt: str, source_surface: str | None) -> dict:
+    hints = dict(profile.learned_hints_json or {})
+    bootstrapped = bool(hints.get("profile_bootstrapped_at"))
+    lowered = prompt.lower()
+    stack_hint = _derive_stack_hint(prompt)
+    plan_first = any(term in lowered for term in ["plan", "outline", "strategy", "approach first"])
+    explanation_dense = any(term in lowered for term in ["explain", "walk me through", "teach"])
+    debug_heavy = any(term in lowered for term in ["debug", "trace", "error", "failing test", "stack trace"])
+    coding_work = any(term in lowered for term in ["repo", "patch", "refactor", "test", "debug", "commit", "diff", "function", "class ", "cli"])
+
+    if not bootstrapped:
+        hints["profile_bootstrapped_at"] = _now_ts()
+        hints["returning_session_count"] = 0
+    else:
+        hints["returning_session_count"] = int(hints.get("returning_session_count", 0)) + 1
+
+    hints["profile_state"] = "returning" if bootstrapped else "new"
+    hints["last_surface"] = source_surface or "terminal"
+    hints["stack_hint"] = stack_hint
+    hints["repo_type"] = "coding" if coding_work else "general"
+    hints["language_preference"] = stack_hint
+    hints["output_style"] = "concise"
+    hints["patch_granularity"] = "surgical"
+    hints["debug_preference"] = "reproduce_first" if debug_heavy else "balanced"
+    hints["explanation_preference"] = "detailed" if explanation_dense else "concise"
+    hints["testing_preference"] = "run_relevant_tests" if coding_work else "light_checks"
+    hints["execution_bias"] = "plan_first" if plan_first else "execute_first"
+    hints["stability_preference"] = "balanced"
+    hints["last_prompt_excerpt"] = prompt[:255]
+    profile.workload_pattern = "coding" if coding_work else "general"
+    profile.pacing_context = "plan_first" if plan_first else "steady"
+    profile.learned_hints_json = hints
+    return {
+        "user_state": hints["profile_state"],
+        "stack_hint": stack_hint,
+        "coding_work": coding_work,
+        "execution_bias": hints["execution_bias"],
+    }
+
+
 def get_or_create_agent_profile(db: Session, user_id: int) -> AgentProfile:
     profile = db.scalar(select(AgentProfile).where(AgentProfile.user_id == user_id))
     if profile:
