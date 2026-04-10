@@ -577,17 +577,13 @@
   async function handleModalSubmit() {
     const name = document.getElementById('signupName').value.trim();
     const email = document.getElementById('signupEmail').value.trim();
-    if (!name || !email) {
-      modalIntro.textContent = 'Please fill in both fields to continue.';
-      return;
-    }
     if (modalMode === 'checkout' && selectedPackCode) {
       try {
         const referral = new URL(window.location.href).searchParams.get('ref') || window.localStorage.getItem('ab_referral_code');
         const res = await fetch('/api/payments/checkout', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ email, pack_code: selectedPackCode, referred_by_code: referral || null })
+          body:JSON.stringify({ pack_code: selectedPackCode, referred_by_code: referral || null })
         });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Checkout unavailable');
@@ -595,6 +591,10 @@
       } catch(e) {
         modalIntro.textContent = e.message || 'Checkout unavailable during launch verification.';
       }
+      return;
+    }
+    if (!name || !email) {
+      modalIntro.textContent = 'Please fill in both fields to continue.';
       return;
     }
     try {

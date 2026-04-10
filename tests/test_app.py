@@ -147,6 +147,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "/v1/keys" in body
     assert "/demo/chat" in body
     assert "/api/payments/checkout" in body
+    assert "body:json.stringify({ pack_code: selectedpackcode, referred_by_code: referral || null })" in body
     assert "starter reward" not in body
     assert '><h3>$10</h3>' not in body
 
