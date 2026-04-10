@@ -214,7 +214,6 @@ class DemoTrial(TimestampMixin, Base):
     session_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     tries_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     last_example: Mapped[str | None] = mapped_column(String(32))
-    last_prompt_excerpt: Mapped[str | None] = mapped_column(String(255))
 
 
 class TrialSubsidy(TimestampMixin, Base):

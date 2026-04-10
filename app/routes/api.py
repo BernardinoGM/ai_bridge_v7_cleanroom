@@ -288,7 +288,6 @@ def _persist_demo_preview(
     benchmark = benchmark_cost_usd(estimated_prompt_tokens, estimated_completion_tokens, settings)
     trial.tries_used += 1
     trial.last_example = example_key
-    trial.last_prompt_excerpt = prompt[:255]
     db.add(
         TrialSubsidy(
             demo_trial_id=trial.id,
