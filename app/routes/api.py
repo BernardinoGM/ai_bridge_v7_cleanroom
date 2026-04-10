@@ -15,7 +15,7 @@ from app.db import get_db
 from app.agents import choose_initial_lane, get_or_create_agent_profile, update_profile_after_turn
 from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
 from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, TrialSubsidy, UsageEvent, User
-from app.payments import create_checkout_session, ensure_seed_user, process_checkout_completed
+from app.payments import create_checkout_session, process_checkout_completed
 from app.pricing import TOP_UP_PACKS, estimate_public_charge
 from app.providers.base import ProviderClient, ProviderResponse
 from app.providers.real import ProviderExecutionError, build_provider_clients
@@ -215,32 +215,6 @@ def _provider_registry(settings: Settings) -> dict[str, ProviderClient]:
     return build_provider_clients(settings)
 
 
-def _default_demo_profile() -> AgentProfile:
-    return AgentProfile(
-        user_id=0,
-        preferred_mode="smart",
-        default_provider_family="ds_balanced",
-        workload_pattern="general",
-        escalation_sensitivity="balanced",
-        qa_preference="adaptive",
-        cost_guardrail_band="standard",
-        stable_task_bias="enabled",
-        pacing_context="steady",
-        last_successful_provider="remote_balanced",
-        recent_premium_trigger_count=0,
-        recent_ds_success_rate=1.0,
-        fallback_count=0,
-        qa_trigger_count=0,
-        fallback_count_7d=0,
-        qa_trigger_rate_7d=0.0,
-        stable_task_completion_rate_7d=1.0,
-        ds_clean_success_count_7d=0,
-        premium_escalation_count_7d=0,
-        last_execution_profile="remote_balanced",
-        learned_hints_json={},
-    )
-
-
 def _format_usd(amount: float) -> str:
     return f"${amount:.2f}"
 
@@ -317,8 +291,8 @@ def _execute_demo_preview(
     except (HTTPException, ProviderExecutionError):
         provider_response = ProviderResponse(
             text=(
-                "AI Bridge preview is temporarily running in compatibility mode. "
-                "The lane choice, quality posture, and blended comparison are still available for this task."
+                "AI Bridge preview is temporarily unavailable at full quality. "
+                "Please try again in a moment."
             ),
             latency_ms=0,
             prompt_tokens_est=max(24, len(prompt) // 4),
