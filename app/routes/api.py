@@ -1,9 +1,11 @@
+import logging
 import uuid
 
 import stripe
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import desc, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.benchmark import benchmark_cost_usd
@@ -11,7 +13,7 @@ from app.billing import debit_usage, wallet_balance
 from app.config import Settings, get_settings
 from app.costing import estimate_serving_cost_usd
 from app.dashboard import build_dashboard
-from app.db import get_db
+from app.db import get_db, init_database
 from app.agents import choose_initial_lane, get_or_create_agent_profile, hydrate_profile_for_request, update_profile_after_turn
 from app.api_keys import authenticate_api_key, issue_api_key, attach_referrer_by_code
 from app.models import AgentProfile, DemoTrial, RequestFailure, TaskSession, TaskTurn, TrialSubsidy, UsageEvent, User
@@ -36,9 +38,11 @@ from app.tasks import record_task_turn, resolve_task
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 DEMO_COOKIE_NAME = "ab_demo_session"
 DEMO_TRIAL_LIMIT = 3
+DEMO_TEMPORARY_MESSAGE = "AI Bridge preview is temporarily unavailable. Please try again in a moment."
 
 
 DEMO_EXAMPLES = {
@@ -248,6 +252,69 @@ def _get_or_create_demo_trial(db: Session, session_id: str) -> DemoTrial:
     return trial
 
 
+def _get_or_create_demo_trial_resilient(db: Session, session_id: str) -> DemoTrial:
+    try:
+        return _get_or_create_demo_trial(db, session_id)
+    except SQLAlchemyError:
+        logger.exception("Demo trial lookup failed; reinitializing runtime tables")
+        db.rollback()
+        init_database()
+        return _get_or_create_demo_trial(db, session_id)
+
+
+def _persist_demo_preview(
+    *,
+    db: Session,
+    trial: DemoTrial,
+    session_id: str,
+    example_key: str,
+    prompt: str,
+    preview: dict,
+    settings: Settings,
+) -> dict:
+    routed_cost_usd = float(preview["routed_cost"].replace("$", ""))
+    direct_cost_usd = float(preview["direct_cost"].replace("$", ""))
+    estimated_prompt_tokens = 160
+    estimated_completion_tokens = 220
+    serving_cost = estimate_serving_cost_usd(
+        provider_key=preview["execution_profile"],
+        prompt_tokens=estimated_prompt_tokens,
+        completion_tokens=estimated_completion_tokens,
+        public_charge_usd=routed_cost_usd,
+        quality_check=preview["quality"] == "Checked",
+        fallback_used=preview["fallback_used"],
+        retry_count=0,
+    )
+    benchmark = benchmark_cost_usd(estimated_prompt_tokens, estimated_completion_tokens, settings)
+    trial.tries_used += 1
+    trial.last_example = example_key
+    trial.last_prompt_excerpt = prompt[:255]
+    db.add(
+        TrialSubsidy(
+            demo_trial_id=trial.id,
+            session_id=session_id,
+            request_id=uuid.uuid4().hex,
+            prompt_excerpt=prompt[:255],
+            execution_profile=preview["execution_profile"],
+            visible_lane=(preview["lane"] or "Smart").lower(),
+            direct_cost_usd=direct_cost_usd,
+            routed_cost_usd=routed_cost_usd,
+            serving_cogs_usd=serving_cost.serving_cogs_usd,
+            benchmark_cost_usd=benchmark,
+            saved_pct=int(preview["saved_pct"]),
+        )
+    )
+    db.commit()
+    reason = _demo_reason(example_key, decide_demo_route(prompt))
+    preview["reason"] = reason
+    preview["why"] = reason
+    preview["trial_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
+    preview["tries_remaining"] = preview["trial_remaining"]
+    preview["trial_exhausted"] = trial.tries_used >= DEMO_TRIAL_LIMIT
+    preview["show_signup_after_ms"] = 7000 if preview["trial_exhausted"] else 0
+    return preview
+
+
 def _execute_with_fallback(
     route: RouteDecision,
     registry: dict[str, ProviderClient],
@@ -432,48 +499,41 @@ def demo_chat(
     settings: Settings = Depends(get_settings),
 ) -> dict:
     session_id = request.cookies.get(DEMO_COOKIE_NAME) or uuid.uuid4().hex
-    trial = _get_or_create_demo_trial(db, session_id)
-    if trial.tries_used >= DEMO_TRIAL_LIMIT:
-        raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
     example_key = payload.example or "spec"
     prompt = (payload.message or "").strip()
     if not prompt:
         prompt = DEMO_EXAMPLES[example_key]["prompt"]
     try:
+        trial = _get_or_create_demo_trial_resilient(db, session_id)
+        if trial.tries_used >= DEMO_TRIAL_LIMIT:
+            raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
         preview = _route_preview(prompt=prompt[:8000], settings=settings)
-        routed_cost_usd = float(preview["routed_cost"].replace("$", ""))
-        direct_cost_usd = float(preview["direct_cost"].replace("$", ""))
-        estimated_prompt_tokens = 160
-        estimated_completion_tokens = 220
-        serving_cost = estimate_serving_cost_usd(
-            provider_key=preview["execution_profile"],
-            prompt_tokens=estimated_prompt_tokens,
-            completion_tokens=estimated_completion_tokens,
-            public_charge_usd=routed_cost_usd,
-            quality_check=preview["quality"] == "Checked",
-            fallback_used=preview["fallback_used"],
-            retry_count=0,
-        )
-        benchmark = benchmark_cost_usd(estimated_prompt_tokens, estimated_completion_tokens, settings)
-        trial.tries_used += 1
-        trial.last_example = example_key
-        trial.last_prompt_excerpt = prompt[:255]
-        db.add(
-            TrialSubsidy(
-                demo_trial_id=trial.id,
+        try:
+            preview = _persist_demo_preview(
+                db=db,
+                trial=trial,
                 session_id=session_id,
-                request_id=uuid.uuid4().hex,
-                prompt_excerpt=prompt[:255],
-                execution_profile=preview["execution_profile"],
-                visible_lane=(preview["lane"] or "Smart").lower(),
-                direct_cost_usd=direct_cost_usd,
-                routed_cost_usd=routed_cost_usd,
-                serving_cogs_usd=serving_cost.serving_cogs_usd,
-                benchmark_cost_usd=benchmark,
-                saved_pct=int(preview["saved_pct"]),
+                example_key=example_key,
+                prompt=prompt,
+                preview=preview,
+                settings=settings,
             )
-        )
-        db.commit()
+        except SQLAlchemyError:
+            logger.exception("Demo preview persistence failed; reinitializing runtime tables")
+            db.rollback()
+            init_database()
+            trial = _get_or_create_demo_trial_resilient(db, session_id)
+            if trial.tries_used >= DEMO_TRIAL_LIMIT:
+                raise HTTPException(status_code=429, detail="Anonymous demo limit reached. Open the dashboard demo or request API access to continue.")
+            preview = _persist_demo_preview(
+                db=db,
+                trial=trial,
+                session_id=session_id,
+                example_key=example_key,
+                prompt=prompt,
+                preview=preview,
+                settings=settings,
+            )
         response.set_cookie(
             key=DEMO_COOKIE_NAME,
             value=session_id,
@@ -481,17 +541,18 @@ def demo_chat(
             httponly=True,
             samesite="lax",
         )
-        reason = _demo_reason(example_key, decide_demo_route(prompt))
-        preview["reason"] = reason
-        preview["why"] = reason
-        preview["trial_remaining"] = max(0, DEMO_TRIAL_LIMIT - trial.tries_used)
-        preview["tries_remaining"] = preview["trial_remaining"]
-        preview["trial_exhausted"] = trial.tries_used >= DEMO_TRIAL_LIMIT
-        preview["show_signup_after_ms"] = 7000 if preview["trial_exhausted"] else 0
         return preview
     except HTTPException as exc:
         _record_failure(db, "/demo/chat", exc.detail if isinstance(exc.detail, str) else "demo failure", context_json={"example": example_key})
         raise
+    except Exception as exc:
+        logger.exception("Demo preview failed")
+        db.rollback()
+        try:
+            _record_failure(db, "/demo/chat", str(exc)[:255] or "demo failure", context_json={"example": example_key})
+        except Exception:
+            db.rollback()
+        raise HTTPException(status_code=503, detail=DEMO_TEMPORARY_MESSAGE)
 
 
 @router.post("/keys")
