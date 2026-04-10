@@ -151,6 +151,16 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert '><h3>$10</h3>' not in body
 
 
+def test_try_cta_scrolls_to_playground_and_focuses_live_input() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.text
+    assert 'id="freeTryCta"' in body
+    assert "playground.scrollIntoView" in body
+    assert "focusPromptComposer()" in body
+    assert "promptInput.focus" in body
+
+
 def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() -> None:
     demo_client = TestClient(app)
     first = demo_client.post("/demo/chat", json={"message": "Summarize a heat pump controller spec for me."})
@@ -292,6 +302,20 @@ def test_referral_link_and_first_purchase_credit_are_closed_loop_and_one_time() 
         assert processed_first is True
         assert processed_second is False
         assert wallet_balance(db, referrer_id, "promo") == promo_before + 1.0
+
+
+def test_referral_relationship_uses_referral_code_and_user_link_not_api_key() -> None:
+    create = client.post(
+        "/v1/keys",
+        json={"email": "refcodesafe@example.com", "use_case": "support prompts", "referred_by_code": "UTWO10"},
+    )
+    assert create.status_code == 200
+    issued_key = create.json()["api_key"]
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == "refcodesafe@example.com"))
+        assert user is not None
+        assert user.referred_by_user_id == _user_id("user2@example.com")
+        assert user.referral_code != issued_key
 
 
 def test_dashboard_shows_real_key_balance_and_topup_history_for_created_user() -> None:

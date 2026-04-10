@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     provider_remote_api_key: str | None = None
 
     provider_premium_base_url: str = "https://api.anthropic.com"
-    provider_premium_model: str = "claude-sonnet"
+    provider_premium_model: str = ""
     provider_premium_api_key: str | None = None
 
     bill_guard_enabled: bool = True
