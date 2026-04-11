@@ -482,12 +482,6 @@ def _trusted_checkout_user(request: Request, db: Session, settings: Settings) ->
         return None
     if cookie_user.email.strip().lower() in BLOCKED_CHECKOUT_EMAILS:
         return None
-    setup_key = read_session_token(request.cookies.get(SETUP_SESSION_COOKIE_NAME), settings, "setup")
-    if not setup_key:
-        return None
-    setup_user = authenticate_api_key(db, settings, setup_key)
-    if setup_user is None or setup_user.id != cookie_user.id:
-        return None
     return cookie_user
 
 

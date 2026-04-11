@@ -53,7 +53,7 @@
   .playground-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .trial-badge { background: var(--accent-cyan-dim); color: var(--accent-cyan); padding: 6px 16px; border-radius: 40px; font-size: 14px; font-weight: 600; border: 1px solid var(--accent-cyan-border); }
   .chat-shell { background: var(--bg); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; }
-  .chat-thread { min-height: 360px; max-height: 520px; overflow-y: auto; padding: 22px; display: grid; gap: 14px; }
+  .chat-thread { min-height: 220px; max-height: 360px; overflow-y: auto; padding: 18px; display: grid; gap: 12px; }
   .message-row { display: flex; }
   .message-row.user { justify-content: flex-end; }
   .message-row.assistant { justify-content: flex-start; }
@@ -62,12 +62,13 @@
   .message-role { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
   .message-text { font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
   .message-meta { margin-top: 10px; font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
-  .composer-wrap { position: sticky; bottom: 0; padding: 16px; border-top: 1px solid var(--border); background: linear-gradient(180deg, rgba(11,14,20,0.7), rgba(11,14,20,0.96)); backdrop-filter: blur(8px); }
+  .composer-wrap { position: sticky; bottom: 0; padding: 14px 16px 16px; border-top: 1px solid var(--border); background: linear-gradient(180deg, rgba(11,14,20,0.7), rgba(11,14,20,0.96)); backdrop-filter: blur(8px); }
   .prompt-input-area { display: flex; gap: 12px; align-items: flex-end; }
-  .prompt-input { flex: 1; background: var(--surface); border: 1px solid var(--border-bright); border-radius: 18px; padding: 16px 18px; color: var(--text); font-family: var(--sans); font-size: 16px; resize: vertical; min-height: 88px; max-height: 220px; }
+  .prompt-input { flex: 1; background: var(--surface); border: 1px solid var(--border-bright); border-radius: 18px; padding: 14px 16px; color: var(--text); font-family: var(--sans); font-size: 15px; resize: vertical; min-height: 62px; max-height: 160px; }
   .example-chips { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
   .chip { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 40px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
   .chip:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); }
+  .task-intake-note { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
   .result-panel { background: rgba(255,255,255,0.02); border-radius: 18px; padding: 18px; border: 1px solid var(--border); margin-top: 18px; }
   .result-meta { display: flex; gap: 24px; margin-bottom: 12px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
   .result-content { font-family: var(--mono); font-size: 13px; line-height: 1.65; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border-left: 3px solid var(--accent-cyan); }
@@ -80,8 +81,14 @@
   .card h3 { font-size: 22px; margin-bottom: 12px; }
 
   .pricing-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; margin-top: 40px; }
-  .pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 20px; }
+  .pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 20px; display: grid; gap: 10px; }
   .pricing-card:hover { border-color: var(--accent-cyan); }
+  .pricing-card .price { font-family: var(--display); font-size: 36px; font-weight: 900; line-height: 1; }
+  .pricing-card .bonus-line { color: var(--accent-cyan); font-size: 18px; font-weight: 800; line-height: 1.2; }
+  .pricing-card .bonus-line.dim { color: var(--muted); font-size: 14px; font-weight: 600; }
+  .pricing-card .total-line { font-size: 15px; font-weight: 700; }
+  .pricing-card .instant-line { color: var(--muted); font-size: 13px; }
+  .pricing-card .cta-row { margin-top: 6px; }
   .price { font-size: 36px; font-weight: 800; margin: 16px 0 8px; font-family: var(--display); color: var(--accent-cyan); }
 
   .addon-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
@@ -171,8 +178,8 @@
 
     <!-- Playground — 保留原功能，示例调为工程向 -->
     <section id="playground">
-      <h2 style="text-align: center;">Try it. Right now.</h2>
-      <p class="section-subhead" style="margin-bottom: 16px;">Fast preview for real work. Three tries. No setup.</p>
+      <h2 style="text-align: center;">Quick task intake</h2>
+      <p class="section-subhead" style="margin-bottom: 16px;">Use the web preview to probe a task fast. Most real work continues in your terminal with aibridge.</p>
       <div class="live-playground">
         <div class="playground-header">
           <div style="display: flex; align-items: center; gap: 16px;">
@@ -182,10 +189,12 @@
           <span style="color: var(--green); display: flex; align-items: center; gap: 6px;"><span style="display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%;"></span> Preview</span>
         </div>
         <div class="example-chips">
-          <span class="chip" data-prompt="Explain this function: const memoize = (fn) => { const cache = {}; return (...args) => { const key = JSON.stringify(args); return cache[key] ?? (cache[key] = fn(...args)); }; };">Explain function</span>
-          <span class="chip" data-prompt="Write unit tests for an email validator that checks format and domain MX records">Write tests</span>
-          <span class="chip" data-prompt="Review this diff: removed error handling from db pool, added query cache layer">Review diff</span>
-          <span class="chip" data-prompt="Refactor to async/await: function getUsers() { return fetch('/users').then(r => r.json()).catch(e => console.error(e)); }">Refactor</span>
+          <span class="chip" data-prompt="Debug this error: TypeError: Cannot read properties of undefined at src/auth/session.ts:118">Debug error</span>
+          <span class="chip" data-prompt="Explain this stack trace and identify the likely root cause: sqlalchemy.exc.IntegrityError on payment_records insert">Explain stack trace</span>
+          <span class="chip" data-prompt="Review this diff: removed rollback handling from checkout webhook, added optimistic payment status updates">Review diff</span>
+          <span class="chip" data-prompt="Plan a safe patch for a session bug that only reproduces after refresh and stale cookies">Plan patch</span>
+          <span class="chip" data-prompt="Refactor this module without changing behavior: token cache, db session wiring, and retry handling are coupled together">Refactor module</span>
+          <span class="chip" data-prompt="Write tests for a webhook handler that must stay idempotent across retries and partial failures">Write tests</span>
         </div>
         <div class="chat-shell">
           <div class="chat-thread" id="chatThread">
@@ -197,8 +206,9 @@
             </div>
           </div>
           <div class="composer-wrap">
+            <p class="task-intake-note">Most real work continues in your terminal with aibridge.</p>
             <div class="prompt-input-area">
-              <textarea id="promptInput" class="prompt-input" placeholder="Ask anything — Enter to send · Shift+Enter for newline">Summarize the key features of a modern heat pump controller</textarea>
+              <textarea id="promptInput" class="prompt-input" placeholder="Paste a bug, diff, stack trace, or repo task. Enter to send · Shift+Enter for newline"></textarea>
               <button class="btn-primary" id="sendPromptBtn">Send</button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
@@ -245,13 +255,13 @@
       <h2 style="text-align: center;">Start with credit — no subscriptions</h2>
       <p class="section-subhead" style="margin-bottom: 16px;">Pre-pay, route real work, and top up only when it proves itself.</p>
       <div class="pricing-grid">
-        <div class="pricing-card"><h3>Try it out</h3><div class="price">$10</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>Solo builder</h3><div class="price">$50</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>Growing team</h3><div class="price">$200</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>High volume</h3><div class="price">$500</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
-        <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><button class="btn-primary" style="width:100%;margin-top:16px;" onclick="{% if checkout_enabled %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Start →</button></div>
+        <div class="pricing-card"><h3>Try it out</h3><div class="price">$10</div><div class="bonus-line dim">No bonus on this tier</div><div class="total-line">Total added: $10</div><div class="instant-line">Available immediately after payment</div><div class="cta-row"><button class="btn-primary" style="width:100%;" onclick="{% if checkout_enabled %}openModal('checkout','starter'){% else %}showCheckoutUnavailable(){% endif %}">Buy credits →</button></div></div>
+        <div class="pricing-card"><h3>Solo builder</h3><div class="price">$50</div><div class="bonus-line">$50 + $5 bonus</div><div class="total-line">Total added: $55</div><div class="instant-line">Available immediately after payment</div><div class="cta-row"><button class="btn-primary" style="width:100%;" onclick="{% if checkout_enabled %}openModal('checkout','growth'){% else %}showCheckoutUnavailable(){% endif %}">Buy credits →</button></div></div>
+        <div class="pricing-card"><h3>Growing team</h3><div class="price">$200</div><div class="bonus-line">$200 + $20 bonus</div><div class="total-line">Total added: $220</div><div class="instant-line">Available immediately after payment</div><div class="cta-row"><button class="btn-primary" style="width:100%;" onclick="{% if checkout_enabled %}openModal('checkout','scale'){% else %}showCheckoutUnavailable(){% endif %}">Buy credits →</button></div></div>
+        <div class="pricing-card"><h3>High volume</h3><div class="price">$500</div><div class="bonus-line">$500 + $60 bonus</div><div class="total-line">Total added: $560</div><div class="instant-line">Available immediately after payment</div><div class="cta-row"><button class="btn-primary" style="width:100%;" onclick="{% if checkout_enabled %}openModal('checkout','scale_plus'){% else %}showCheckoutUnavailable(){% endif %}">Buy credits →</button></div></div>
+        <div class="pricing-card"><h3>Scale</h3><div class="price">$1,000</div><div class="bonus-line">$1,000 + $130 bonus</div><div class="total-line">Total added: $1,130</div><div class="instant-line">Available immediately after payment</div><div class="cta-row"><button class="btn-primary" style="width:100%;" onclick="{% if checkout_enabled %}openModal('checkout','volume'){% else %}showCheckoutUnavailable(){% endif %}">Buy credits →</button></div></div>
       </div>
-      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">Starter credit appears after key signup. Bigger top-ups include bonus credit. Rewards and referral credits post to your internal balance automatically.</p>
+      <p style="text-align:center;margin-top:24px;color:var(--muted);font-size:14px;">Starter credit appears after key signup. Bigger top-ups credit your bonus instantly. Rewards and referral credits post to your internal balance automatically.</p>
       <p style="text-align:center;margin-top:10px;color:var(--muted);font-size:13px;">$10 → no bonus · $50 → includes $5 bonus credit · $200 → includes $20 bonus credit · $500 → includes $60 bonus credit · $1,000 → includes $130 bonus credit. <a href="/terms" style="color:var(--accent-cyan);">Terms</a> · <a href="/privacy" style="color:var(--accent-cyan);">Privacy</a> · <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a></p>
     </section>
 
@@ -311,8 +321,10 @@
     <div id="modalForm">
       <h3 style="font-size:28px;font-weight:800;margin-bottom:12px;">Get your API key</h3>
       <p id="modalIntro" style="margin-bottom:28px;color:var(--muted);">Start with $3 free credit. No card required.</p>
-      <input type="text" id="signupName" placeholder="Your name or company">
-      <input type="email" id="signupEmail" placeholder="Email address">
+      <div id="signupIdentityFields">
+        <input type="text" id="signupName" placeholder="Your name or company">
+        <input type="email" id="signupEmail" placeholder="Email address">
+      </div>
       <input type="text" id="signupUseCase" placeholder="What are you routing? (optional)">
       <button class="modal-submit" id="modalSubmitBtn" onclick="handleModalSubmit()">Generate API Key →</button>
       <p style="margin-top:14px;color:var(--muted);font-size:12px;">By continuing, you agree to the launch <a href="/terms" style="color:var(--accent-cyan);">Terms</a>, <a href="/privacy" style="color:var(--accent-cyan);">Privacy Policy</a>, and <a href="/acceptable-use" style="color:var(--accent-cyan);">Acceptable Use</a>.</p>
@@ -353,6 +365,7 @@
   const onboardingBox = document.getElementById('onboardingBox');
   const onboardingCommands = document.getElementById('onboardingCommands');
   const copySetupBtn = document.getElementById('copySetupBtn');
+  const signupIdentityFields = document.getElementById('signupIdentityFields');
   const signupUseCase = document.getElementById('signupUseCase');
   const rewardPrompt = document.querySelector('.referral-box .btn-primary');
   const packCodeMap = {
@@ -440,10 +453,11 @@
 
   function showCheckoutUnavailable() {
     openModal('signup');
-    modalIntro.textContent = 'Top-up temporarily unavailable during launch verification.';
+    modalIntro.textContent = 'Identify your account first to unlock checkout and starter credit.';
     modalSubmitBtn.textContent = 'Generate API Key →';
     modalMode = 'signup';
     selectedPackCode = null;
+    signupIdentityFields.style.display = 'block';
     signupUseCase.style.display = 'block';
   }
 
@@ -531,12 +545,14 @@
     document.querySelector('#modalSuccess').style.display = 'none';
     onboardingBox.style.display = 'none';
     if (modalMode === 'checkout') {
-      modalIntro.textContent = `Start secure checkout for ${packCodeMap[packCode] || 'this credit tier'}.`;
+      modalIntro.textContent = `Top up your balance with ${packCodeMap[packCode] || 'this credit tier'}. Checkout stays tied to your current signed-in account.`;
       modalSubmitBtn.textContent = 'Continue to checkout →';
+      signupIdentityFields.style.display = 'none';
       signupUseCase.style.display = 'none';
     } else {
       modalIntro.textContent = 'Start with $3 free credit. No card required.';
       modalSubmitBtn.textContent = 'Generate API Key →';
+      signupIdentityFields.style.display = 'block';
       signupUseCase.style.display = 'block';
     }
   }

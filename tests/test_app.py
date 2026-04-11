@@ -128,7 +128,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "try 3 free demos" in body
     assert "try 3 free demos →" in body
     assert "adaptive model routing for developers" in body
-    assert "demo preview" in body
+    assert "quick task intake" in body
     assert "dashboard" in body
     assert "get api key" in body
     assert "claude code" not in body
@@ -144,11 +144,14 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "$200" in body
     assert "$500" in body
     assert "$1,000" in body
-    assert "$10 → no bonus" in body
-    assert "$50 → includes $5 bonus credit" in body
-    assert "$200 → includes $20 bonus credit" in body
-    assert "$500 → includes $60 bonus credit" in body
-    assert "$1,000 → includes $130 bonus credit" in body
+    assert "$50 + $5 bonus" in body
+    assert "total added: $55" in body
+    assert "$200 + $20 bonus" in body
+    assert "total added: $220" in body
+    assert "$500 + $60 bonus" in body
+    assert "total added: $560" in body
+    assert "$1,000 + $130 bonus" in body
+    assert "total added: $1,130" in body
     assert "bill guard" in body
     assert "priority queue" in body
     assert "available now · $20/mo" in body
@@ -162,6 +165,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "copy full setup" in body
     assert 'export ab_api_key="ab_live_..."' in body
     assert ">aibridge</div>" in body
+    assert "most real work continues in your terminal with aibridge." in body
     assert "your-bridge-key" not in body
     assert "your_key_from_above" not in body
     assert "anthropic_base_url" not in body
@@ -177,6 +181,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "/demo/chat" in body
     assert "/api/payments/checkout" in body
     assert "body:json.stringify({ pack_code: selectedpackcode, referred_by_code: referral || null })" in body
+    assert "summarize the key features of a modern heat pump controller" not in body
     assert "starter reward" not in body
     assert '><h3>$10</h3>' not in body
 
@@ -189,6 +194,19 @@ def test_try_cta_scrolls_to_playground_and_focuses_live_input() -> None:
     assert "playground.scrollIntoView" in body
     assert "focusPromptComposer()" in body
     assert "promptInput.focus" in body
+
+
+def test_task_input_starts_empty_and_is_terminal_first_intake() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.text
+    assert 'placeholder="Paste a bug, diff, stack trace, or repo task. Enter to send · Shift+Enter for newline"' in body
+    assert '<textarea id="promptInput" class="prompt-input" placeholder="Paste a bug, diff, stack trace, or repo task. Enter to send · Shift+Enter for newline"></textarea>' in body
+    assert "Most real work continues in your terminal with aibridge." in body
+    assert "Summarize the key features of a modern heat pump controller" not in body
+    assert "Debug error" in body
+    assert "Explain stack trace" in body
+    assert "Plan patch" in body
 
 
 def test_demo_chat_returns_structured_fields_and_enforces_backend_trial_limit() -> None:
@@ -505,7 +523,7 @@ def test_demo_only_web_routes_are_not_live_runtime_paths() -> None:
     assert client.get("/chat/demo").status_code == 404
 
 
-def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypatch) -> None:
+def test_checkout_creation_goes_direct_to_checkout_for_authenticated_user(monkeypatch) -> None:
     class _FakeSession:
         id = "cs_test_checkout_real"
         url = "https://checkout.stripe.test/session"
@@ -531,6 +549,31 @@ def test_checkout_creation_can_bind_credit_to_email_backed_launch_user(monkeypat
         assert payment.pack_code == "scale_plus"
         assert payment.amount_usd == 500.0
         assert user.email == "checkoutuser@example.com"
+
+
+def test_landing_topup_buttons_switch_directly_to_checkout_for_signed_user() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "topupflow@example.com", "use_case": "topup"})
+    assert create.status_code == 200
+    response = session_client.get("/")
+    assert response.status_code == 200
+    body = response.text
+    assert "Buy credits →" in body
+    assert "Top up your balance with" in body
+    assert "Checkout stays tied to your current signed-in account." in body
+    assert "Identify your account first to unlock checkout and starter credit." in body
+
+
+def test_dashboard_identity_comes_from_current_authenticated_server_user() -> None:
+    session_client = TestClient(app)
+    create = session_client.post("/v1/keys", json={"email": "identityproof@example.com", "name": "Identity Proof"})
+    assert create.status_code == 200
+    response = session_client.get("/dashboard")
+    assert response.status_code == 200
+    body = response.text
+    assert "Identity Proof · identityproof@example.com" in body
+    assert "founder@aibridge.local" not in body
+    assert "Demo user" not in body
 
 
 def test_checkout_is_blocked_for_inherited_admin_or_seed_identity(monkeypatch) -> None:

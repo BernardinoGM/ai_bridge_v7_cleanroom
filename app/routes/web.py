@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.config import BASE_DIR
 from app.config import get_settings
-from app.api_keys import authenticate_api_key
 from app.dashboard import build_admin_dashboard, build_dashboard
 from app.db import get_db
 from app.models import TaskSession, User
@@ -68,13 +67,7 @@ def _checkout_enabled_for_request(request: Request, db: Session) -> bool:
     if read_session_token(request.cookies.get(ADMIN_SESSION_COOKIE_NAME), settings, "admin"):
         return False
     user = _current_user(request, db)
-    if user is None or user.email.strip().lower() in BLOCKED_CHECKOUT_EMAILS:
-        return False
-    setup_key = read_session_token(request.cookies.get(SETUP_SESSION_COOKIE_NAME), settings, "setup")
-    if not setup_key:
-        return False
-    setup_user = authenticate_api_key(db, settings, setup_key)
-    return bool(setup_user and setup_user.id == user.id)
+    return bool(user and user.email.strip().lower() not in BLOCKED_CHECKOUT_EMAILS)
 
 
 @router.get("/", response_class=HTMLResponse)

@@ -29,6 +29,8 @@ def estimate_runway(balance_usd: float, daily_spend_usd: float, heavy_day_multip
 def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> dict:
     settings = get_settings()
     user = db.get(User, user_id)
+    if user is None:
+        raise ValueError("Authenticated dashboard user not found.")
     balance = wallet_balance(db, user_id, "main")
     ledger = db.scalars(
         select(WalletLedger).where(WalletLedger.user_id == user_id, WalletLedger.bucket == "main").order_by(desc(WalletLedger.created_at)).limit(20)
@@ -62,10 +64,10 @@ def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> di
     rewards_posted = round(sum(entry.amount_usd for entry in reward_ledger if entry.amount_usd > 0), 2)
     return {
         "user_id": user_id,
-        "user_name": user.name if user else "Demo user",
-        "user_email": user.email if user else "founder@aibridge.local",
-        "referral_code": user.referral_code if user else "FOUNDER10",
-        "referral_link": f"https://getaibridge.com/signup?ref={user.referral_code}" if user else "https://getaibridge.com/signup?ref=FOUNDER10",
+        "user_name": user.name,
+        "user_email": user.email,
+        "referral_code": user.referral_code,
+        "referral_link": f"https://getaibridge.com/signup?ref={user.referral_code}",
         "balance_usd": round(balance, 2),
         "promo_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),
         "reward_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),
