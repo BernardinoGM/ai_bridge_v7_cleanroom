@@ -89,6 +89,14 @@ def referral_redirect(referral_code: str) -> RedirectResponse:
     return RedirectResponse(url=f"/?ref={referral_code}", status_code=307)
 
 
+@router.get("/signup")
+def signup_redirect(ref: str | None = None) -> RedirectResponse:
+    target = "/?open=signup"
+    if ref:
+        target = f"{target}&ref={ref}"
+    return RedirectResponse(url=target, status_code=307)
+
+
 @router.get("/dashboard")
 def dashboard_root(request: Request, db: Session = Depends(get_db)) -> Response:
     user = _current_user(request, db)

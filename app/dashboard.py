@@ -67,7 +67,7 @@ def build_dashboard(db: Session, user_id: int, raw_key: str | None = None) -> di
         "user_name": user.name,
         "user_email": user.email,
         "referral_code": user.referral_code,
-        "referral_link": f"https://getaibridge.com/signup?ref={user.referral_code}",
+        "referral_link": f"https://getaibridge.com/?ref={user.referral_code}",
         "balance_usd": round(balance, 2),
         "promo_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),
         "reward_balance_usd": round(wallet_balance(db, user_id, "promo"), 2),

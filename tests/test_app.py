@@ -163,6 +163,11 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "what do starter credit, bonus credit, and rewards actually mean?" in body
     assert "do you train on raw user prompts?" in body
     assert "copy full setup" in body
+    assert "python3 -m venv ~/.aibridge" in body
+    assert "~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel" in body
+    assert 'git+https://github.com/bernardinogm/ai_bridge_v7_cleanroom.git@main' in body
+    assert "export path=" in body
+    assert ".aibridge/bin" in body
     assert 'export ab_api_key="ab_live_..."' in body
     assert ">aibridge</div>" in body
     assert "most real work continues in your terminal with aibridge." in body
@@ -182,6 +187,10 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "/api/payments/checkout" in body
     assert "body:json.stringify({ pack_code: selectedpackcode, referred_by_code: referral || null })" in body
     assert "summarize the key features of a modern heat pump controller" not in body
+    assert "available immediately after payment" not in body
+    assert 'id="modaltitle"' in body
+    assert "modaltitle.textcontent = 'top up your balance';" in body
+    assert "modaltitle.textcontent = 'get your api key';" in body
     assert "starter reward" not in body
     assert '><h3>$10</h3>' not in body
 
@@ -278,8 +287,12 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["dashboard_url"] == "/dashboard"
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
-    assert payload["onboarding_commands"][0].startswith('export AB_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][1] == "aibridge"
+    assert payload["onboarding_commands"][0] == "python3 -m venv ~/.aibridge"
+    assert payload["onboarding_commands"][1] == "~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel"
+    assert payload["onboarding_commands"][2] == '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"'
+    assert payload["onboarding_commands"][3] == 'export PATH="$HOME/.aibridge/bin:$PATH"'
+    assert payload["onboarding_commands"][4].startswith('export AB_API_KEY="ab_live_')
+    assert payload["onboarding_commands"][5] == "aibridge"
     assert payload["terminal_command"] == "aibridge"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
@@ -1147,7 +1160,7 @@ def test_dashboard_matches_landing_user_blocks() -> None:
     assert "recent top-ups" in body
     assert "recent sessions" in body
     assert "referral" in body
-    assert "https://getaibridge.com/signup?ref=" in body
+    assert "https://getaibridge.com/?ref=" in body
     assert "feature store" in body
     assert "priority queue" in body
     assert "$20.00/mo" in body
@@ -1166,6 +1179,11 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     assert page.status_code == 200
     body = page.text.lower()
     assert api_key in page.text
+    assert 'python3 -m venv ~/.aibridge' in body
+    assert "~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel" in page.text
+    assert 'git+https://github.com/bernardinogm/ai_bridge_v7_cleanroom.git@main' in body
+    assert "export path=" in body
+    assert ".aibridge/bin" in body
     assert 'export ab_api_key=' in body
     assert '\naibridge\n' in body or '>aibridge<' in body
     assert 'anthropic_base_url' not in body
@@ -1213,6 +1231,12 @@ def test_ab_cli_entry_uses_ab_api_key_and_ab_surface(monkeypatch, capsys) -> Non
     assert url.endswith("/terminal/messages")
     assert headers["Authorization"] == "Bearer ab_live_test_key"
     assert json_body["source_surface"] == "ab_cli"
+
+
+def test_signup_referral_url_redirects_to_real_landing_onboarding_path() -> None:
+    response = client.get("/signup?ref=UTWO10", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/?open=signup&ref=UTWO10"
 
 
 def test_ab_cli_returns_only_neutral_fallback_on_runtime_failure(monkeypatch) -> None:

@@ -38,6 +38,10 @@ def build_terminal_setup_commands(raw_key: str | None, settings: Settings) -> li
         else '# Generate a fresh AB key to get a copy-ready terminal setup block.'
     )
     return [
+        'python3 -m venv ~/.aibridge',
+        '~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel',
+        '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"',
+        'export PATH="$HOME/.aibridge/bin:$PATH"',
         key_line,
         settings.terminal_cli_command,
     ]
