@@ -164,11 +164,7 @@ def test_landing_is_conversion_led_and_routes_to_sections() -> None:
     assert "what do starter credit, bonus credit, and rewards actually mean?" in body
     assert "do you train on raw user prompts?" in body
     assert "copy full setup" in body
-    assert "python3 -m venv ~/.aibridge" in body
-    assert "~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel" in body
-    assert 'git+https://github.com/bernardinogm/ai_bridge_v7_cleanroom.git@main' in body
-    assert "export path=" in body
-    assert ".aibridge/bin" in body
+    assert "curl -fssl https://getaibridge.com/install.sh | bash" in body
     assert 'export ab_api_key="ab_live_..."' in body
     assert ">aibridge</div>" in body
     assert "most real work continues in your terminal with aibridge." in body
@@ -288,10 +284,9 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["dashboard_url"] == "/dashboard"
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
-    assert payload["onboarding_commands"][0] == "python3 -m venv ~/.aibridge"
-    assert payload["onboarding_commands"][1] == '~/.aibridge/bin/pip install --upgrade --force-reinstall "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"'
-    assert payload["onboarding_commands"][2].startswith('export AB_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][3] == "~/.aibridge/bin/aibridge"
+    assert payload["onboarding_commands"][0] == "curl -fsSL https://getaibridge.com/install.sh | bash"
+    assert payload["onboarding_commands"][1].startswith('export AB_API_KEY="ab_live_')
+    assert payload["onboarding_commands"][2] == "aibridge"
     assert payload["terminal_command"] == "aibridge"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
@@ -311,6 +306,16 @@ def test_public_key_issue_surface_uses_ab_owned_route() -> None:
     payload = response.json()
     assert payload["api_key"].startswith("ab_live_")
     assert payload["terminal_command"] == "aibridge"
+
+
+def test_public_installer_route_serves_shell_script() -> None:
+    response = client.get("/install.sh")
+    assert response.status_code == 200
+    body = response.text
+    assert body.startswith("#!/usr/bin/env bash")
+    assert 'PACKAGE_REF="git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"' in body
+    assert '"$INSTALL_DIR/bin/pip" install --disable-pip-version-check --quiet --upgrade --force-reinstall "$PACKAGE_REF"' in body
+    assert 'ln -sf "$INSTALL_DIR/bin/aibridge" "$LOCAL_BIN_DIR/aibridge"' in body
 
 
 def test_issued_api_key_is_usable_for_authenticated_messages_without_user_id() -> None:
@@ -1286,11 +1291,9 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     assert page.status_code == 200
     body = page.text.lower()
     assert api_key in page.text
-    assert "python3 -m venv ~/.aibridge" in body
-    assert "~/.aibridge/bin/pip install" in body
-    assert "git+https://github.com/bernardinogm/ai_bridge_v7_cleanroom.git@main" in body
+    assert "curl -fssl https://getaibridge.com/install.sh | bash" in body
     assert 'export ab_api_key=' in body
-    assert "~/.aibridge/bin/aibridge" in page.text
+    assert "aibridge" in page.text
     assert 'anthropic_base_url' not in body
     assert 'anthropic_api_key' not in body
     assert 'unset anthropic_model' not in body

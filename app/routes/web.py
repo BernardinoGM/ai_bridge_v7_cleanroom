@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -81,6 +81,15 @@ def landing(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
             "launch_session_active": bool(current_user),
             "checkout_enabled": _checkout_enabled_for_request(request, db),
         },
+    )
+
+
+@router.get("/install.sh")
+def install_script() -> FileResponse:
+    return FileResponse(
+        BASE_DIR / "app" / "static" / "install.sh",
+        media_type="text/x-shellscript; charset=utf-8",
+        filename="install.sh",
     )
 
 

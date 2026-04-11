@@ -23,6 +23,7 @@ TERMINAL_CAPABILITY_INTAKE_MESSAGE = "Tell me what you need built, fixed, review
 TERMINAL_CODING_INTAKE_MESSAGE = (
     "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
 )
+PUBLIC_INSTALLER_URL = "https://getaibridge.com/install.sh"
 
 
 @dataclass(frozen=True)
@@ -76,10 +77,9 @@ def build_terminal_setup_commands(raw_key: str | None, settings: Settings) -> li
         else '# Generate a fresh AB key to get a copy-ready terminal setup block.'
     )
     return [
-        'python3 -m venv ~/.aibridge',
-        '~/.aibridge/bin/pip install --upgrade --force-reinstall "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"',
+        f"curl -fsSL {PUBLIC_INSTALLER_URL} | bash",
         key_line,
-        f'~/.aibridge/bin/{settings.terminal_cli_command}',
+        settings.terminal_cli_command,
     ]
 
 
