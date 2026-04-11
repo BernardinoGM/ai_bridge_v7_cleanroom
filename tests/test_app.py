@@ -1416,6 +1416,7 @@ def test_ab_cli_paste_mode_waits_for_send_before_submitting(monkeypatch, capsys)
 
     fake_client = _FakeClient()
     monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli, "resolve_terminal_identity", lambda api_key, base_url=None, client=None: "promptidentity")
     monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
     monkeypatch.setattr(builtins, "input", _fake_input)
     monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
@@ -1435,10 +1436,61 @@ def test_ab_cli_starts_clean_without_startup_chatter(monkeypatch, capsys) -> Non
         raise EOFError
 
     monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli, "resolve_terminal_identity", lambda api_key, base_url=None, client=None: "promptidentity")
     monkeypatch.setattr(builtins, "input", _fake_input)
     monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
     result = terminal_cli.main([])
     assert result == 0
+    output = capsys.readouterr().out
+    assert "terminal ready" not in output.lower()
+    assert "ctrl-d exits" not in output.lower()
+
+
+def test_terminal_whoami_returns_authenticated_user_identity() -> None:
+    key_response = client.post("/v1/keys", json={"email": "promptidentity@example.com", "name": "Prompt Identity"})
+    assert key_response.status_code == 200
+    api_key = key_response.json()["api_key"]
+    response = client.get("/terminal/whoami", headers={"Authorization": f"Bearer {api_key}"})
+    assert response.status_code == 200
+    assert response.json()["email"] == "promptidentity@example.com"
+    assert response.json()["handle"] == "promptidentity"
+
+
+def test_ab_cli_uses_authenticated_identity_for_prompt(monkeypatch, capsys) -> None:
+    prompts_seen: list[str] = []
+
+    class _WhoAmIResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "user_id": 99,
+                "name": "Prompt Identity",
+                "email": "promptidentity@example.com",
+                "handle": "promptidentity",
+            }
+
+    class _FakeClient:
+        def get(self, url, headers=None):
+            assert url.endswith("/terminal/whoami")
+            assert headers["Authorization"] == "Bearer ab_live_test_key"
+            return _WhoAmIResponse()
+
+        def close(self) -> None:
+            return None
+
+    def _fake_input(prompt: str) -> str:
+        prompts_seen.append(prompt)
+        raise EOFError
+
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=10.0: _FakeClient())
+    monkeypatch.setattr(builtins, "input", _fake_input)
+    monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
+    result = terminal_cli.main([])
+    assert result == 0
+    assert prompts_seen == ["promptidentity> "]
     output = capsys.readouterr().out
     assert "terminal ready" not in output.lower()
     assert "ctrl-d exits" not in output.lower()
@@ -1466,6 +1518,7 @@ def test_ab_cli_cancel_discards_paste_buffer(monkeypatch, capsys) -> None:
 
     fake_client = _FakeClient()
     monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli, "resolve_terminal_identity", lambda api_key, base_url=None, client=None: "promptidentity")
     monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
     monkeypatch.setattr(builtins, "input", _fake_input)
     monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
@@ -1500,6 +1553,7 @@ def test_ab_cli_paste_enters_local_compose_mode_without_remote_execution(monkeyp
 
     fake_client = _FakeClient()
     monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli, "resolve_terminal_identity", lambda api_key, base_url=None, client=None: "promptidentity")
     monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
     monkeypatch.setattr(builtins, "input", _fake_input)
     monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)

@@ -523,6 +523,33 @@ def health(settings: Settings = Depends(get_settings)) -> dict:
     }
 
 
+def _terminal_handle_for_user(user: User) -> str:
+    local = user.email.split("@", 1)[0].strip().lower()
+    if local:
+        return local
+    return (user.name or "aibridge").strip().lower().replace(" ", "-")
+
+
+@router.get("/terminal/whoami")
+def terminal_whoami(
+    request: Request,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    user_id = _resolve_user_id(db, settings, request, None, authorization, x_api_key)
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    return {
+        "user_id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "handle": _terminal_handle_for_user(user),
+    }
+
+
 @router.post("/demo/chat")
 def demo_chat(
     payload: DemoChatRequest,

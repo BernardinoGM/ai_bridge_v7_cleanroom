@@ -13,6 +13,7 @@ from app.terminal import TERMINAL_TEMPORARY_MESSAGE
 
 DEFAULT_BASE_URL = "https://getaibridge.com"
 DEFAULT_API_PATH = "/terminal/messages"
+DEFAULT_IDENTITY_PATH = "/terminal/whoami"
 PASTE_HELP = "/paste for multi-line input, /send to submit, /cancel to discard."
 
 
@@ -20,6 +21,13 @@ PASTE_HELP = "/paste for multi-line input, /send to submit, /cancel to discard."
 class TerminalCliResult:
     text: str
     task_id: str | None
+
+
+def _normalize_prompt_identity(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    collapsed = "-".join(part for part in raw.strip().lower().replace("@", " ").split() if part)
+    return collapsed or None
 
 
 def _terminal_headers(api_key: str) -> dict[str, str]:
@@ -58,6 +66,32 @@ def _should_continue_task(prompt: str, active_task_id: str | None) -> bool:
     if normalized in {"1", "2", "3", "option 1", "option 2", "option 3", "i mean i choose 1", "i mean i will choose 1"}:
         return True
     return False
+
+
+def resolve_terminal_identity(
+    api_key: str,
+    *,
+    base_url: str | None = None,
+    client: httpx.Client | None = None,
+) -> str | None:
+    url = f"{(base_url or os.environ.get('AB_BASE_URL') or DEFAULT_BASE_URL).rstrip('/')}{DEFAULT_IDENTITY_PATH}"
+    close_client = client is None
+    http_client = client or httpx.Client(timeout=10.0)
+    try:
+        response = http_client.get(url, headers=_terminal_headers(api_key))
+        if response.status_code != 200:
+            return None
+        data = response.json()
+        return (
+            _normalize_prompt_identity(data.get("handle"))
+            or _normalize_prompt_identity(data.get("email"))
+            or _normalize_prompt_identity(data.get("name"))
+        )
+    except Exception:
+        return None
+    finally:
+        if close_client:
+            http_client.close()
 
 
 def send_terminal_request(
@@ -109,10 +143,11 @@ def send_terminal_prompt(
     return send_terminal_request(prompt, api_key, base_url=base_url, client=client).text
 
 
-def _interactive_repl(api_key: str, base_url: str | None = None) -> int:
+def _interactive_repl(api_key: str, base_url: str | None = None, prompt_identity: str | None = None) -> int:
     compose_mode = False
     compose_lines: list[str] = []
     active_task_id: str | None = None
+    prompt_prefix = f"{prompt_identity or 'aibridge'}> "
 
     def _submit(prompt: str) -> None:
         nonlocal active_task_id
@@ -128,7 +163,7 @@ def _interactive_repl(api_key: str, base_url: str | None = None) -> int:
 
     while True:
         try:
-            prompt = input("aibridge> " if not compose_mode else "paste> ")
+            prompt = input(prompt_prefix if not compose_mode else "paste> ")
         except EOFError:
             print()
             return 0
@@ -185,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
             print(send_terminal_request(piped, api_key).text)
             return 0
 
-    return _interactive_repl(api_key)
+    return _interactive_repl(api_key, prompt_identity=resolve_terminal_identity(api_key))
 
 
 if __name__ == "__main__":
