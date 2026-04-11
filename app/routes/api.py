@@ -831,6 +831,7 @@ def _complete_terminal_chat(
     settings: Settings,
     endpoint: str,
     task_id: str | None = None,
+    task_context: dict[str, str | None] | None = None,
 ) -> dict:
     result = execute_terminal_strategy(
         user_id=user_id,
@@ -843,6 +844,7 @@ def _complete_terminal_chat(
         task_id=task_id,
         request_id=uuid.uuid4().hex,
         registry=_provider_registry(settings),
+        task_context=task_context,
     )
     return {
         "id": f"ab_{result.request_id}",
@@ -966,6 +968,11 @@ def api_messages(
         settings=settings,
         endpoint=str(request.url.path),
         task_id=task.task_id,
+        task_context={
+            "summary": task.summary,
+            "last_user_message": task.last_user_message,
+            "last_assistant_excerpt": task.last_assistant_excerpt,
+        },
     )
     correction_terms = ["verify", "recheck", "double-check", "double check", "correct", "fix again", "audit", "bugfix", "bug fix", "refactor", "regression", "patch"]
     task_stable = (

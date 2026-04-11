@@ -23,6 +23,11 @@ UserVisibleMode = Literal["preview", "assistant", "coding_assistant"]
 
 
 CODING_SIGNAL_PATTERNS: tuple[tuple[str, str], ...] = (
+    ("code_change", "deliver code"),
+    ("code_change", "build"),
+    ("code_change", "implement"),
+    ("code_change", "write code"),
+    ("code_change", "ship code"),
     ("stack_trace", "traceback"),
     ("stack_trace", "exception"),
     ("stack_trace", "stack trace"),

@@ -1105,6 +1105,7 @@ def test_terminal_hello_messages_flow_uses_alias_without_vendor_leakage() -> Non
     assert "claude-sonnet-4-5" not in body
     assert "anthropic" not in body
     assert "你好" not in response.text
+    assert response.json()["content"][0]["text"] == "Paste the bug, task, diff, stack trace, or repo question."
 
 
 def test_terminal_payload_no_longer_exposes_public_billing_fields() -> None:
@@ -1119,6 +1120,47 @@ def test_terminal_payload_no_longer_exposes_public_billing_fields() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert "billing" not in payload["ab"]
+
+
+def test_terminal_low_information_inputs_steer_into_coding_intake() -> None:
+    create = client.post("/keys", json={"email": "terminalintake@example.com", "use_case": "terminal intake"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    cases = {
+        "hello": "Paste the bug, task, diff, stack trace, or repo question.",
+        "what can you do": "Tell me what you need built, fixed, reviewed, or explained.",
+        "deliver code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+    }
+    for prompt, expected in cases.items():
+        response = client.post(
+            "/terminal/messages",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"messages": [{"role": "user", "content": prompt}], "source_surface": "ab_cli"},
+        )
+        assert response.status_code == 200
+        assert response.json()["content"][0]["text"] == expected
+
+
+def test_terminal_option_reference_uses_task_context_instead_of_resetting() -> None:
+    create = client.post("/keys", json={"name": "Zeta Option Proof", "email": "zetaoptionproof@example.com", "use_case": "terminal option"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    first = client.post(
+        "/terminal/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"messages": [{"role": "user", "content": "Fix auth.py session bug"}], "source_surface": "ab_cli"},
+    )
+    assert first.status_code == 200
+    task_id = first.json()["task_id"]
+    second = client.post(
+        "/terminal/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"messages": [{"role": "user", "content": "1"}], "task_id": task_id, "source_surface": "ab_cli"},
+    )
+    assert second.status_code == 200
+    text = second.json()["content"][0]["text"]
+    assert text.startswith("Option noted for: Fix auth.py session bug")
+    assert "file, diff, stack trace, or exact task" in text
 
 
 def test_outer_compat_boundary_returns_only_neutral_message_on_model_failure(monkeypatch) -> None:

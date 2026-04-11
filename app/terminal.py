@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -31,6 +32,28 @@ class TerminalExecutionResult:
     strategy: dict
 
 
+LOW_INFORMATION_TERMINAL_INPUTS = {
+    "hello",
+    "hi",
+    "hey",
+    "hello!",
+    "hi!",
+    "hey!",
+    "what can you do",
+    "what do you do",
+    "help",
+}
+
+UNDERSPECIFIED_CODING_PHRASES = (
+    "deliver code",
+    "write code",
+    "build it",
+    "implement it",
+    "fix it",
+    "ship it",
+)
+
+
 def build_terminal_setup_commands(raw_key: str | None, settings: Settings) -> list[str]:
     key_line = (
         f'export AB_API_KEY="{raw_key}"'
@@ -47,8 +70,59 @@ def build_terminal_setup_commands(raw_key: str | None, settings: Settings) -> li
     ]
 
 
+def _normalize_prompt(prompt: str) -> str:
+    return re.sub(r"\s+", " ", prompt.strip().lower())
+
+
+def _is_option_reference(prompt: str) -> bool:
+    normalized = _normalize_prompt(prompt)
+    return bool(re.fullmatch(r"(option\s*)?\d+", normalized)) or normalized in {
+        "i mean i will choose 1",
+        "i'll choose 1",
+        "i choose 1",
+        "choose 1",
+        "option 1",
+    }
+
+
+def _is_underspecified_coding_intent(prompt: str, strategy: ExecutionStrategy) -> bool:
+    normalized = _normalize_prompt(prompt)
+    if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
+        return False
+    if any(phrase in normalized for phrase in UNDERSPECIFIED_CODING_PHRASES):
+        return True
+    if strategy.task_type not in {"coding", "mixed"}:
+        return False
+    if len(normalized.split()) <= 4 and not any(
+        marker in normalized
+        for marker in ("error", "traceback", ".py", ".ts", ".js", "repo", "diff", "stack", "file", "test", "bug")
+    ):
+        return True
+    return False
+
+
+def build_terminal_intake_reply(
+    prompt: str,
+    strategy: ExecutionStrategy,
+    task_context: dict[str, str | None] | None = None,
+) -> str | None:
+    normalized = _normalize_prompt(prompt)
+    summary = (task_context or {}).get("summary") or (task_context or {}).get("last_user_message") or ""
+    if normalized in {"what can you do", "what do you do", "help"}:
+        return "Tell me what you need built, fixed, reviewed, or explained."
+    if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
+        return "Paste the bug, task, diff, stack trace, or repo question."
+    if _is_option_reference(prompt):
+        if summary:
+            return f"Option noted for: {summary[:80]}. Paste the file, diff, stack trace, or exact task."
+        return "If you're choosing an option, paste the bug, file, diff, or current error."
+    if _is_underspecified_coding_intent(prompt, strategy):
+        return "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
+    return None
+
+
 def sanitize_terminal_reply(prompt: str, reply: str, strategy: ExecutionStrategy) -> str:
-    normalized_prompt = prompt.strip().lower()
+    normalized_prompt = _normalize_prompt(prompt)
     lowered = reply.lower()
     blocked_markers = (
         "selected model",
@@ -67,11 +141,15 @@ def sanitize_terminal_reply(prompt: str, reply: str, strategy: ExecutionStrategy
     )
     contains_cjk = any("\u4e00" <= ch <= "\u9fff" for ch in reply)
     if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"}:
-        return "Hello! How can I help you today?"
+        return "Paste the bug, task, diff, stack trace, or repo question."
+    if normalized_prompt in {"what can you do", "what do you do", "help"}:
+        return "Tell me what you need built, fixed, reviewed, or explained."
     if contains_cjk or any(marker in lowered for marker in blocked_markers):
         if strategy.task_type in {"coding", "mixed"}:
-            return "I can help with that. Share the repo task, error, or next step."
-        return "Hello! How can I help you today?"
+            return "Share the repo task, error, file, diff, or next step."
+        return "Paste the task or repo question you want worked on."
+    if len(reply.split()) > 80 and normalized_prompt in LOW_INFORMATION_TERMINAL_INPUTS:
+        return "Paste the bug, task, diff, stack trace, or repo question."
     return reply
 
 
@@ -108,7 +186,24 @@ def execute_terminal_strategy(
     task_id: str | None,
     request_id: str,
     registry: dict[str, ProviderClient],
+    task_context: dict[str, str | None] | None = None,
 ) -> TerminalExecutionResult:
+    intake_reply = build_terminal_intake_reply(prompt, strategy, task_context)
+    if intake_reply:
+        return TerminalExecutionResult(
+            content=intake_reply,
+            mode="smart",
+            request_id=request_id,
+            provider_family="ab_orchestrator",
+            fallback_used=False,
+            usage={"prompt_tokens": 0, "completion_tokens": 0},
+            telemetry={
+                "premium_escalated": False,
+                "quality_check_triggered": False,
+                "local_model_hit": False,
+            },
+            strategy=strategy_summary(strategy),
+        )
     runtime_plan: RuntimeExecutionPlan = runtime_plan_for_strategy(strategy, "terminal")
     provider_response, execution_profile_used, fallback_used = _execute_with_fallback(
         runtime_plan.primary_execution_profile,
