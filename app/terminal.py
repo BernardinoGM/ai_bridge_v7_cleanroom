@@ -23,6 +23,7 @@ TERMINAL_CAPABILITY_INTAKE_MESSAGE = "Tell me what you need built, fixed, review
 TERMINAL_CODING_INTAKE_MESSAGE = (
     "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
 )
+TERMINAL_INSTALLER_URL = "https://raw.githubusercontent.com/BernardinoGM/ai_bridge_v7_cleanroom/main/scripts/install_aibridge.sh"
 
 
 @dataclass(frozen=True)
@@ -76,12 +77,9 @@ def build_terminal_setup_commands(raw_key: str | None, settings: Settings) -> li
         else '# Generate a fresh AB key to get a copy-ready terminal setup block.'
     )
     return [
-        'python3 -m venv ~/.aibridge',
-        '~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel',
-        '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"',
-        'export PATH="$HOME/.aibridge/bin:$PATH"',
+        f'curl -fsSL {TERMINAL_INSTALLER_URL} | bash',
         key_line,
-        settings.terminal_cli_command,
+        f'~/.aibridge/bin/{settings.terminal_cli_command}',
     ]
 
 

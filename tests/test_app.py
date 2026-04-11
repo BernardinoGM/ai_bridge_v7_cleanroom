@@ -288,12 +288,9 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["dashboard_url"] == "/dashboard"
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
-    assert payload["onboarding_commands"][0] == "python3 -m venv ~/.aibridge"
-    assert payload["onboarding_commands"][1] == "~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel"
-    assert payload["onboarding_commands"][2] == '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"'
-    assert payload["onboarding_commands"][3] == 'export PATH="$HOME/.aibridge/bin:$PATH"'
-    assert payload["onboarding_commands"][4].startswith('export AB_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][5] == "aibridge"
+    assert payload["onboarding_commands"][0] == "curl -fsSL https://raw.githubusercontent.com/BernardinoGM/ai_bridge_v7_cleanroom/main/scripts/install_aibridge.sh | bash"
+    assert payload["onboarding_commands"][1].startswith('export AB_API_KEY="ab_live_')
+    assert payload["onboarding_commands"][2] == "~/.aibridge/bin/aibridge"
     assert payload["terminal_command"] == "aibridge"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
@@ -1288,13 +1285,9 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     assert page.status_code == 200
     body = page.text.lower()
     assert api_key in page.text
-    assert 'python3 -m venv ~/.aibridge' in body
-    assert "~/.aibridge/bin/python -m pip install --upgrade pip setuptools wheel" in page.text
-    assert 'git+https://github.com/bernardinogm/ai_bridge_v7_cleanroom.git@main' in body
-    assert "export path=" in body
-    assert ".aibridge/bin" in body
+    assert "curl -fssl https://raw.githubusercontent.com/bernardinogm/ai_bridge_v7_cleanroom/main/scripts/install_aibridge.sh | bash" in body
     assert 'export ab_api_key=' in body
-    assert '\naibridge\n' in body or '>aibridge<' in body
+    assert "~/.aibridge/bin/aibridge" in page.text
     assert 'anthropic_base_url' not in body
     assert 'anthropic_api_key' not in body
     assert 'unset anthropic_model' not in body
