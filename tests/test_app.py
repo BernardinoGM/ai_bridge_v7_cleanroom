@@ -288,9 +288,10 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["dashboard_url"] == "/dashboard"
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
-    assert payload["onboarding_commands"][0] == "curl -fsSL https://raw.githubusercontent.com/BernardinoGM/ai_bridge_v7_cleanroom/main/scripts/install_aibridge.sh | bash"
-    assert payload["onboarding_commands"][1].startswith('export AB_API_KEY="ab_live_')
-    assert payload["onboarding_commands"][2] == "~/.aibridge/bin/aibridge"
+    assert payload["onboarding_commands"][0] == "python3 -m venv ~/.aibridge"
+    assert payload["onboarding_commands"][1] == '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"'
+    assert payload["onboarding_commands"][2].startswith('export AB_API_KEY="ab_live_')
+    assert payload["onboarding_commands"][3] == "~/.aibridge/bin/aibridge"
     assert payload["terminal_command"] == "aibridge"
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == "newbuilder@example.com"))
@@ -1285,7 +1286,9 @@ def test_dashboard_setup_commands_use_real_key_for_signed_user() -> None:
     assert page.status_code == 200
     body = page.text.lower()
     assert api_key in page.text
-    assert "curl -fssl https://raw.githubusercontent.com/bernardinogm/ai_bridge_v7_cleanroom/main/scripts/install_aibridge.sh | bash" in body
+    assert "python3 -m venv ~/.aibridge" in body
+    assert "~/.aibridge/bin/pip install" in body
+    assert "git+https://github.com/bernardinogm/ai_bridge_v7_cleanroom.git@main" in body
     assert 'export ab_api_key=' in body
     assert "~/.aibridge/bin/aibridge" in page.text
     assert 'anthropic_base_url' not in body
