@@ -1,5 +1,6 @@
 import os
 import json
+import builtins
 from pathlib import Path
 
 os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test.db'}"
@@ -1164,6 +1165,29 @@ def test_terminal_option_reference_uses_task_context_instead_of_resetting() -> N
     assert "file, diff, stack trace, or exact task" in text
 
 
+def test_terminal_continue_and_same_bug_use_task_context() -> None:
+    create = client.post("/keys", json={"name": "Continue Proof", "email": "continue-proof@example.com", "use_case": "terminal continue"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    first = client.post(
+        "/terminal/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"messages": [{"role": "user", "content": "Fix auth.py session bug"}], "source_surface": "ab_cli"},
+    )
+    assert first.status_code == 200
+    task_id = first.json()["task_id"]
+    for followup in ("continue", "same bug", "same file"):
+        response = client.post(
+            "/terminal/messages",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"messages": [{"role": "user", "content": followup}], "task_id": task_id, "task_action": "continue", "source_surface": "ab_cli"},
+        )
+        assert response.status_code == 200
+        text = response.json()["content"][0]["text"]
+        assert text.startswith("Continuing: Fix auth.py session bug")
+        assert "next coding step" in text
+
+
 def test_outer_compat_boundary_returns_only_neutral_message_on_model_failure(monkeypatch) -> None:
     create = client.post("/v1/keys", json={"email": "neutralerror@example.com", "use_case": "terminal"})
     assert create.status_code == 200
@@ -1274,6 +1298,129 @@ def test_ab_cli_entry_uses_ab_api_key_and_ab_surface(monkeypatch, capsys) -> Non
     assert url.endswith("/terminal/messages")
     assert headers["Authorization"] == "Bearer ab_live_test_key"
     assert json_body["source_surface"] == "ab_cli"
+
+
+def test_ab_cli_piped_stdin_is_sent_as_one_full_message(monkeypatch, capsys) -> None:
+    class _FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "id": "ab_task",
+                "task_id": "task_pipe",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "received"}],
+            }
+
+    class _FakeClient:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def post(self, url, headers=None, json=None):
+            self.calls.append((url, headers, json))
+            return _FakeResponse()
+
+        def close(self) -> None:
+            return None
+
+    class _Pipe:
+        def isatty(self) -> bool:
+            return False
+
+        def read(self) -> str:
+            return "line one\nline two\nline three"
+
+    fake_client = _FakeClient()
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
+    monkeypatch.setattr(terminal_cli.sys, "stdin", _Pipe())
+    result = terminal_cli.main([])
+    assert result == 0
+    _, _, json_body = fake_client.calls[0]
+    assert json_body["messages"][0]["content"] == "line one\nline two\nline three"
+    assert capsys.readouterr().out.strip().endswith("received")
+
+
+def test_ab_cli_paste_mode_waits_for_send_before_submitting(monkeypatch, capsys) -> None:
+    prompts = iter(["/paste", "line one", "line two", "/send"])
+
+    class _FakeResponse:
+        status_code = 200
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "id": "ab_task",
+                "task_id": "task_paste",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "processed"}],
+            }
+
+    class _FakeClient:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def post(self, url, headers=None, json=None):
+            self.calls.append((url, headers, json))
+            return _FakeResponse()
+
+        def close(self) -> None:
+            return None
+
+    def _fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration:
+            raise EOFError
+
+    fake_client = _FakeClient()
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
+    monkeypatch.setattr(builtins, "input", _fake_input)
+    monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
+    result = terminal_cli.main([])
+    assert result == 0
+    assert len(fake_client.calls) == 1
+    _, _, json_body = fake_client.calls[0]
+    assert json_body["messages"][0]["content"] == "line one\nline two"
+    output = capsys.readouterr().out
+    assert "Paste mode enabled. /send submits, /cancel discards." in output
+    assert output.strip().endswith("processed")
+
+
+def test_ab_cli_cancel_discards_paste_buffer(monkeypatch, capsys) -> None:
+    prompts = iter(["/paste", "line one", "/cancel"])
+
+    class _FakeClient:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def post(self, url, headers=None, json=None):
+            self.calls.append((url, headers, json))
+            raise AssertionError("paste buffer should not be submitted")
+
+        def close(self) -> None:
+            return None
+
+    def _fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration:
+            raise EOFError
+
+    fake_client = _FakeClient()
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
+    monkeypatch.setattr(builtins, "input", _fake_input)
+    monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
+    result = terminal_cli.main([])
+    assert result == 0
+    assert fake_client.calls == []
+    output = capsys.readouterr().out
+    assert "Paste buffer discarded." in output
 
 
 def test_signup_referral_url_redirects_to_real_landing_onboarding_path() -> None:

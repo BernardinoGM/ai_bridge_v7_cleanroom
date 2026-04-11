@@ -85,6 +85,20 @@ def _is_option_reference(prompt: str) -> bool:
     }
 
 
+def _is_context_reference(prompt: str) -> bool:
+    normalized = _normalize_prompt(prompt)
+    return normalized in {
+        "continue",
+        "same file",
+        "same bug",
+        "same task",
+        "same repo",
+        "same error",
+        "continue that",
+        "continue this",
+    }
+
+
 def _is_underspecified_coding_intent(prompt: str, strategy: ExecutionStrategy) -> bool:
     normalized = _normalize_prompt(prompt)
     if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
@@ -118,6 +132,10 @@ def build_terminal_intake_reply(
         if summary:
             return f"Option noted for: {summary[:80]}. Paste the file, diff, stack trace, or exact task."
         return "If you're choosing an option, paste the bug, file, diff, or current error."
+    if _is_context_reference(prompt):
+        if summary:
+            return f"Continuing: {summary[:80]}. Paste the file, diff, stack trace, or next coding step."
+        return "Continue with the file, diff, stack trace, or exact coding step."
     if _is_underspecified_coding_intent(prompt, strategy):
         return "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
     return None
