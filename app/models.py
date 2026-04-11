@@ -53,6 +53,10 @@ class AgentProfile(TimestampMixin, Base):
     ds_clean_success_count_7d: Mapped[int] = mapped_column(Integer, default=0)
     premium_escalation_count_7d: Mapped[int] = mapped_column(Integer, default=0)
     last_execution_profile: Mapped[str | None] = mapped_column(String(50))
+    last_known_workspace_fingerprint: Mapped[str | None] = mapped_column(String(255))
+    recent_task_patterns_json: Mapped[list | None] = mapped_column(JSON)
+    surface_preferences_json: Mapped[dict | None] = mapped_column(JSON)
+    last_strategy_json: Mapped[dict | None] = mapped_column(JSON)
     learned_hints_json: Mapped[dict | None] = mapped_column(JSON)
     last_task_id: Mapped[str | None] = mapped_column(String(64), index=True)
 

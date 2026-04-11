@@ -583,13 +583,16 @@ def hydrate_profile_for_request(
     if workspace_context:
         if workspace_context.get("workspace_fingerprint"):
             hints["last_known_workspace_fingerprint"] = workspace_context["workspace_fingerprint"]
+            profile.last_known_workspace_fingerprint = workspace_context["workspace_fingerprint"]
         if workspace_context.get("repo_type"):
             hints["repo_type_hint"] = workspace_context["repo_type"]
     recent_patterns = list(hints.get("recent_task_patterns", []))
     recent_patterns.append("coding" if coding_work else "general")
     hints["recent_task_patterns"] = recent_patterns[-8:]
+    profile.recent_task_patterns_json = recent_patterns[-8:]
     profile.workload_pattern = "coding" if coding_work else "general"
     profile.pacing_context = "plan_first" if plan_first else "steady"
+    profile.surface_preferences_json = dict(hints.get("surface_preferences") or {})
     profile.learned_hints_json = hints
     return profile
 
@@ -621,6 +624,10 @@ def get_or_create_agent_profile(db: Session, user_id: int) -> AgentProfile:
         ds_clean_success_count_7d=0,
         premium_escalation_count_7d=0,
         last_execution_profile="remote_balanced",
+        last_known_workspace_fingerprint=None,
+        recent_task_patterns_json=[],
+        surface_preferences_json={},
+        last_strategy_json=None,
         learned_hints_json={
             "observed_high_risk_turns": 0,
             "stable_task_bias": "enabled",
@@ -682,6 +689,7 @@ def update_profile_after_turn(
     profile.workload_pattern = strategy.task_type
     profile.pacing_context = strategy.planning_mode
     hints["last_strategy"] = strategy_summary(strategy)
+    profile.last_strategy_json = strategy_summary(strategy)
     hints["last_user_visible_mode"] = strategy.user_visible_mode
     hints["last_surface"] = turn_input.get("surface") or hints.get("last_surface", "terminal")
     hints["surface_preferences"] = dict(hints.get("surface_preferences") or {})
@@ -689,10 +697,15 @@ def update_profile_after_turn(
         "language_preference": strategy.profile_updates.get("language_preference", "en"),
         "execution_bias": strategy.profile_updates.get("execution_bias", "execute_first"),
     }
+    profile.surface_preferences_json = hints["surface_preferences"]
     hints["english_response_preference"] = "en"
     recent_patterns = list(hints.get("recent_task_patterns", []))
     recent_patterns.append(strategy.task_type)
     hints["recent_task_patterns"] = recent_patterns[-8:]
+    profile.recent_task_patterns_json = recent_patterns[-8:]
+    workspace_fingerprint = strategy.profile_updates.get("workspace_fingerprint")
+    if workspace_fingerprint:
+        profile.last_known_workspace_fingerprint = str(workspace_fingerprint)
 
     ds_attempts = max(int(hints.get("ds_attempt_count", 0)), 1)
     ds_successes = int(hints.get("ds_clean_success_count", 0))

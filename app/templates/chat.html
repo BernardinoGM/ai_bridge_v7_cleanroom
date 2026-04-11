@@ -256,7 +256,9 @@
       await refreshTaskList(activeTaskId);
       await loadTask(activeTaskId);
       statusEl.textContent = payload.ab.task_state || payload.ab.status;
-      runwayBalance.textContent = `$${Number(payload.ab.billing.balance_remaining_usd).toFixed(2)}`;
+      if (payload.ab && payload.ab.billing && typeof payload.ab.billing.balance_remaining_usd !== "undefined") {
+        runwayBalance.textContent = `$${Number(payload.ab.billing.balance_remaining_usd).toFixed(2)}`;
+      }
     } catch (error) {
       setComposerError(error.message || "Unable to continue the task right now.");
     } finally {

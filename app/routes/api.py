@@ -43,7 +43,7 @@ from app.session_auth import (
     issue_session_token,
     read_session_token,
 )
-from app.terminal import build_terminal_setup_commands
+from app.terminal import TERMINAL_TEMPORARY_MESSAGE, build_terminal_setup_commands, execute_terminal_strategy, sanitize_terminal_reply
 from app.tasks import record_task_turn, resolve_task
 
 
@@ -83,7 +83,7 @@ MODEL_ALIAS_TO_MODE = {
     "claude-3-7-sonnet-latest": "assured",
     "claude-opus-4-1": "assured",
 }
-COMPAT_TEMPORARY_MESSAGE = "This workflow is temporarily unavailable. Please retry in a moment."
+COMPAT_TEMPORARY_MESSAGE = TERMINAL_TEMPORARY_MESSAGE
 
 BLOCKED_CHECKOUT_EMAILS = {"founder@aibridge.local", "bernard.gmny@gmail.com"}
 
@@ -290,11 +290,7 @@ def _sanitize_ab_reply(prompt: str, reply: str, strategy: ExecutionStrategy) -> 
         if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"} or len(normalized_prompt) <= 80:
             return "Hi, I’m AB. Paste a bug, repo task, or code question to get started."
         return "I’m AB. Share the bug, repo task, or code question and I’ll help you work through it."
-    if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"} or len(normalized_prompt) <= 80:
-        return "Hello! How can I help you today?"
-    if blocked or _CJK_PATTERN.search(reply):
-        return "I can help with that. Share the repo task, error, or next step."
-    return reply
+    return sanitize_terminal_reply(prompt, reply, strategy)
 
 
 def _get_or_create_demo_trial(db: Session, session_id: str) -> DemoTrial:
@@ -377,27 +373,6 @@ def _public_demo_response(preview: dict) -> dict:
         "trial_exhausted": preview["trial_exhausted"],
         "show_signup_after_ms": preview["show_signup_after_ms"],
     }
-
-
-def _execute_with_fallback(
-    execution_profile: str,
-    fallback_execution_profile: str | None,
-    registry: dict[str, ProviderClient],
-    prompt: str,
-    system: str | None,
-) -> tuple[ProviderResponse, str, bool]:
-    if execution_profile not in registry:
-        raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
-    try:
-        return registry[execution_profile].generate(prompt=prompt, system=system), execution_profile, False
-    except ProviderExecutionError:
-        if not fallback_execution_profile or fallback_execution_profile not in registry:
-            raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.")
-        try:
-            fallback_response = registry[fallback_execution_profile].generate(prompt=prompt, system=system)
-            return fallback_response, fallback_execution_profile, True
-        except ProviderExecutionError as exc:
-            raise HTTPException(status_code=503, detail="Service temporarily unavailable. Please try again.") from exc
 
 
 def _execute_demo_preview(
@@ -853,6 +828,7 @@ def admin_agent_profile(
 
 
 def _complete_terminal_chat(
+    *,
     user_id: int,
     strategy: ExecutionStrategy,
     system: str | None,
@@ -862,83 +838,28 @@ def _complete_terminal_chat(
     endpoint: str,
     task_id: str | None = None,
 ) -> dict:
-    runtime_plan = runtime_plan_for_strategy(strategy, "terminal")
-    registry = _provider_registry(settings)
-    provider_response, execution_profile_used, fallback_used = _execute_with_fallback(
-        runtime_plan.primary_execution_profile,
-        runtime_plan.fallback_execution_profile,
-        registry,
-        prompt,
-        system,
-    )
-    reply_text = _sanitize_ab_reply(prompt, provider_response.text, strategy)
-    public_charge = estimate_public_charge(
-        mode=runtime_plan.visible_mode,
-        prompt_tokens=provider_response.prompt_tokens_est,
-        completion_tokens=provider_response.completion_tokens_est,
-        quality_check=runtime_plan.quality_check,
-    )
-    if wallet_balance(db, user_id, "main") < public_charge:
-        raise HTTPException(status_code=402, detail="Insufficient main balance. Top up to continue.")
-    cost_estimate = estimate_serving_cost_usd(
-        provider_key=execution_profile_used,
-        prompt_tokens=provider_response.prompt_tokens_est,
-        completion_tokens=provider_response.completion_tokens_est,
-        public_charge_usd=public_charge,
-        quality_check=runtime_plan.quality_check,
-        fallback_used=fallback_used,
-        retry_count=provider_response.retry_count,
-    )
-    benchmark = benchmark_cost_usd(provider_response.prompt_tokens_est, provider_response.completion_tokens_est, settings)
-    request_id = uuid.uuid4().hex
-    debit_usage(
-        db,
+    result = execute_terminal_strategy(
         user_id=user_id,
-        amount_usd=public_charge,
-        request_id=request_id,
-        mode=runtime_plan.visible_mode,
-    )
-    event = UsageEvent(
-        user_id=user_id,
-        task_id=task_id,
-        request_id=request_id,
+        strategy=strategy,
+        system=system,
+        prompt=prompt,
+        db=db,
+        settings=settings,
         endpoint=endpoint,
-        mode=runtime_plan.visible_mode,
-        public_charge_usd=public_charge,
-        serving_cogs_usd=cost_estimate.serving_cogs_usd,
-        benchmark_cost_usd=benchmark,
-        gross_margin_guardrail_usd=cost_estimate.guardrail_usd,
-        route_chosen=execution_profile_used,
-        premium_escalated=runtime_plan.premium_escalated,
-        local_model_hit=False,
-        fallback_used=fallback_used,
-        retry_count=provider_response.retry_count,
-        quality_check_triggered=runtime_plan.quality_check,
-        latency_ms=provider_response.latency_ms,
-        prompt_tokens_est=provider_response.prompt_tokens_est,
-        completion_tokens_est=provider_response.completion_tokens_est,
-        request_payload={"prompt": prompt[:500], "mode": runtime_plan.visible_mode, "strategy": strategy_summary(strategy)},
-        response_excerpt=reply_text[:200],
+        task_id=task_id,
+        request_id=uuid.uuid4().hex,
+        registry=_provider_registry(settings),
     )
-    db.add(event)
-    db.commit()
     return {
-        "id": f"ab_{request_id}",
-        "content": reply_text,
-        "mode": runtime_plan.visible_mode,
-        "request_id": request_id,
-        "provider_family": execution_profile_used,
-        "fallback_used": fallback_used,
-        "strategy": strategy_summary(strategy),
-        "usage": {
-            "prompt_tokens": provider_response.prompt_tokens_est,
-            "completion_tokens": provider_response.completion_tokens_est,
-        },
-        "billing": {
-            "public_charge_usd": public_charge,
-            "balance_remaining_usd": wallet_balance(db, user_id, "main"),
-        },
-        "telemetry": {"premium_escalated": runtime_plan.premium_escalated, "quality_check_triggered": runtime_plan.quality_check, "local_model_hit": False},
+        "id": f"ab_{result.request_id}",
+        "content": result.content,
+        "mode": result.mode,
+        "request_id": result.request_id,
+        "provider_family": result.provider_family,
+        "fallback_used": result.fallback_used,
+        "strategy": result.strategy,
+        "usage": result.usage,
+        "telemetry": result.telemetry,
     }
 
 
@@ -966,13 +887,13 @@ def api_chat_completions(
         session_context={"surface": source_surface},
     )
     result = _complete_terminal_chat(
-        user_id,
-        strategy,
-        system,
-        prompt,
-        db,
-        settings,
-        str(request.url.path),
+        user_id=user_id,
+        strategy=strategy,
+        system=system,
+        prompt=prompt,
+        db=db,
+        settings=settings,
+        endpoint=str(request.url.path),
     )
     update_profile_after_turn(
         profile=profile,
@@ -995,7 +916,7 @@ def api_chat_completions(
         "object": "chat.completion",
         "choices": [{"index": 0, "message": {"role": "assistant", "content": result["content"]}, "finish_reason": "stop"}],
         "usage": result["usage"],
-        "ab": {"mode": result["mode"].title(), "status": "Checked" if result["telemetry"]["quality_check_triggered"] else "In progress", "billing": result["billing"]},
+        "ab": {"mode": result["mode"].title(), "status": "Checked" if result["telemetry"]["quality_check_triggered"] else "In progress"},
     }
 
 
@@ -1043,13 +964,13 @@ def api_messages(
     notes["strategy"] = strategy_summary(strategy)
     task.notes_json = notes
     result = _complete_terminal_chat(
-        user_id,
-        strategy,
-        payload.system,
-        prompt,
-        db,
-        settings,
-        str(request.url.path),
+        user_id=user_id,
+        strategy=strategy,
+        system=payload.system,
+        prompt=prompt,
+        db=db,
+        settings=settings,
+        endpoint=str(request.url.path),
         task_id=task.task_id,
     )
     correction_terms = ["verify", "recheck", "double-check", "double check", "correct", "fix again", "audit", "bugfix", "bug fix", "refactor", "regression", "patch"]
@@ -1085,7 +1006,6 @@ def api_messages(
             "mode": task.pinned_lane.title(),
             "status": "Checked" if result["telemetry"]["quality_check_triggered"] else "In progress",
             "task_state": "Verified" if task.pinned_lane == "assured" else "In progress",
-            "billing": result["billing"],
         },
         "task": _serialize_task_summary(task),
     }

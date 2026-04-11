@@ -236,7 +236,10 @@ def test_demo_chat_still_returns_preview_if_provider_path_is_unavailable(monkeyp
 
 
 def test_demo_chat_no_longer_depends_on_terminal_executor(monkeypatch) -> None:
-    monkeypatch.setattr("app.routes.api._execute_with_fallback", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("terminal executor should not handle demo")))
+    monkeypatch.setattr(
+        "app.terminal.execute_terminal_strategy",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("terminal executor should not handle demo")),
+    )
     demo_client = TestClient(app)
     response = demo_client.post("/demo/chat", json={"message": "quick overview of the changes"})
     assert response.status_code == 200
@@ -962,7 +965,7 @@ def test_outer_compat_boundary_rewrites_chat_completion_alias_before_deeper_path
             "object": "chat.completion",
             "choices": [{"index": 0, "message": {"role": "assistant", "content": "hello"}, "finish_reason": "stop"}],
             "usage": {"prompt_tokens": 1, "completion_tokens": 1},
-            "ab": {"mode": "Assured", "status": "In progress", "billing": {"public_charge_usd": 0.0, "balance_remaining_usd": 3.0}},
+            "ab": {"mode": "Assured", "status": "In progress"},
         }
 
     monkeypatch.setattr("app.routes.api.api_chat_completions", _fake_chat)
@@ -994,7 +997,7 @@ def test_outer_compat_boundary_rewrites_messages_alias_before_deeper_path(monkey
             "task_id": "task_test",
             "content": [{"type": "text", "text": "hello"}],
             "usage": {"prompt_tokens": 1, "completion_tokens": 1},
-            "ab": {"mode": "Assured", "status": "In progress", "task_state": "Verified", "billing": {"public_charge_usd": 0.0, "balance_remaining_usd": 3.0}},
+            "ab": {"mode": "Assured", "status": "In progress", "task_state": "Verified"},
             "task": {"task_id": "task_test"},
         }
 
@@ -1045,6 +1048,21 @@ def test_terminal_hello_messages_flow_uses_alias_without_vendor_leakage() -> Non
     assert "selected model does not exist" not in body
     assert "claude-sonnet-4-5" not in body
     assert "anthropic" not in body
+    assert "你好" not in response.text
+
+
+def test_terminal_payload_no_longer_exposes_public_billing_fields() -> None:
+    create = client.post("/keys", json={"email": "nobilling@example.com", "use_case": "terminal billing proof"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+    response = client.post(
+        "/terminal/messages",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"messages": [{"role": "user", "content": "hello"}], "source_surface": "ab_cli"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert "billing" not in payload["ab"]
 
 
 def test_outer_compat_boundary_returns_only_neutral_message_on_model_failure(monkeypatch) -> None:
