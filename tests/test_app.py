@@ -1135,6 +1135,13 @@ def test_terminal_low_information_inputs_steer_into_coding_intake() -> None:
         "build a tiny game": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
         "tiny game, I can play and relax": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
         "need help with a Python service": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "build it": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "fix it": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "review this": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "review diff": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "write tests": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "patch it": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "refactor it": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
     }
     for prompt, expected in cases.items():
         response = client.post(
@@ -1155,7 +1162,16 @@ def test_terminal_local_intake_turns_do_not_depend_on_remote_execution(monkeypat
         raise AssertionError("provider execution should not run for local intake turns")
 
     monkeypatch.setattr("app.routes.api._provider_registry", _boom)
-    for prompt in ("hello", "what can you do", "deliver code", "I want to code", "build a tiny game"):
+    for prompt in (
+        "hello",
+        "what can you do",
+        "deliver code",
+        "I want to code",
+        "build a tiny game",
+        "tiny game, I can play and relax",
+        "fix it",
+        "review this",
+    ):
         response = client.post(
             "/terminal/messages",
             headers={"Authorization": f"Bearer {api_key}"},
@@ -1411,6 +1427,7 @@ def test_ab_cli_paste_mode_waits_for_send_before_submitting(monkeypatch, capsys)
     output = capsys.readouterr().out
     assert "Paste mode enabled. /send submits, /cancel discards." in output
     assert output.strip().endswith("processed")
+    assert "temporarily unavailable" not in output.lower()
 
 
 def test_ab_cli_starts_clean_without_startup_chatter(monkeypatch, capsys) -> None:
@@ -1457,6 +1474,42 @@ def test_ab_cli_cancel_discards_paste_buffer(monkeypatch, capsys) -> None:
     assert fake_client.calls == []
     output = capsys.readouterr().out
     assert "Paste buffer discarded." in output
+    assert "temporarily unavailable" not in output.lower()
+    assert "tell me what you need built" not in output.lower()
+
+
+def test_ab_cli_paste_enters_local_compose_mode_without_remote_execution(monkeypatch, capsys) -> None:
+    prompts = iter(["/paste", "/cancel"])
+
+    class _FakeClient:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def post(self, url, headers=None, json=None):
+            self.calls.append((url, headers, json))
+            raise AssertionError("compose mode should not submit on /paste")
+
+        def close(self) -> None:
+            return None
+
+    def _fake_input(_prompt: str) -> str:
+        try:
+            return next(prompts)
+        except StopIteration:
+            raise EOFError
+
+    fake_client = _FakeClient()
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(terminal_cli.httpx, "Client", lambda timeout=45.0: fake_client)
+    monkeypatch.setattr(builtins, "input", _fake_input)
+    monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
+    result = terminal_cli.main([])
+    assert result == 0
+    assert fake_client.calls == []
+    output = capsys.readouterr().out
+    assert "Paste mode enabled. /send submits, /cancel discards." in output
+    assert "temporarily unavailable" not in output.lower()
+    assert "tell me what you need built" not in output.lower()
 
 
 def test_signup_referral_url_redirects_to_real_landing_onboarding_path() -> None:

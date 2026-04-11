@@ -18,6 +18,11 @@ from app.providers.real import ProviderExecutionError
 
 
 TERMINAL_TEMPORARY_MESSAGE = "This workflow is temporarily unavailable. Please retry in a moment."
+TERMINAL_GREETING_INTAKE_MESSAGE = "Paste the bug, task, diff, stack trace, or repo question."
+TERMINAL_CAPABILITY_INTAKE_MESSAGE = "Tell me what you need built, fixed, reviewed, or explained."
+TERMINAL_CODING_INTAKE_MESSAGE = (
+    "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
+)
 
 
 @dataclass(frozen=True)
@@ -131,9 +136,9 @@ def build_terminal_intake_reply(
     normalized = _normalize_prompt(prompt)
     summary = (task_context or {}).get("summary") or (task_context or {}).get("last_user_message") or ""
     if normalized in {"what can you do", "what do you do", "help"}:
-        return "Tell me what you need built, fixed, reviewed, or explained."
+        return TERMINAL_CAPABILITY_INTAKE_MESSAGE
     if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
-        return "Paste the bug, task, diff, stack trace, or repo question."
+        return TERMINAL_GREETING_INTAKE_MESSAGE
     if _is_option_reference(prompt):
         if summary:
             return f"Option noted for: {summary[:80]}. Paste the file, diff, stack trace, or exact task."
@@ -143,7 +148,7 @@ def build_terminal_intake_reply(
             return f"Continuing: {summary[:80]}. Paste the file, diff, stack trace, or next coding step."
         return "Continue with the file, diff, stack trace, or exact coding step."
     if _is_underspecified_coding_intent(prompt, strategy):
-        return "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
+        return TERMINAL_CODING_INTAKE_MESSAGE
     return None
 
 
@@ -167,15 +172,15 @@ def sanitize_terminal_reply(prompt: str, reply: str, strategy: ExecutionStrategy
     )
     contains_cjk = any("\u4e00" <= ch <= "\u9fff" for ch in reply)
     if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"}:
-        return "Paste the bug, task, diff, stack trace, or repo question."
+        return TERMINAL_GREETING_INTAKE_MESSAGE
     if normalized_prompt in {"what can you do", "what do you do", "help"}:
-        return "Tell me what you need built, fixed, reviewed, or explained."
+        return TERMINAL_CAPABILITY_INTAKE_MESSAGE
     if contains_cjk or any(marker in lowered for marker in blocked_markers):
         if strategy.task_type in {"coding", "mixed"}:
             return "Share the repo task, error, file, diff, or next step."
         return "Paste the task or repo question you want worked on."
     if len(reply.split()) > 80 and normalized_prompt in LOW_INFORMATION_TERMINAL_INPUTS:
-        return "Paste the bug, task, diff, stack trace, or repo question."
+        return TERMINAL_GREETING_INTAKE_MESSAGE
     return reply
 
 
