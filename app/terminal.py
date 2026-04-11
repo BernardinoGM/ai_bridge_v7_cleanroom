@@ -19,6 +19,7 @@ from app.providers.real import ProviderExecutionError
 
 TERMINAL_TEMPORARY_MESSAGE = "This workflow is temporarily unavailable. Please retry in a moment."
 TERMINAL_GREETING_INTAKE_MESSAGE = "Paste the bug, task, diff, stack trace, or repo question."
+TERMINAL_IDENTITY_INTAKE_MESSAGE = "I'm your coding terminal. Paste the bug, task, diff, stack trace, or repo question."
 TERMINAL_CAPABILITY_INTAKE_MESSAGE = "Tell me what you need built, fixed, reviewed, or explained."
 TERMINAL_CODING_INTAKE_MESSAGE = (
     "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
@@ -48,6 +49,29 @@ LOW_INFORMATION_TERMINAL_INPUTS = {
     "what can you do",
     "what do you do",
     "help",
+}
+
+IDENTITY_META_INPUTS = {
+    "who are you",
+    "what is your name",
+    "who am i talking to",
+    "aibridge",
+}
+
+CAPABILITY_INPUTS = {
+    "what can you do",
+    "what do you do",
+    "help",
+    "can you code",
+    "could you code",
+}
+
+VAGUE_CODING_INPUTS = {
+    "code",
+    "build",
+    "fix",
+    "review diff",
+    "write tests",
 }
 
 UNDERSPECIFIED_CODING_PHRASES = (
@@ -114,11 +138,13 @@ def _is_context_reference(prompt: str) -> bool:
 
 def _is_underspecified_coding_intent(prompt: str, strategy: ExecutionStrategy) -> bool:
     normalized = _normalize_prompt(prompt)
-    if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
+    if normalized in LOW_INFORMATION_TERMINAL_INPUTS or normalized in IDENTITY_META_INPUTS:
         return False
+    if normalized in CAPABILITY_INPUTS or normalized in VAGUE_CODING_INPUTS:
+        return True
     if any(phrase in normalized for phrase in UNDERSPECIFIED_CODING_PHRASES):
         return True
-    if any(term in normalized for term in ("build ", "implement ", "fix bug", "review diff", "write a test", "write tests", "patch ", "refactor ")):
+    if any(term in normalized for term in ("build ", "implement ", "fix bug", "review diff", "write a test", "write tests", "patch ", "refactor ", "fix ", "code ")):
         return True
     if strategy.task_type not in {"coding", "mixed"}:
         return False
@@ -139,7 +165,9 @@ def build_terminal_intake_reply(
 ) -> str | None:
     normalized = _normalize_prompt(prompt)
     summary = (task_context or {}).get("summary") or (task_context or {}).get("last_user_message") or ""
-    if normalized in {"what can you do", "what do you do", "help"}:
+    if normalized in IDENTITY_META_INPUTS:
+        return TERMINAL_IDENTITY_INTAKE_MESSAGE
+    if normalized in CAPABILITY_INPUTS:
         return TERMINAL_CAPABILITY_INTAKE_MESSAGE
     if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
         return TERMINAL_GREETING_INTAKE_MESSAGE
@@ -175,10 +203,14 @@ def sanitize_terminal_reply(prompt: str, reply: str, strategy: ExecutionStrategy
         "claude",
     )
     contains_cjk = any("\u4e00" <= ch <= "\u9fff" for ch in reply)
+    if normalized_prompt in IDENTITY_META_INPUTS:
+        return TERMINAL_IDENTITY_INTAKE_MESSAGE
     if normalized_prompt in {"hello", "hi", "hey", "hello!", "hi!", "hey!"}:
         return TERMINAL_GREETING_INTAKE_MESSAGE
-    if normalized_prompt in {"what can you do", "what do you do", "help"}:
+    if normalized_prompt in CAPABILITY_INPUTS:
         return TERMINAL_CAPABILITY_INTAKE_MESSAGE
+    if normalized_prompt in VAGUE_CODING_INPUTS:
+        return TERMINAL_CODING_INTAKE_MESSAGE
     if contains_cjk or any(marker in lowered for marker in blocked_markers):
         if strategy.task_type in {"coding", "mixed"}:
             return "Share the repo task, error, file, diff, or next step."

@@ -1132,7 +1132,16 @@ def test_terminal_low_information_inputs_steer_into_coding_intake() -> None:
     api_key = create.json()["api_key"]
     cases = {
         "hello": "Paste the bug, task, diff, stack trace, or repo question.",
+        "who are you": "I'm your coding terminal. Paste the bug, task, diff, stack trace, or repo question.",
+        "what is your name": "I'm your coding terminal. Paste the bug, task, diff, stack trace, or repo question.",
+        "who am i talking to": "I'm your coding terminal. Paste the bug, task, diff, stack trace, or repo question.",
+        "aibridge": "I'm your coding terminal. Paste the bug, task, diff, stack trace, or repo question.",
         "what can you do": "Tell me what you need built, fixed, reviewed, or explained.",
+        "can you code": "Tell me what you need built, fixed, reviewed, or explained.",
+        "could you code": "Tell me what you need built, fixed, reviewed, or explained.",
+        "code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "build": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "fix": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
         "deliver code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
         "I want to code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
         "i wanna code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
@@ -1169,7 +1178,16 @@ def test_terminal_local_intake_turns_do_not_depend_on_remote_execution(monkeypat
     monkeypatch.setattr("app.routes.api._provider_registry", _boom)
     for prompt in (
         "hello",
+        "who are you",
+        "what is your name",
+        "who am i talking to",
+        "aibridge",
         "what can you do",
+        "can you code",
+        "could you code",
+        "code",
+        "build",
+        "fix",
         "deliver code",
         "I want to code",
         "i wanna code",
