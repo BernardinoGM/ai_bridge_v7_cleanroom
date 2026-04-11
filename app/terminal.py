@@ -20,7 +20,7 @@ from app.providers.real import ProviderExecutionError
 TERMINAL_TEMPORARY_MESSAGE = "This workflow is temporarily unavailable. Please retry in a moment."
 TERMINAL_GREETING_INTAKE_MESSAGE = "Paste the bug, task, diff, stack trace, or repo question."
 TERMINAL_IDENTITY_INTAKE_MESSAGE = "I'm your coding terminal. Paste the bug, task, diff, stack trace, or repo question."
-TERMINAL_CAPABILITY_INTAKE_MESSAGE = "Tell me what you need built, fixed, reviewed, or explained."
+TERMINAL_CAPABILITY_INTAKE_MESSAGE = "Yes. Tell me what you need built, fixed, reviewed, or explained."
 TERMINAL_CODING_INTAKE_MESSAGE = (
     "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error."
 )
@@ -68,7 +68,9 @@ CAPABILITY_INPUTS = {
 
 VAGUE_CODING_INPUTS = {
     "code",
+    "code for me",
     "build",
+    "build something",
     "fix",
     "review diff",
     "write tests",
@@ -80,12 +82,14 @@ UNDERSPECIFIED_CODING_PHRASES = (
     "want to code",
     "wanna code",
     "deliver code",
+    "code for me",
     "review this",
     "review diff",
     "write code",
     "write a test",
     "write tests",
     "build a tiny game",
+    "build something",
     "tiny game",
     "build it",
     "implement it",
