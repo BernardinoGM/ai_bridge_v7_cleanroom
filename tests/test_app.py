@@ -1130,6 +1130,7 @@ def test_terminal_low_information_inputs_steer_into_coding_intake() -> None:
         "hello": "Paste the bug, task, diff, stack trace, or repo question.",
         "what can you do": "Tell me what you need built, fixed, reviewed, or explained.",
         "deliver code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "need help with a Python service": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
     }
     for prompt, expected in cases.items():
         response = client.post(

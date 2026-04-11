@@ -57,6 +57,7 @@ CODING_SIGNAL_PATTERNS: tuple[tuple[str, str], ...] = (
     ("code_change", "runtime"),
     ("code_change", "config"),
     ("stack_hint", ".py"),
+    ("stack_hint", "python"),
     ("stack_hint", ".ts"),
     ("stack_hint", ".tsx"),
     ("stack_hint", ".js"),

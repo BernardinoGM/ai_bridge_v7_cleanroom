@@ -93,6 +93,8 @@ def _is_underspecified_coding_intent(prompt: str, strategy: ExecutionStrategy) -
         return True
     if strategy.task_type not in {"coding", "mixed"}:
         return False
+    if normalized.startswith(("need help with", "working on", "building ", "i need help with")) and len(normalized.split()) <= 8:
+        return True
     if len(normalized.split()) <= 4 and not any(
         marker in normalized
         for marker in ("error", "traceback", ".py", ".ts", ".js", "repo", "diff", "stack", "file", "test", "bug")
