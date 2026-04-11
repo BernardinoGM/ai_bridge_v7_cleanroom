@@ -289,7 +289,7 @@ def test_v1_keys_issues_real_key_and_stores_user_association() -> None:
     assert payload["chat_url"] == "/chat"
     assert payload["granted_credit_usd"] == 3.0
     assert payload["onboarding_commands"][0] == "python3 -m venv ~/.aibridge"
-    assert payload["onboarding_commands"][1] == '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"'
+    assert payload["onboarding_commands"][1] == '~/.aibridge/bin/pip install --upgrade --force-reinstall "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"'
     assert payload["onboarding_commands"][2].startswith('export AB_API_KEY="ab_live_')
     assert payload["onboarding_commands"][3] == "~/.aibridge/bin/aibridge"
     assert payload["terminal_command"] == "aibridge"

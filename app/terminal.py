@@ -77,7 +77,7 @@ def build_terminal_setup_commands(raw_key: str | None, settings: Settings) -> li
     )
     return [
         'python3 -m venv ~/.aibridge',
-        '~/.aibridge/bin/pip install "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"',
+        '~/.aibridge/bin/pip install --upgrade --force-reinstall "git+https://github.com/BernardinoGM/ai_bridge_v7_cleanroom.git@main"',
         key_line,
         f'~/.aibridge/bin/{settings.terminal_cli_command}',
     ]
