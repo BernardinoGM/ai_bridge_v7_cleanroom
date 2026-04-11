@@ -45,8 +45,12 @@ LOW_INFORMATION_TERMINAL_INPUTS = {
 }
 
 UNDERSPECIFIED_CODING_PHRASES = (
+    "i want to code",
     "deliver code",
+    "review this",
     "write code",
+    "build a tiny game",
+    "tiny game",
     "build it",
     "implement it",
     "fix it",
@@ -104,6 +108,8 @@ def _is_underspecified_coding_intent(prompt: str, strategy: ExecutionStrategy) -
     if normalized in LOW_INFORMATION_TERMINAL_INPUTS:
         return False
     if any(phrase in normalized for phrase in UNDERSPECIFIED_CODING_PHRASES):
+        return True
+    if any(term in normalized for term in ("build ", "implement ", "fix bug", "review diff", "write tests", "patch ", "refactor ")):
         return True
     if strategy.task_type not in {"coding", "mixed"}:
         return False

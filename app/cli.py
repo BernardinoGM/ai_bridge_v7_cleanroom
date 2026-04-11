@@ -110,7 +110,6 @@ def send_terminal_prompt(
 
 
 def _interactive_repl(api_key: str, base_url: str | None = None) -> int:
-    print(f"AI Bridge terminal ready. Enter sends. {PASTE_HELP} Ctrl-D exits.")
     compose_mode = False
     compose_lines: list[str] = []
     active_task_id: str | None = None

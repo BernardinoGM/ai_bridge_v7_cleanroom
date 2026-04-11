@@ -1131,6 +1131,9 @@ def test_terminal_low_information_inputs_steer_into_coding_intake() -> None:
         "hello": "Paste the bug, task, diff, stack trace, or repo question.",
         "what can you do": "Tell me what you need built, fixed, reviewed, or explained.",
         "deliver code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "I want to code": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "build a tiny game": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
+        "tiny game, I can play and relax": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
         "need help with a Python service": "Tell me what you need built, fixed, reviewed, or explained. Include the file, diff, language, or current error.",
     }
     for prompt, expected in cases.items():
@@ -1141,6 +1144,25 @@ def test_terminal_low_information_inputs_steer_into_coding_intake() -> None:
         )
         assert response.status_code == 200
         assert response.json()["content"][0]["text"] == expected
+
+
+def test_terminal_local_intake_turns_do_not_depend_on_remote_execution(monkeypatch) -> None:
+    create = client.post("/keys", json={"email": "localintake@example.com", "use_case": "terminal local intake"})
+    assert create.status_code == 200
+    api_key = create.json()["api_key"]
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("provider execution should not run for local intake turns")
+
+    monkeypatch.setattr("app.routes.api._provider_registry", _boom)
+    for prompt in ("hello", "what can you do", "deliver code", "I want to code", "build a tiny game"):
+        response = client.post(
+            "/terminal/messages",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"messages": [{"role": "user", "content": prompt}], "source_surface": "ab_cli"},
+        )
+        assert response.status_code == 200
+        assert "temporarily unavailable" not in response.text.lower()
 
 
 def test_terminal_option_reference_uses_task_context_instead_of_resetting() -> None:
@@ -1389,6 +1411,20 @@ def test_ab_cli_paste_mode_waits_for_send_before_submitting(monkeypatch, capsys)
     output = capsys.readouterr().out
     assert "Paste mode enabled. /send submits, /cancel discards." in output
     assert output.strip().endswith("processed")
+
+
+def test_ab_cli_starts_clean_without_startup_chatter(monkeypatch, capsys) -> None:
+    def _fake_input(_prompt: str) -> str:
+        raise EOFError
+
+    monkeypatch.setenv("AB_API_KEY", "ab_live_test_key")
+    monkeypatch.setattr(builtins, "input", _fake_input)
+    monkeypatch.setattr(terminal_cli.sys.stdin, "isatty", lambda: True)
+    result = terminal_cli.main([])
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "terminal ready" not in output.lower()
+    assert "ctrl-d exits" not in output.lower()
 
 
 def test_ab_cli_cancel_discards_paste_buffer(monkeypatch, capsys) -> None:

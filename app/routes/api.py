@@ -43,7 +43,13 @@ from app.session_auth import (
     issue_session_token,
     read_session_token,
 )
-from app.terminal import TERMINAL_TEMPORARY_MESSAGE, build_terminal_setup_commands, execute_terminal_strategy, sanitize_terminal_reply
+from app.terminal import (
+    TERMINAL_TEMPORARY_MESSAGE,
+    build_terminal_intake_reply,
+    build_terminal_setup_commands,
+    execute_terminal_strategy,
+    sanitize_terminal_reply,
+)
 from app.tasks import record_task_turn, resolve_task
 
 
@@ -833,6 +839,24 @@ def _complete_terminal_chat(
     task_id: str | None = None,
     task_context: dict[str, str | None] | None = None,
 ) -> dict:
+    intake_reply = build_terminal_intake_reply(prompt, strategy, task_context)
+    if intake_reply:
+        request_id = uuid.uuid4().hex
+        return {
+            "id": f"ab_{request_id}",
+            "content": intake_reply,
+            "mode": "smart",
+            "request_id": request_id,
+            "provider_family": "ab_orchestrator",
+            "fallback_used": False,
+            "strategy": strategy_summary(strategy),
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0},
+            "telemetry": {
+                "premium_escalated": False,
+                "quality_check_triggered": False,
+                "local_model_hit": False,
+            },
+        }
     result = execute_terminal_strategy(
         user_id=user_id,
         strategy=strategy,
